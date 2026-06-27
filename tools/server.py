@@ -298,13 +298,15 @@ def analyze(data):
     used_today = km_today = used_week = km_week = 0.0
     for i in range(1, len(fr)):
         ts0, b0, o0 = fr[i-1]; ts1, b1, o1 = fr[i]
-        if o1 > o0:                                    # moving
-            dkwh = (b1 - b0) / 100.0 * CAP_KWH
-            if dkwh < 0:
-                if time.strftime("%Y-%m-%d", time.localtime(ts1)) == today:
-                    used_today += -dkwh; km_today += (o1 - o0)
-                if time.strftime("%Y-W%W", time.localtime(ts1)) == week:
-                    used_week += -dkwh; km_week += (o1 - o0)
+        d_today = time.strftime("%Y-%m-%d", time.localtime(ts1)) == today
+        d_week = time.strftime("%Y-W%W", time.localtime(ts1)) == week
+        if b1 < b0:                                    # SoC fell = energy used (count ALL drops, not just
+            e = (b0 - b1) / 100.0 * CAP_KWH            # those that coincide with a 1km odo tick -> no undercount)
+            if d_today: used_today += e
+            if d_week:  used_week += e
+        if o1 > o0:                                    # odo advanced = distance driven
+            if d_today: km_today += (o1 - o0)
+            if d_week:  km_week += (o1 - o0)
     now = time.time()
     sess = build_sessions(fr, now)
     for s in sess:
@@ -496,8 +498,8 @@ def summary():
     day_used = {}
     for i in range(1, len(frS)):
         t0, b0, o0 = frS[i-1]; t1, b1, o1 = frS[i]
-        if o1 > o0 and b0 > b1:                        # moving + SoC fell = energy spent
-            k = time.strftime("%Y-%m-%d", time.localtime(t1))
+        if b0 > b1:                                    # SoC fell = energy spent (every drop, not only the
+            k = time.strftime("%Y-%m-%d", time.localtime(t1))   # ones aligned to a 1km odo tick)
             day_used[k] = day_used.get(k, 0.0) + (b0 - b1) / 100.0 * CAP_KWH
     # last 7 days km + efficiency series
     series = []
