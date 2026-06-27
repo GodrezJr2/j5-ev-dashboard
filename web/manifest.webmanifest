@@ -1,0 +1,14 @@
+{
+  "name": "Jaecoo J5 EV",
+  "short_name": "J5 EV",
+  "description": "Live telemetry, TPMS, and trip tracking for the Jaecoo J5 EV",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0e12",
+  "theme_color": "#0a0e12",
+  "start_url": "./",
+  "scope": "./",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

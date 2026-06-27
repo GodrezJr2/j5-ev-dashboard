@@ -1,0 +1,14 @@
+[Unit]
+Description=CarLinko dashboard (J5 EV telemetry)
+After=network-online.target
+
+[Service]
+User=jay
+WorkingDirectory=/home/jay/carlinko
+ExecStart=/home/jay/carlinko/venv/bin/python /home/jay/carlinko/server.py 8088
+Restart=always
+RestartSec=3
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

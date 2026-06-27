@@ -1,0 +1,15 @@
+apk/
+*.xapk
+tools/*.jar
+capture/
+carlinko.db
+.playwright-mcp/
+dash-*.png
+token.txt
+tools/token.txt
+creds.json
+tools/creds.json
+
+# Python
+__pycache__/
+*.pyc

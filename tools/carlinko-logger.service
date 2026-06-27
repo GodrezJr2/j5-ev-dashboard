@@ -1,0 +1,17 @@
+[Unit]
+Description=CarLinko adaptive telemetry logger (fast when awake, slow when parked)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jay
+WorkingDirectory=/home/jay/carlinko
+ExecStart=/home/jay/carlinko/venv/bin/python -u /home/jay/carlinko/logger.py --adaptive
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/jay/carlinko/logger.log
+StandardError=append:/home/jay/carlinko/logger.log
+
+[Install]
+WantedBy=multi-user.target

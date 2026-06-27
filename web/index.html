@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="J5 EV">
+<meta name="theme-color" content="#f4f1ea" id="themeColor">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.lang=localStorage.getItem('lang')||'en';}catch(e){document.documentElement.dataset.theme='light';}</script>
+<link rel="stylesheet" href="leaflet.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon.svg">
+<title>J5 EV</title>
+<style>
+  :root{
+    --canvas: oklch(0.972 0.006 95);
+    --surface: oklch(0.992 0.004 95);
+    --ink:    oklch(0.27 0.012 95);
+    --muted:  oklch(0.55 0.012 95);
+    --faint:  oklch(0.70 0.010 95);
+    --line:   oklch(0.90 0.008 95);
+    --hair:   oklch(0.93 0.007 95);
+    --accent: oklch(0.52 0.10 158);
+    --accent-soft: oklch(0.52 0.10 158 / .12);
+    --warn:   oklch(0.74 0.13 70);
+    --bad:    oklch(0.58 0.16 27);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0}
+  html{background:var(--canvas)}
+  body{
+    font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;
+    color:var(--ink); background:var(--canvas);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    padding:max(20px,env(safe-area-inset-top)) 20px calc(82px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:440px;margin:0 auto}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+  .over{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+
+  /* header */
+  header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .plate{font-size:21px;font-weight:700;letter-spacing:.01em;margin-top:3px}
+  .status{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);margin-top:5px}
+  .status b{width:7px;height:7px;border-radius:50%;background:var(--faint);transition:background .2s}
+  .status.on b{background:var(--accent)}
+  .hr{display:flex;flex-direction:column;align-items:flex-end;gap:9px}
+  .refresh{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);
+    color:var(--muted);font-size:19px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:color .2s,border-color .2s}
+  .refresh:active{color:var(--accent);border-color:var(--accent)}
+  .refresh.spin{animation:spin .7s linear}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  section{padding:24px 0;border-bottom:1px solid var(--hair)}
+  section:last-of-type{border-bottom:0}
+
+  /* battery */
+  .batt{display:flex;align-items:center;gap:24px}
+  .gauge{position:relative;width:104px;height:104px;flex:none}
+  .gauge svg{display:block}
+  .gauge svg circle{transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1)}
+  .gauge .c{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .gauge .grp{display:inline-flex;align-items:baseline}
+  .gauge .c b{font-size:30px;font-weight:700;line-height:1}
+  .gauge .c i{font-size:14px;font-weight:600;color:var(--muted);font-style:normal;margin-left:1px}
+  .batt .side{flex:1;display:flex;flex-direction:column;gap:16px}
+  .kv .over{display:block;margin-bottom:3px}
+  .kv .val{font-size:26px;font-weight:700;line-height:1}
+  .kv .val u{font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;margin-left:3px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--accent)}
+  .pill.off{color:var(--faint)}
+
+  /* tyres */
+  .tyres .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .badge{font-size:12px;font-weight:700;padding:3px 11px;border-radius:999px;letter-spacing:.01em}
+  .badge.ok{color:var(--accent);background:var(--accent-soft)}
+  .badge.bad{color:var(--bad);background:oklch(0.58 0.16 27 / .12)}
+  .pad.ok .v{color:var(--accent)} .pad.bad .v{color:var(--bad)}
+  .car{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto;
+    align-items:center;justify-items:center;gap:18px 14px;max-width:300px;margin:18px auto 8px}
+  .carsvg{grid-column:2;grid-row:1/3;width:118px;height:auto;display:block}
+  .ty{fill:var(--faint);transition:fill .3s}
+  .ty.ok{fill:var(--accent)}.ty.warn{fill:var(--warn)}.ty.bad{fill:var(--bad)}.ty.idle{fill:var(--line)}
+  .pad{display:flex;flex-direction:column;line-height:1;gap:3px}
+  .pad.fl,.pad.rl{grid-column:1;align-items:flex-end;text-align:right}
+  .pad.fr,.pad.rr{grid-column:3;align-items:flex-start;text-align:left}
+  .pad.fl,.pad.fr{grid-row:1}
+  .pad.rl,.pad.rr{grid-row:2}
+  .pad .lbl{font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .pad .v{font-size:23px;font-weight:700}
+  .pad .u{font-size:10px;color:var(--faint)}
+  .pad .t{font-size:11px;color:var(--muted)}
+  .pad.idle .v{color:var(--faint);font-weight:600}
+  .pad.warn .v{color:var(--warn)} .pad.bad .v{color:var(--bad)}
+  .cap{text-align:center;font-size:13px;color:var(--muted)}
+
+  /* distance */
+  .dist .top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+  .today b{font-size:44px;font-weight:700;line-height:.95;letter-spacing:-.02em}
+  .today u{font-size:16px;font-weight:600;color:var(--muted);text-decoration:none;margin-left:4px}
+  .wm{display:flex;gap:22px;text-align:right}
+  .wm div .over{display:block;margin-bottom:4px}
+  .wm div b{font-size:19px;font-weight:700}
+  .bars{display:flex;align-items:flex-end;gap:8px;height:70px;margin-top:22px}
+  .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end}
+  .bar i{width:72%;border-radius:3px;background:var(--accent);min-height:2px;transition:height .4s ease-out}
+  .bar.z i{background:var(--line)}
+  .bar span{font-size:10px;color:var(--faint)}
+
+  /* footer stats */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 12px;padding-top:24px}
+  .stat .over{display:block;margin-bottom:5px}
+  .stat b{font-size:20px;font-weight:700}
+  .stat b u{font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;margin-left:3px}
+  .ststat{display:block;font-size:10px;margin-top:4px;color:var(--faint)}
+  .ststat.low{color:var(--warn)} .ststat.bad{color:var(--bad)}
+  .vinrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:20px;padding-top:18px;border-top:1px solid var(--hair)}
+  .vinrow .vin{font-size:13px;color:var(--muted);font-weight:500;letter-spacing:.02em}
+  .head2{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .effrow{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+  .big2{font-size:36px;font-weight:750;line-height:.95;letter-spacing:-.02em}
+  .sub{font-size:12px;color:var(--muted);margin-top:6px}
+  .effmeta{display:flex;gap:22px;text-align:right}
+  .effmeta b{font-size:18px;font-weight:700}
+  .effmeta u{font-size:11px;color:var(--muted);text-decoration:none;margin-left:2px}
+  .effmeta .over{display:block;margin-bottom:4px}
+  .badge.warn{color:var(--warn);background:oklch(0.74 0.13 70 / .14)}
+  .badge.idle{color:var(--faint);background:oklch(0.70 0.010 95 / .14)}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .tile{background:oklch(0.955 0.006 95);border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center}
+  .tile b{font-size:22px;font-weight:700;display:block;margin-bottom:4px;line-height:1}
+  .tile span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+
+  /* charge planner */
+  .planrow{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+  .planrow u{font-size:16px;font-weight:600;color:var(--muted);text-decoration:none;margin-left:3px}
+  .planfrom{font-size:13px;color:var(--muted);padding-bottom:6px}
+  .planfrom b{color:var(--ink);font-weight:700}
+  .badge.tog{cursor:pointer;user-select:none}
+  .slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:999px;
+    background:var(--line);margin:20px 0 22px;outline:none}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;
+    background:var(--surface);border:2px solid var(--accent);box-shadow:0 1px 5px rgba(0,0,0,.18);cursor:pointer}
+  .slider::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--surface);
+    border:2px solid var(--accent);box-shadow:0 1px 5px rgba(0,0,0,.18);cursor:pointer}
+  .plancost{display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:13px;color:var(--muted)}
+  .plancost label{display:inline-flex;align-items:center;gap:7px}
+  .plancost input{width:70px;border:1px solid var(--line);border-radius:9px;padding:5px 9px;
+    font:inherit;font-size:13px;text-align:right;background:var(--surface);color:var(--ink);-moz-appearance:textfield}
+  .plancost input::-webkit-outer-spin-button,.plancost input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .plancost .rp{font-weight:700;color:var(--ink);font-size:17px}
+
+  /* charge curve expander + chart */
+  .expander{display:flex;justify-content:space-between;align-items:center;margin-top:16px;
+    padding:11px 15px;border:1px solid var(--line);border-radius:12px;background:var(--surface);
+    font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none}
+  .expander .chev{transition:transform .25s;font-size:20px;color:var(--faint);line-height:1}
+  .expander.open .chev{transform:rotate(90deg)}
+  #chgChart{margin-top:14px}
+  #chgSvg{display:block;width:100%;background:var(--surface);border:1px solid var(--hair);border-radius:12px}
+  .chgstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;text-align:center}
+  .chgstats b{display:block;font-size:18px;font-weight:700;line-height:1;margin-bottom:4px}
+  .chgstats span{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .hrow{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);padding:8px 0;border-top:1px solid var(--hair)}
+  .hrow b{color:var(--ink);font-weight:700}
+  #chgHist{margin-top:8px}
+
+  /* trips */
+  .trip{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--hair)}
+  .trip:last-child{border-bottom:0}
+  .trip .km{font-size:21px;font-weight:700;line-height:1}
+  .trip .km u{font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;margin-left:2px}
+  .trip .when{font-size:11.5px;color:var(--faint);margin-top:5px}
+  .trip .r{text-align:right;flex:none}
+  .trip .eff{font-size:18px;font-weight:700;line-height:1}
+  .trip .eff u{font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;margin-left:2px}
+  .trip .sub2{font-size:11px;color:var(--faint);margin-top:5px}
+
+  /* insights */
+  .ins{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:15px 16px;
+    border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:10px}
+  .ins:last-child{margin-bottom:0}
+  .ins .t{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+  .ins .v{font-size:23px;font-weight:750;line-height:1;letter-spacing:-.01em}
+  .ins .v u{font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;margin-left:3px}
+  .ins .r{text-align:right;font-size:12px;line-height:1.5;color:var(--muted);flex:none}
+  .ins .r b{color:var(--ink);font-weight:700}
+  .ins .vd{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;margin-top:5px;display:inline-block}
+  .vd.ok{color:var(--accent);background:var(--accent-soft)} .vd.warn{color:var(--warn);background:oklch(0.74 0.13 70 / .14)}
+
+  .meta{text-align:center;font-size:11px;color:var(--faint);margin-top:26px;line-height:1.6}
+
+  /* tappable affordance */
+  .tappable{cursor:pointer;user-select:none;transition:transform .12s ease}
+  .tappable:active{transform:scale(.985)}
+  .hint{font-size:12px;color:var(--faint);padding:12px 0 0;display:flex;align-items:center;gap:6px;transition:opacity .3s}
+  .hint:before{content:"›";font-weight:700;color:var(--accent)}
+
+  /* pull to refresh */
+  .ptr{position:fixed;top:0;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:40}
+  .ptr i{margin-top:10px;width:24px;height:24px;border-radius:50%;border:2px solid var(--line);
+    border-top-color:var(--accent);opacity:0;transition:opacity .15s}
+  .ptr.show i{opacity:1}
+  .ptr.spin i{animation:spin .7s linear infinite}
+
+  /* bottom sheet */
+  .scrim{position:fixed;inset:0;z-index:50;background:oklch(0.2 0.01 95 / 0);
+    transition:background .25s;pointer-events:none}
+  .scrim.open{background:oklch(0.2 0.01 95 / .34);pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-width:440px;margin:0 auto;
+    background:var(--surface);border-radius:22px 22px 0 0;box-shadow:0 -10px 44px rgba(0,0,0,.20);
+    padding:8px 22px calc(28px + env(safe-area-inset-bottom));max-height:84vh;overflow-y:auto;
+    transform:translateY(102%);transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+  .sheet.open{transform:translateY(0)}
+  .sheet .grip{width:38px;height:4px;border-radius:99px;background:var(--line);margin:8px auto 16px}
+  .sheet h3{font-size:21px;font-weight:750;letter-spacing:-.01em;margin-bottom:4px}
+  .sheet .lead{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+  .sheet .row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+    padding:12px 0;border-bottom:1px solid var(--hair);font-size:14px}
+  .sheet .row:last-of-type{border-bottom:0}
+  .sheet .row span{color:var(--muted)}
+  .sheet .row b{font-weight:700;font-size:16px;text-align:right}
+  .sheet .note{font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:16px;
+    background:oklch(0.955 0.006 95);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .sheet .note b{color:var(--ink);font-weight:700}
+
+  /* slot-text (vendored) — rolling-digit animation for live numbers */
+  .slot-text{display:inline-flex;white-space:pre}
+  .char-slot{position:relative;display:inline-flex;flex:none;justify-content:center;
+    overflow:hidden;overflow-x:visible;overflow-y:clip;line-height:1.3;vertical-align:bottom}
+  .char-slot.is-resizing{overflow-x:clip}
+  .char-sizer{visibility:hidden;white-space:pre}
+  .char-face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    white-space:pre;will-change:transform}
+  /* keep rolling numbers tight + aligned with their adjacent units */
+  .gauge .c .char-slot,.today .char-slot,.val .char-slot,.big2 .char-slot,.effmeta .char-slot{line-height:1.05}
+
+  /* native: no root rubber-band, no long-press callout / text select on chrome */
+  html,body{overscroll-behavior-y:none}
+  body{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+  #vin{user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
+
+  /* iOS collapsing large-title -> frosted sticky app bar */
+  .appbar{position:fixed;top:0;left:0;right:0;z-index:45;display:flex;align-items:center;gap:10px;
+    padding:max(8px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-left)) 9px;
+    background:oklch(0.972 0.006 95 / .72);-webkit-backdrop-filter:saturate(1.7) blur(18px);
+    backdrop-filter:saturate(1.7) blur(18px);border-bottom:1px solid var(--line);
+    transform:translateY(-101%);opacity:0;transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .2s;
+    pointer-events:none}
+  .appbar.show{transform:none;opacity:1;pointer-events:auto}
+  .appbar .ttl{font-size:15px;font-weight:700;letter-spacing:.01em}
+  .appbar .ab-soc{margin-left:auto;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;
+    display:inline-flex;align-items:center;gap:6px}
+  .appbar .ab-dot{width:7px;height:7px;border-radius:50%;background:var(--faint);transition:background .2s}
+  .appbar.on .ab-dot{background:var(--accent)}
+  .appbar .ab-rf{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);
+    color:var(--muted);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center}
+  .appbar .ab-rf:active{color:var(--accent);border-color:var(--accent)}
+  .appbar .ab-rf.spin{animation:spin .7s linear}
+
+  /* scroll-reveal */
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  .tiles.two{grid-template-columns:repeat(2,1fr)}
+  #effSpark{display:block}
+
+  /* spec table */
+  .speclist{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--hair);
+    border:1px solid var(--hair);border-radius:13px;overflow:hidden}
+  .speclist>div{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+  .speclist .full{grid-column:1/-1}
+  .speclist span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .speclist b{font-size:18px;font-weight:700;line-height:1}
+  .speclist b u{font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;margin-left:2px}
+  .specsub{margin:18px 0 11px}
+
+  /* car hero (official render, self-hosted) */
+  .hero{position:relative;margin:-6px 0 14px;text-align:center;isolation:isolate}
+  .hero:before{content:"";position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);
+    width:120%;height:160px;z-index:-1;
+    background:radial-gradient(ellipse 60% 50% at 50% 50%,var(--accent-soft),transparent 72%)}
+  .heroimg{width:100%;max-width:330px;height:auto;
+    filter:drop-shadow(0 16px 16px rgba(0,0,0,.16))}
+
+  .btns{display:flex;gap:8px}
+  .refresh svg{display:block}
+
+  /* bottom tab bar (frosted, fixed) */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:46;display:flex;max-width:440px;margin:0 auto;
+    background:oklch(0.972 0.006 95 / .82);-webkit-backdrop-filter:saturate(1.7) blur(20px);
+    backdrop-filter:saturate(1.7) blur(20px);border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar .tb{flex:1;background:none;border:0;padding:9px 0 7px;display:flex;flex-direction:column;
+    align-items:center;gap:3px;color:var(--faint);font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;
+    transition:color .18s}
+  .tabbar .tb.on{color:var(--accent)}
+  .tabbar .tb:active{transform:scale(.94)}
+  .tabbar .tb svg{width:23px;height:23px}
+  .tabbar .tb span{font-size:10px;font-weight:600;letter-spacing:.02em}
+
+  /* flex / share card */
+  .flexbtn{display:block;width:100%;margin-top:24px;padding:14px;border-radius:14px;border:1px solid var(--accent);
+    background:var(--accent-soft);color:var(--accent);font:inherit;font-weight:700;font-size:15px;cursor:pointer;
+    transition:transform .12s}
+  .flexbtn:active{transform:scale(.99)}
+  .flexcard{background:linear-gradient(158deg,var(--accent-soft),transparent 60%),var(--surface);
+    border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:4px}
+  .flexcard .fk{font-size:20px;font-weight:750;letter-spacing:.01em}
+  .flexcard .ft{font-size:12px;color:var(--muted);margin-top:2px;margin-bottom:18px}
+  .fgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+  .fgrid .fc b{display:block;font-size:22px;font-weight:750;line-height:1;letter-spacing:-.01em}
+  .fgrid .fc span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .fbeat{margin-top:18px;font-size:13px;font-weight:700;color:var(--accent);text-align:center;
+    background:var(--accent-soft);border-radius:11px;padding:10px}
+  .ffoot{margin-top:14px;font-size:11px;color:var(--faint);text-align:center;line-height:1.55}
+
+  /* dark / night theme — manual toggle (data-theme), defaults to system on first load */
+  :root[data-theme="dark"]{
+    --canvas: oklch(0.205 0.012 95);
+    --surface:oklch(0.252 0.012 95);
+    --ink:    oklch(0.95 0.008 95);
+    --muted:  oklch(0.70 0.012 95);
+    --faint:  oklch(0.55 0.012 95);
+    --line:   oklch(0.34 0.012 95);
+    --hair:   oklch(0.30 0.010 95);
+    --accent: oklch(0.74 0.13 158);
+    --accent-soft: oklch(0.74 0.13 158 / .17);
+    --warn:   oklch(0.80 0.13 70);
+    --bad:    oklch(0.67 0.17 27);
+  }
+  :root[data-theme="dark"] .tile{background:oklch(0.285 0.012 95)}
+  :root[data-theme="dark"] .sheet .note{background:oklch(0.285 0.012 95)}
+  :root[data-theme="dark"] .appbar{background:oklch(0.205 0.012 95 / .72)}
+  :root[data-theme="dark"] .tabbar{background:oklch(0.205 0.012 95 / .82)}
+  :root[data-theme="dark"] .badge.bad{background:oklch(0.67 0.17 27 / .18)}
+  :root[data-theme="dark"] .badge.warn{background:oklch(0.80 0.13 70 / .18)}
+  :root[data-theme="dark"] .vd.warn{background:oklch(0.80 0.13 70 / .18)}
+
+  /* settings — segmented controls */
+  .setrow{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hair)}
+  .setrow:last-child{border-bottom:0}
+  .setrow .sl{font-size:14px;font-weight:600}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+  .seg button{background:none;border:0;padding:8px 17px;font:inherit;font-size:13px;font-weight:600;
+    color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s,color .15s}
+  .seg button.on{background:var(--accent);color:var(--surface)}
+  .fuelsel{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);
+    border:1px solid var(--line);border-radius:10px;padding:8px 12px;-webkit-appearance:none;appearance:none;max-width:180px}
+  .fuelin{font-size:13px;color:var(--muted)}
+  .fuelin input{width:60px;border:1px solid var(--line);border-radius:9px;padding:5px 8px;font:inherit;font-size:13px;
+    text-align:right;background:var(--surface);color:var(--ink);-moz-appearance:textfield}
+  .fuelin input::-webkit-outer-spin-button,.fuelin input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .fuelin #fuelKml{width:44px}
+
+  /* trip planner */
+  .tpform{display:flex;flex-direction:column;gap:10px}
+  .acwrap{position:relative}
+  #tripFrom,#tripTo{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);
+    border:1px solid var(--line);border-radius:11px;padding:11px 13px;width:100%}
+  .acbox{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:30;background:var(--surface);
+    border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 28px rgba(0,0,0,.16);
+    overflow:hidden;display:none;max-height:50vh;overflow-y:auto}
+  .acbox.show{display:block}
+  .acitem{padding:10px 13px;font-size:12.5px;line-height:1.35;color:var(--ink);cursor:pointer;
+    border-bottom:1px solid var(--hair)}
+  .acitem:last-child{border-bottom:0}
+  .acitem:active{background:var(--accent-soft)}
+  .acitem b{font-weight:700} .acitem small{color:var(--muted)}
+  .tprow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .tpchk{font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .tpres{font-size:13px;color:var(--muted)}
+  .tpres input{width:46px;border:1px solid var(--line);border-radius:8px;padding:5px 7px;font:inherit;
+    font-size:13px;text-align:right;background:var(--surface);color:var(--ink);-moz-appearance:textfield}
+  .tpres input::-webkit-outer-spin-button,.tpres input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .tpmode{margin:-4px 0 14px}
+  .spkrow{display:flex;gap:8px;margin-bottom:12px}
+  .spkrow .tpbtn{margin-left:0;flex:1;text-align:center}
+  .tpbtn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .spkitem{display:flex;align-items:center;gap:10px;border-top:1px solid var(--hair);padding:11px 0;cursor:pointer}
+  .spkitem:active{opacity:.6}
+  .spkbolt{flex:none;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .spkmain{flex:1;min-width:0}
+  .spkname{font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .spksub{font-size:12px;color:var(--muted);margin-top:1px}
+  .spkdist{flex:none;font-size:12px;font-weight:700;color:var(--muted)}
+  .tpbtn{margin-left:auto;background:var(--accent);color:var(--surface);border:0;border-radius:11px;
+    padding:11px 24px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:transform .12s}
+  .tpbtn:active{transform:scale(.98)}
+  .tpbtn.busy{opacity:.6;pointer-events:none}
+  .tpsum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 6px;text-align:center}
+  .tpsum b{display:block;font-size:21px;font-weight:750;line-height:1}
+  .tpsum span{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  #tripOut svg{display:block;margin:14px 0 6px}
+  .tpmap{height:264px;margin:14px 0 6px;border:1px solid var(--line);border-radius:14px;overflow:hidden;z-index:0}
+  .tpmap .leaflet-container{height:100%;width:100%;background:var(--surface);font:inherit}
+  .tpmap .leaflet-control-attribution{font-size:9px;background:color-mix(in oklch,var(--surface) 80%,transparent)}
+  .tpmap .leaflet-control-attribution a{color:var(--muted)}
+  .tpmap .leaflet-bar a{background:var(--surface);color:var(--ink);border-color:var(--line)}
+  .tpmap .leaflet-bar a:hover{background:var(--hair)}
+  .tppin{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;
+         border-radius:50%;width:24px;height:24px;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45)}
+  .tppop{font-size:12.5px;line-height:1.5;min-width:120px}
+  .tppop b{font-size:13px}
+  .tpmap .leaflet-popup-content-wrapper,.tpmap .leaflet-popup-tip{background:var(--surface);color:var(--ink);box-shadow:0 4px 16px rgba(0,0,0,.25)}
+  .tpmap .leaflet-popup-content{margin:10px 12px;font:inherit}
+  .tproute{font-size:13px;font-weight:600;text-align:center;margin:8px 0 4px;color:var(--muted)}
+  .tpstop{border-top:1px solid var(--hair);padding:12px 0}
+  .tpsk{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+  .tpsd{font-size:15px;font-weight:600;margin:3px 0}
+  .tpss{font-size:12.5px;color:var(--muted)}
+  .tptot{font-size:13px;font-weight:700;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .tpnote{font-size:11px;color:var(--faint);line-height:1.55;margin-top:12px}
+  .gmapbtn{display:block;text-align:center;margin-top:14px;padding:13px;border-radius:12px;
+    background:var(--accent);color:var(--surface);font-weight:700;font-size:14px;text-decoration:none;transition:transform .12s}
+  .gmapbtn:active{transform:scale(.99)}
+</style>
+</head>
+<body>
+<div class="appbar" id="appbar">
+  <span class="ttl">J5 EV</span>
+  <span class="ab-soc"><span class="ab-dot" id="abDot"></span><span id="abSoc" class="num">&mdash;</span>%</span>
+  <button class="ab-rf" id="abRefresh" aria-label="Refresh">&#8635;</button>
+</div>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="over">Jaecoo J5 EV</div>
+      <div class="plate" id="plate">&mdash;</div>
+    </div>
+    <div class="hr">
+      <div class="btns"><button id="eye" class="refresh" aria-label="Hide plate &amp; VIN"></button><button id="refresh" class="refresh" aria-label="Refresh">&#8635;</button></div>
+      <div class="status" id="status"><b></b><span id="statusTxt">connecting</span></div>
+    </div>
+  </header>
+  <div class="hint" id="hint">Tap any card, bar or stat for the detail behind it.</div>
+
+  <section>
+    <div class="hero"><img class="heroimg" src="car-front.png" alt="Jaecoo J5 EV" width="330" height="211"></div>
+    <div class="batt">
+      <div class="gauge">
+        <svg width="104" height="104" viewBox="0 0 104 104">
+          <circle cx="52" cy="52" r="46" fill="none" stroke="var(--line)" stroke-width="7"/>
+          <circle id="arc" cx="52" cy="52" r="46" fill="none" stroke="var(--accent)" stroke-width="7"
+                  stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289"
+                  transform="rotate(-90 52 52)"/>
+        </svg>
+        <div class="c"><span class="grp"><b id="soc" class="num">&mdash;</b><i>%</i></span></div>
+      </div>
+      <div class="side">
+        <div class="kv"><span class="over">Range</span><div class="val num"><span id="range">&mdash;</span><u>km</u></div></div>
+        <div class="kv"><span class="over">State</span><div><span class="pill" id="pill">&mdash;</span></div></div>
+      </div>
+    </div>
+    <div class="cap" id="drain" style="display:none;text-align:left;margin-top:16px"></div>
+  </section>
+
+  <section class="tyres">
+    <div class="head"><div class="over">Tyres</div><span class="badge" id="tstatus">—</span></div>
+    <div class="car">
+      <svg class="carsvg" viewBox="0 0 200 244" aria-hidden="true">
+        <rect id="ty0" class="ty" x="26" y="48" width="16" height="44" rx="8"/>
+        <rect id="ty1" class="ty" x="158" y="48" width="16" height="44" rx="8"/>
+        <rect id="ty2" class="ty" x="26" y="150" width="16" height="44" rx="8"/>
+        <rect id="ty3" class="ty" x="158" y="150" width="16" height="44" rx="8"/>
+        <rect x="44" y="16" width="112" height="212" rx="34" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/>
+        <path d="M70 64 H130 L122 90 H78 Z" fill="var(--faint)" opacity=".55"/>
+        <rect x="75" y="92" width="50" height="58" rx="11" fill="var(--hair)"/>
+        <path d="M78 150 H122 L130 176 H70 Z" fill="var(--faint)" opacity=".55"/>
+        <line x1="44" y1="122" x2="156" y2="122" stroke="var(--line)" stroke-width="1.2" opacity=".6"/>
+      </svg>
+      <div class="pad fl idle" id="t0"><span class="lbl">Front L</span><span class="v num">&mdash;</span><span class="u">psi</span><span class="t"></span></div>
+      <div class="pad fr idle" id="t1"><span class="lbl">Front R</span><span class="v num">&mdash;</span><span class="u">psi</span><span class="t"></span></div>
+      <div class="pad rl idle" id="t2"><span class="lbl">Rear L</span><span class="v num">&mdash;</span><span class="u">psi</span><span class="t"></span></div>
+      <div class="pad rr idle" id="t3"><span class="lbl">Rear R</span><span class="v num">&mdash;</span><span class="u">psi</span><span class="t"></span></div>
+    </div>
+    <div class="cap" id="tcap">Tyres report only while driving.</div>
+  </section>
+
+  <section class="dist">
+    <div class="top">
+      <div class="today"><div class="over" style="margin-bottom:6px">Driven today</div><b class="num" id="kmToday">&mdash;</b><u>km</u></div>
+      <div class="wm">
+        <div><span class="over">Week</span><b class="num" id="kmWeek">&mdash;</b></div>
+        <div><span class="over">Month</span><b class="num" id="kmMonth">&mdash;</b></div>
+      </div>
+    </div>
+    <div class="bars" id="bars"></div>
+  </section>
+
+  <section>
+    <div class="head2"><div class="over">Efficiency</div><span class="badge" id="effbadge">&mdash;</span></div>
+    <div class="effrow">
+      <div><div class="big2 num" id="cons">&mdash;</div><div class="sub">kWh / 100 km</div></div>
+      <div class="effmeta">
+        <div><span class="over">Used today</span><div><b class="num" id="usedkwh">&mdash;</b><u>kWh</u></div></div>
+        <div><span class="over">Energy left</span><div><b class="num" id="leftkwh">&mdash;</b><u>kWh</u></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head2"><div class="over">Insights</div><span class="over" id="insCons"></span></div>
+    <div class="ins">
+      <div><div class="t">Running cost</div><div class="v num"><span id="insRpkm">&mdash;</span><u>/km</u></div></div>
+      <div class="r" id="insRpkmR">&mdash;</div>
+    </div>
+    <div class="ins">
+      <div><div class="t">Charge forecast</div><div class="v num"><span id="insDays">&mdash;</span><u>days</u></div></div>
+      <div class="r" id="insDaysR">&mdash;</div>
+    </div>
+    <div class="ins">
+      <div><div class="t">Real-world range</div><div class="v num"><span id="insRange">&mdash;</span><u>km</u></div></div>
+      <div class="r" id="insRangeR">&mdash;</div>
+    </div>
+    <div class="ins">
+      <div><div class="t">Battery health</div><div class="v num"><span id="insCap">&mdash;</span><u>kWh usable</u></div></div>
+      <div class="r" id="insCapR">&mdash;</div>
+    </div>
+  </section>
+
+  <section class="care">
+    <div class="head2"><div class="over">Battery care</div><span class="badge" id="careBadge">&mdash;</span></div>
+    <div class="ins" style="margin-bottom:0">
+      <div><div class="t">Last full charge</div><div class="v num"><span id="careDays">&mdash;</span><u>days ago</u></div></div>
+      <div class="r" id="careR">&mdash;</div>
+    </div>
+  </section>
+
+  <section class="svc">
+    <div class="head2"><div class="over">Service</div><span class="badge" id="svcBadge">&mdash;</span></div>
+    <div class="planrow">
+      <div><div class="over" style="margin-bottom:6px">Next service in</div><b class="big2 num" id="svcKm">&mdash;</b><u>km</u></div>
+      <div class="planfrom" id="svcWhen">&mdash;</div>
+    </div>
+    <div class="expander" id="svcToggle"><span>Set last service</span><span class="chev">&rsaquo;</span></div>
+    <div id="svcForm" style="display:none;margin-top:14px">
+      <div class="plancost"><label>Last service odo <input id="svcOdo" type="number" inputmode="numeric" placeholder="km"></label></div>
+      <div class="plancost" style="margin-top:11px"><label>Date <input id="svcDate" type="date" style="width:150px;text-align:left"></label></div>
+      <div class="plancost" style="margin-top:11px"><label>Every <input id="svcIntKm" type="number" inputmode="numeric" value="10000"> km</label><label>or <input id="svcIntMo" type="number" inputmode="numeric" value="12"> mo</label></div>
+    </div>
+  </section>
+
+  <section class="spec">
+    <div class="head2"><div class="over">Specifications</div><span class="badge ok" id="specBadge">Jaecoo J5 EV</span></div>
+    <div class="over specsub" style="margin-top:0">Performance</div>
+    <div class="speclist">
+      <div><span>Power</span><b>210<u>PS</u></b></div>
+      <div><span>Torque</span><b>288<u>Nm</u></b></div>
+      <div><span>0&ndash;100 km/h</span><b>7.3<u>s</u></b></div>
+      <div><span>DC 10&ndash;80%</span><b>28<u>min</u></b></div>
+      <div><span>Battery</span><b>60.9<u>kWh</u></b></div>
+      <div><span>Range NEDC</span><b>461<u>km</u></b></div>
+      <div class="full"><span>Drivetrain</span><b>FWD</b></div>
+    </div>
+    <div class="over specsub">Dimensions</div>
+    <div class="speclist">
+      <div><span>Length</span><b>4380<u>mm</u></b></div>
+      <div><span>Width</span><b>1860<u>mm</u></b></div>
+      <div><span>Height</span><b>1650<u>mm</u></b></div>
+      <div><span>Wheelbase</span><b>2620<u>mm</u></b></div>
+      <div class="full"><span>Ground clearance</span><b>200<u>mm</u></b></div>
+    </div>
+  </section>
+
+  <section class="settings">
+    <div class="head2"><div class="over">Settings</div></div>
+    <div class="setrow"><span class="sl">Theme</span>
+      <span class="seg" id="themeSeg"><button data-v="light">Light</button><button data-v="dark">Dark</button></span></div>
+    <div class="setrow"><span class="sl">Language</span>
+      <span class="seg" id="langSeg"><button data-v="en">EN</button><button data-v="id">ID</button></span></div>
+    <div class="setrow"><span class="sl">Petrol compare</span>
+      <select class="fuelsel" id="fuelSel">
+        <option value="Pertalite">Pertalite</option>
+        <option value="Pertamax">Pertamax</option>
+        <option value="Pertamax Green 95">Pertamax Green 95</option>
+        <option value="Pertamax Turbo">Pertamax Turbo</option>
+        <option value="Dexlite">Dexlite</option>
+        <option value="Pertamina Dex">Pertamina Dex</option>
+        <option value="Solar">Solar (subsidi)</option>
+      </select></div>
+    <div class="setrow"><span class="sl">Price · economy</span>
+      <span class="fuelin">Rp <input id="fuelPrice" type="number" inputmode="numeric"> /L · <input id="fuelKml" type="number" inputmode="decimal" step="0.1"> km/L</span></div>
+  </section>
+
+  <section class="tripplan">
+    <div class="head2"><div class="over" id="tpOver">Trip planner</div></div>
+    <span class="seg tpmode" id="tpModeSeg"><button data-v="plan" class="on">Planner</button><button data-v="map">SPKLU Map</button></span>
+    <div id="tpPlanner">
+      <div class="tpform">
+        <div class="acwrap"><input id="tripFrom" type="text" placeholder="From (city / place)" autocomplete="off"><div class="acbox" id="acFrom"></div></div>
+        <div class="acwrap"><input id="tripTo" type="text" placeholder="To (city / place)" autocomplete="off"><div class="acbox" id="acTo"></div></div>
+        <div class="tprow">
+          <label class="tpchk"><input type="checkbox" id="tripHwy"> <span id="tpHwyLbl">Highway / AC</span></label>
+          <label class="tpres"><span id="tpStartLbl">Start</span> <input id="tripStart" type="number" inputmode="numeric" placeholder="now">%</label>
+          <label class="tpres"><span id="tpResLbl">Buffer</span> <input id="tripReserve" type="number" inputmode="numeric" value="15">%</label>
+          <button id="tripGo" class="tpbtn">Plan</button>
+        </div>
+      </div>
+      <div id="tripOut"></div>
+    </div>
+    <div id="tpMapView" hidden>
+      <div class="acwrap"><input id="spkluCenter" type="text" placeholder="Area (city / place)" autocomplete="off"><div class="acbox" id="acCenter"></div></div>
+      <div class="spkrow">
+        <button id="spkluHere" class="tpbtn ghost">📍 <span id="spkluHereLbl">My location</span></button>
+        <button id="spkluSearch" class="tpbtn">Search this area</button>
+      </div>
+      <div id="spkluMap" class="tpmap"></div>
+      <div id="spkluList"></div>
+      <div class="tpnote" id="spkluNote"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head2"><div class="over">Recent trips</div><span class="over" id="tripCount"></span></div>
+    <div id="tripList"></div>
+  </section>
+
+  <section>
+    <div class="head2"><div class="over">Charging</div><span class="badge" id="chgbadge">&mdash;</span></div>
+    <div id="chgActive" style="display:none">
+      <div class="effrow" style="margin-bottom:18px">
+        <div><div class="big2 num" id="chgrate">&mdash;</div><div class="sub">kW charging now</div></div>
+        <div class="effmeta">
+          <div><span class="over">This session</span><div><b class="num" id="chgkwh">&mdash;</b><u>kWh</u></div></div>
+          <div><span class="over">Battery</span><div><b class="num" id="chgsoc">&mdash;</b><u>%</u></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><b class="num" id="chgWeek">&mdash;</b><span>Charges / wk</span></div>
+      <div class="tile"><b class="num" id="chgMonthKwh">&mdash;</b><span>kWh / mo</span></div>
+      <div class="tile"><b class="num" id="chgMonthCost">&mdash;</b><span>Rp / mo</span></div>
+    </div>
+    <div class="expander" id="chgToggle" style="display:none">
+      <span id="chgToggleLbl">Charge curve</span><span class="chev" id="chgChev">&rsaquo;</span>
+    </div>
+    <div id="chgChart" style="display:none">
+      <svg id="chgSvg" viewBox="0 0 400 160" width="100%" style="height:auto"></svg>
+      <div class="chgstats">
+        <div><b id="csDur">&mdash;</b><span>duration</span></div>
+        <div><b id="csKwh">&mdash;</b><span>kWh in</span></div>
+        <div><b id="csAvg">&mdash;</b><span>avg kW</span></div>
+        <div><b id="csPeak">&mdash;</b><span>peak kW</span></div>
+      </div>
+      <div class="sub" id="csRange" style="text-align:center;margin-top:12px"></div>
+      <div id="chgHist"></div>
+    </div>
+  </section>
+
+  <section class="life">
+    <div class="head2"><div class="over">Lifetime</div><span class="over" id="lifeSince"></span></div>
+    <div class="tiles two">
+      <div class="tile"><b class="num" id="lifeChg">&mdash;</b><span>kWh charged</span></div>
+      <div class="tile"><b class="num" id="lifeSpent">&mdash;</b><span>Rp spent</span></div>
+      <div class="tile"><b class="num" id="lifeKm">&mdash;</b><span>km driven</span></div>
+      <div class="tile"><b class="num" id="lifeSaved">&mdash;</b><span>Rp saved</span></div>
+    </div>
+    <svg id="effSpark" viewBox="0 0 400 92" width="100%" style="height:auto;margin-top:18px;display:none"></svg>
+    <div class="sub" id="effSparkCap" style="text-align:center;margin-top:8px;display:none"></div>
+  </section>
+
+  <section class="planner">
+    <div class="head2"><div class="over">Charge planner</div><span class="badge tog idle" id="planmode">AC charging</span></div>
+    <div class="planrow">
+      <div><div class="over" style="margin-bottom:6px">Charge to</div><b class="big2 num" id="ptarget">80</b><u>%</u></div>
+      <div class="planfrom">from <b id="pfrom">&mdash;</b>% now</div>
+    </div>
+    <input type="range" id="pslider" class="slider" min="0" max="100" value="80">
+    <div class="tiles">
+      <div class="tile"><b class="num" id="pkwh">&mdash;</b><span>Into battery</span></div>
+      <div class="tile"><b class="num" id="pbuy">&mdash;</b><span>Buy at meter</span></div>
+      <div class="tile"><b class="num" id="prange">&mdash;</b><span>Range +km</span></div>
+    </div>
+    <div class="plancost">
+      <label>Rp <input id="pprice" type="number" inputmode="numeric" value="2540"> / kWh</label>
+      <span class="rp" id="prupiah">&mdash;</span>
+    </div>
+    <div class="sub" id="planref" style="margin-top:10px">SPKLU DC ≈ Rp 2.467/kWh + 3% tax (≈2.540 all-in) · admin Rp 0 · home AC cheaper</div>
+  </section>
+
+  <div class="stats">
+    <div class="stat"><span class="over">Odometer</span><b class="num"><span id="odo">&mdash;</span><u>km</u></b></div>
+    <div class="stat"><span class="over">12V Battery</span><b class="num"><span id="volt">&mdash;</span><u>V</u></b><span class="ststat" id="voltSt"></span></div>
+    <div class="stat"><span class="over">Avg speed</span><b class="num"><span id="avgspeed">&mdash;</span><u>km/h</u></b></div>
+  </div>
+  <div class="vinrow"><span class="over">VIN</span><span class="vin" id="vin">&mdash;</span></div>
+
+  <button id="flex" class="flexbtn">&#10022;&nbsp; Flex card</button>
+  <div class="meta" id="meta">&mdash;</div>
+</div>
+
+<div class="ptr" id="ptr"><i></i></div>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"><div class="grip"></div><div id="sheetBody"></div></div>
+
+<nav class="tabbar" id="tabbar">
+  <button class="tb on" data-t="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></button>
+  <button class="tb" data-t="charging"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13z"/></svg><span>Charge</span></button>
+  <button class="tb" data-t="trips"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v13a3 3 0 003 3h2a3 3 0 003-3V8a3 3 0 013-3"/><circle cx="8" cy="3" r="0.6"/><circle cx="16" cy="21" r="0.6"/></svg><span>Trips</span></button>
+  <button class="tb" data-t="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>More</span></button>
+</nav>
+
+<script src="leaflet.js"></script>
+<script src="slot-text.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let DATA={};
+// rolling-digit numbers for live values; instant on first paint, slot-roll on change
+const slots={};
+function roll(id, text){ const el=$(id); if(!el) return; text=String(text);
+  if(!window.slotText){ el.textContent=text; return; }
+  if(!slots[id]) slots[id]=slotText(el, text);
+  else if(slots[id].value!==text) slots[id].set(text, {direction: 'up'});
+}
+
+// ---- theme + language (i18n) ----
+let theme='light', lang='en';
+try{ theme=localStorage.getItem('theme')||document.documentElement.dataset.theme||'light'; }catch(e){}
+try{ lang=localStorage.getItem('lang')||'en'; }catch(e){}
+const THEME_COLOR={light:'#f4f1ea',dark:'#15140f'};
+function applyTheme(){ document.documentElement.dataset.theme=theme;
+  const m=$('themeColor'); if(m) m.setAttribute('content',THEME_COLOR[theme]||THEME_COLOR.light); }
+const MAP_ID={
+  "Range":"Jangkauan","State":"Kondisi","Tyres":"Ban",
+  "Driven today":"Jarak hari ini","Week":"Minggu","Month":"Bulan",
+  "Efficiency":"Efisiensi","Used today":"Terpakai hari ini","Energy left":"Energi tersisa",
+  "Insights":"Wawasan","Running cost":"Biaya operasional","Charge forecast":"Perkiraan isi ulang",
+  "Real-world range":"Jangkauan nyata","Battery health":"Kesehatan baterai",
+  "Battery care":"Perawatan baterai","Last full charge":"Isi penuh terakhir",
+  "Service":"Servis","Next service in":"Servis berikutnya","Set last service":"Atur servis terakhir",
+  "Specifications":"Spesifikasi","Performance":"Performa","Dimensions":"Dimensi",
+  "Power":"Tenaga","Torque":"Torsi","Drivetrain":"Penggerak","Battery":"Baterai","Range NEDC":"Jangkauan NEDC",
+  "Length":"Panjang","Width":"Lebar","Height":"Tinggi","Wheelbase":"Jarak sumbu roda","Ground clearance":"Jarak ke tanah",
+  "Recent trips":"Perjalanan terakhir","Charging":"Pengisian","This session":"Sesi ini",
+  "Lifetime":"Sepanjang waktu","kWh charged":"kWh diisi","Rp spent":"Rp terpakai","km driven":"km ditempuh","Rp saved":"Rp hemat",
+  "Charge planner":"Perencana isi","Charge to":"Isi sampai",
+  "Into battery":"Masuk baterai","Buy at meter":"Beli di meteran","Range +km":"Tambah jangkauan",
+  "Odometer":"Odometer","12V Battery":"Aki 12V","Avg speed":"Kecepatan rata",
+  "Charges / wk":"Isi / mgg","kWh / mo":"kWh / bln","Rp / mo":"Rp / bln",
+  "duration":"durasi","kWh in":"kWh masuk","avg kW":"rata kW","peak kW":"puncak kW","kW charging now":"kW mengisi kini",
+  "Front L":"Depan Ki","Front R":"Depan Ka","Rear L":"Belakang Ki","Rear R":"Belakang Ka",
+  "Home":"Beranda","Charge":"Isi","Trips":"Jalan","More":"Lainnya",
+  "Tap any card, bar or stat for the detail behind it.":"Ketuk kartu, bar, atau statistik mana pun untuk detailnya.",
+  "SPKLU DC ≈ Rp 2.467/kWh + 3% tax (≈2.540 all-in) · admin Rp 0 · home AC cheaper":"SPKLU DC ≈ Rp 2.467/kWh + pajak 3% (≈2.540 total) · admin Rp 0 · AC rumah lebih murah",
+  "Settings":"Pengaturan","Theme":"Tema","Light":"Terang","Dark":"Gelap","Language":"Bahasa",
+  "Petrol compare":"Banding bensin","Price · economy":"Harga · konsumsi",
+  "Driving":"Berjalan","Parked":"Parkir","No signal":"Tak ada sinyal",
+  "live":"langsung","no signal":"tak ada sinyal","no data yet":"belum ada data","ago":"lalu",
+  "Optimal":"Optimal","Normal":"Normal","Boros":"Boros","No data yet":"Belum ada data",
+  "Active":"Aktif","Idle":"Diam","Balanced":"Seimbang","Charge to 100%":"Isi ke 100%","Charge to 100% soon":"Segera isi ke 100%",
+  "Not set":"Belum diatur","Due soon":"Segera","Overdue":"Lewat tempo","OK":"OK",
+  "Accurate":"Akurat","Car optimistic":"Mobil optimis","Conservative":"Konservatif","No degradation":"Tanpa penurunan",
+  "Indirect TPMS · status only, no PSI":"TPMS tidak langsung · status saja, tanpa PSI","Live.":"Langsung.","As of":"Per",
+  "AC charging":"Isi AC","DC fast":"DC cepat","Charge curve":"Kurva pengisian","Last charge":"Isi terakhir",
+  "No trips yet — drive and they appear here.":"Belum ada perjalanan — berkendara dan akan muncul di sini.",
+  "shown":"ditampilkan","kWh used":"kWh dipakai","cycles":"siklus","in":"masuk","mo":"bln","day":"hari","days":"hari",
+  "saves":"hemat","vs petrol":"vs bensin","drives":"pakai","left now":"tersisa","car rates":"mobil klaim","since":"sejak",
+  "on":"pada","not logged yet":"belum tercatat","LFP likes a weekly 100%":"LFP suka diisi 100% tiap minggu",
+  "Updated":"Diperbarui","self-hosted · live":"mandiri · langsung","Waiting for the first telemetry frame.":"Menunggu data telemetri pertama.",
+  "healthy":"sehat","getting low":"mulai lemah","check 12V":"cek aki 12V","min":"min",
+  "tap \"Set last service\"":"ketuk \"Atur servis terakhir\"","or":"atau","overdue":"lewat","by":"sblm",
+  "Trip planner":"Perencana perjalanan","From (city / place)":"Dari (kota / tempat)","To (city / place)":"Ke (kota / tempat)",
+  "Highway / AC":"Tol / AC","Reserve":"Cadangan","Plan":"Rencana","Planning…":"Merencanakan…",
+  "hours":"jam","stops":"henti","arrive":"tiba","Stop":"Henti","at":"di","charge to":"isi ke","off route":"dari rute",
+  "no mapped SPKLU nearby":"tak ada SPKLU terpetakan","Make it nonstop — no charging needed.":"Bisa tanpa henti — tak perlu isi.",
+  "Charging total":"Total pengisian","Trip lookup failed.":"Pencarian rute gagal.","Couldn't plan: ":"Gagal merencanakan: ",
+  "Open in Google Maps":"Buka di Google Maps","Start":"Mulai","Finish":"Selesai","Buffer":"Cadangan","free":"tersedia",
+  "Planner":"Rencana","SPKLU Map":"Peta SPKLU","Trip planner":"Perencana perjalanan","Find SPKLU":"Cari SPKLU",
+  "My location":"Lokasi saya","Search this area":"Cari area ini","Area (city / place)":"Area (kota / tempat)",
+  "Searching…":"Mencari…","Locating…":"Mencari lokasi…","Directions":"Rute","No connector data":"Data konektor kosong",
+  "No SPKLU found here.":"Tak ada SPKLU di sini.","SPKLU lookup failed.":"Pencarian SPKLU gagal.",
+  "Tap a station for details · live where the operator reports it.":"Ketuk stasiun untuk detail · live bila operator melaporkan.",
+  "Location blocked — type an area or pan the map.":"Lokasi diblokir — ketik area atau geser peta.","Location not available.":"Lokasi tak tersedia.",
+  "Stops are on-route stations you reach with ≥{r}% left (your buffer for traffic). Stations via Google Maps — tap for live availability.":"Henti = stasiun di jalur yang dicapai dengan sisa ≥{r}% (cadangan untuk macet). Stasiun via Google Maps — ketuk untuk ketersediaan live.",
+  "Stops are on-route stations you reach with ≥{r}% left (your buffer). Stations from OpenStreetMap (partial coverage).":"Henti = stasiun di jalur yang dicapai dengan sisa ≥{r}% (cadangan). Stasiun dari OpenStreetMap (cakupan sebagian).",
+  "Stations from OpenStreetMap — coverage is partial; a gap means charge before that area. Charge math uses your real efficiency + a {r}% reserve.":"Stasiun dari OpenStreetMap — cakupan sebagian; bila kosong, isi sebelum area itu. Hitungan isi pakai efisiensi nyata kamu + cadangan {r}%."
+};
+function T(s){ return (lang==='id'&&s!=null)?(MAP_ID[s]||s):s; }
+// bilingual string with optional {var} interpolation, for the detail sheets
+function tn(en, id, vars){ let s = lang==='id' ? id : en;
+  if(vars) for(const k in vars) s = s.split('{'+k+'}').join(vars[k]);
+  return s; }
+const I18N_SEL='.over:not([id]),.ins .t,.sub:not([id]),.tile span,.speclist span,.lbl,.hint,.tabbar .tb span,.chgstats span,.sl,#themeSeg button,#planref,.svc .expander span:first-child';
+function applyLang(){ document.documentElement.lang=lang;
+  document.querySelectorAll(I18N_SEL).forEach(el=>{ if(el.dataset.en===undefined) el.dataset.en=el.textContent.trim(); el.textContent=T(el.dataset.en); });
+  const tf=$('tripFrom'),tt=$('tripTo'),tg=$('tripGo'),th=$('tpHwyLbl'),tr=$('tpResLbl'),ts=$('tpStartLbl');
+  if(tf) tf.placeholder=T('From (city / place)'); if(tt) tt.placeholder=T('To (city / place)');
+  if(tg) tg.textContent=T('Plan'); if(th) th.textContent=T('Highway / AC'); if(tr) tr.textContent=T('Buffer');
+  if(ts) ts.textContent=T('Start');
+  const sc=$('spkluCenter'); if(sc) sc.placeholder=T('Area (city / place)');
+  const sh=$('spkluHereLbl'); if(sh) sh.textContent=T('My location');
+  const ss=$('spkluSearch'); if(ss) ss.textContent=T('Search this area');
+  const sm=$('tpModeSeg'); if(sm){ const bs=sm.querySelectorAll('button'); if(bs[0]) bs[0].textContent=T('Planner'); if(bs[1]) bs[1].textContent=T('SPKLU Map'); }
+  const to=$('tpOver'); if(to) to.textContent=T(to.dataset.en||'Trip planner'); }
+function syncSeg(){ document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===theme));
+  document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===lang)); }
+$('themeSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; theme=b.dataset.v; try{localStorage.setItem('theme',theme)}catch(e){} applyTheme(); syncSeg(); buzz(8); });
+$('langSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; lang=b.dataset.v; try{localStorage.setItem('lang',lang)}catch(e){} applyLang(); syncSeg(); buzz(8); load(false); });
+const ARC=2*Math.PI*46, POS=['fl','fr','rl','rr'];
+function fmt(n){return n==null?'—':Number(n).toLocaleString('en-US')}
+function tyreClass(p){ if(p==null)return 'idle'; if(p<28||p>40)return 'bad'; if(p<30||p>38)return 'warn'; return 'ok'; }
+function ago(m){ if(m==null)return''; if(m<60)return Math.round(m)+'m'; if(m<1440)return Math.round(m/60)+'h'; return Math.round(m/1440)+'d'; }
+
+// ---- charge planner ----
+const EFF={AC:0.88,DC:0.95};           // meter->battery efficiency (AC onboard charger ~12% loss, DC ~5%)
+let planSoc=null, planCap=58.9, planCons=14.8, planMode='AC', planInit=false;
+function renderPlan(){
+  if(planSoc==null) return;
+  const sl=$('pslider'); sl.min=planSoc;
+  let t=Math.max(planSoc, Math.min(100, +sl.value));
+  sl.value=t;
+  const frac = planSoc>=100 ? 1 : (t-planSoc)/(100-planSoc);
+  sl.style.background=`linear-gradient(90deg, var(--accent) ${frac*100}%, var(--line) ${frac*100}%)`;
+  $('ptarget').textContent=t; $('pfrom').textContent=planSoc;
+  $('planmode').textContent=T(planMode==='AC'?'AC charging':'DC fast');
+  const into=(t-planSoc)/100*planCap;          // kWh that actually enters the pack
+  const buy=into/EFF[planMode];                // kWh you pay for at the charger meter
+  const km=planCons>0? into/planCons*100 : 0;  // range this adds at your real consumption
+  $('pkwh').textContent=into.toFixed(1);
+  $('pbuy').textContent=buy.toFixed(1);
+  $('prange').textContent=Math.round(km);
+  const price=+$('pprice').value||0;
+  $('prupiah').textContent='Rp '+Math.round(buy*price).toLocaleString('id-ID');
+}
+$('pslider').addEventListener('input',renderPlan);
+$('pprice').addEventListener('input',renderPlan);
+$('planmode').addEventListener('click',()=>{
+  planMode = planMode==='AC'?'DC':'AC';
+  $('planmode').textContent = T(planMode==='AC'?'AC charging':'DC fast');
+  renderPlan();
+});
+
+// ---- charge curve (SoC% vs elapsed minutes), inline SVG, no libs ----
+function drawCharge(s){
+  const svg=$('chgSvg');
+  if(!s||!s.series||s.series.length<2){ svg.innerHTML=''; return; }
+  const W=400,H=160,L=32,R=12,T=12,B=24;
+  const ys=s.series.map(p=>p.soc), xmax=Math.max(...s.series.map(p=>p.m),1);
+  let ymin=Math.max(0,Math.min(...ys)-3), ymax=Math.min(100,Math.max(...ys)+3);
+  if(ymax-ymin<6) ymax=Math.min(100,ymin+6);
+  const X=m=>L+(m/xmax)*(W-L-R), Y=v=>T+(1-(v-ymin)/(ymax-ymin))*(H-T-B);
+  const pl=s.series.map(p=>X(p.m).toFixed(1)+','+Y(p.soc).toFixed(1));
+  let g='';
+  [ymin,(ymin+ymax)/2,ymax].forEach(v=>{ const y=Y(v).toFixed(1);
+    g+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="var(--hair)" stroke-width="1"/>`;
+    g+=`<text x="${L-5}" y="${(+y+3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--faint)">${Math.round(v)}</text>`; });
+  g+=`<text x="${X(0).toFixed(1)}" y="${H-7}" font-size="9" fill="var(--faint)">0m</text>`;
+  g+=`<text x="${W-R}" y="${H-7}" text-anchor="end" font-size="9" fill="var(--faint)">${Math.round(xmax)}m</text>`;
+  g+=`<path d="M ${X(0).toFixed(1)},${H-B} L ${pl.join(' L ')} L ${X(xmax).toFixed(1)},${H-B} Z" fill="var(--accent-soft)"/>`;
+  g+=`<polyline points="${pl.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const lp=s.series[s.series.length-1];
+  g+=`<circle cx="${X(lp.m).toFixed(1)}" cy="${Y(lp.soc).toFixed(1)}" r="3.5" fill="var(--accent)"/>`;
+  svg.innerHTML=g;
+}
+$('chgToggle').addEventListener('click',()=>{
+  const open=$('chgChart').style.display!=='none';
+  $('chgChart').style.display=open?'none':'block';
+  $('chgToggle').classList.toggle('open',!open);
+});
+
+// efficiency trend (kWh/100km) over the believable days, inline SVG
+function drawSpark(hist){
+  const pts=(hist||[]).filter(h=>h.eff!=null), svg=$('effSpark'), cap=$('effSparkCap');
+  if(pts.length<2){ svg.style.display='none'; cap.style.display='none'; return; }
+  svg.style.display='block'; cap.style.display='block';
+  const W=400,H=92,L=10,R=10,T=12,B=20;
+  const es=pts.map(p=>p.eff), emin=Math.min(...es)-1, emax=Math.max(...es)+1, span=(emax-emin)||1;
+  const X=i=>L+(i/(pts.length-1))*(W-L-R), Y=v=>T+(1-(v-emin)/span)*(H-T-B);
+  const pl=pts.map((p,i)=>X(i).toFixed(1)+','+Y(p.eff).toFixed(1));
+  let g=`<polyline points="${pl.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  pts.forEach((p,i)=>{ g+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.eff).toFixed(1)}" r="2.6" fill="var(--accent)"/>`;
+    g+=`<text x="${X(i).toFixed(1)}" y="${Y(p.eff)-7>14?(Y(p.eff)-7).toFixed(1):(Y(p.eff)+14).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="var(--muted)">${p.eff}</text>`;
+    g+=`<text x="${X(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="9" fill="var(--faint)">${p.day}</text>`; });
+  svg.innerHTML=g;
+  const avg=(es.reduce((a,b)=>a+b,0)/es.length).toFixed(1);
+  cap.textContent=tn('Efficiency','Efisiensi')+' · '+pts.length+' '+tn('days','hari')+' · '+tn('avg','rata')+' '+avg+' kWh/100km '+tn('(lower = better)','(makin rendah makin baik)');
+}
+
+// ---- long-trip planner (route + SPKLU stops via server proxy) ----
+// real Leaflet map (vendored, free Carto tiles) — SPKLU pins sit on the Google coords the server returned
+let _tripMap=null;
+function tpPin(color,label){ return L.divIcon({className:'',iconSize:[24,24],iconAnchor:[12,12],
+  html:`<div class="tppin" style="background:${color}">${label}</div>`}); }
+function drawTripMap(p){ return (p.geom&&p.geom.length>1)? '<div id="tripMap" class="tpmap"></div>' : ''; }
+function initTripMap(p){
+  const el=$('tripMap'); if(!el||typeof L==='undefined'||!p.geom||p.geom.length<2) return;
+  if(_tripMap){ try{_tripMap.remove();}catch(e){} _tripMap=null; }
+  const dark=document.documentElement.dataset.theme==='dark';
+  const route=p.geom.map(c=>[c[1],c[0]]);                       // server sends [lon,lat]; Leaflet wants [lat,lon]
+  _tripMap=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/'+(dark?'dark_all':'voyager')+'/{z}/{x}/{y}{r}.png',
+    {subdomains:'abcd',maxZoom:19,attribution:'&copy; OpenStreetMap, &copy; CARTO'}).addTo(_tripMap);
+  L.polyline(route,{color:'#2d8f5f',weight:7,opacity:.22,lineJoin:'round',lineCap:'round'}).addTo(_tripMap);
+  L.polyline(route,{color:'#2d8f5f',weight:3.5,opacity:.95,lineJoin:'round',lineCap:'round'}).addTo(_tripMap);
+  L.marker(p.start,{icon:tpPin('#2563eb','A')}).addTo(_tripMap).bindPopup(`<div class="tppop"><b>${p.from}</b><br>${T('Start')}</div>`);
+  L.marker(p.end,{icon:tpPin('#2d8f5f','B')}).addTo(_tripMap).bindPopup(`<div class="tppop"><b>${p.to}</b><br>${T('Finish')}</div>`);
+  (p.stops||[]).forEach((s,i)=>{
+    const lat=s.station_lat!=null?s.station_lat:s.lat, lon=s.station_lon!=null?s.station_lon:s.lon;
+    if(lat==null||lon==null) return;
+    const name=s.station||(T('Stop')+' '+(i+1));
+    const cn=s.conns?`<br>⚡ ${s.conns}${s.avail?` · ${s.avail} ${T('free')}`:''}`:'';
+    const pop=`<div class="tppop"><b>${name}</b><br>${T('arrive')} ~${s.arrive}% · ${T('charge to')} ${s.charge_to}%<br>`
+      +`${s.kwh} kWh · Rp ${s.cost.toLocaleString('id-ID')} · ~${s.min} ${T('min')}${cn}</div>`;
+    L.marker([lat,lon],{icon:tpPin('#d08a1e',String(i+1))}).addTo(_tripMap).bindPopup(pop);
+  });
+  _tripMap.fitBounds(L.latLngBounds(route).pad(0.12));
+  setTimeout(()=>{ try{_tripMap.invalidateSize();}catch(e){} },140);
+}
+function gmapsLink(fromO, toO, stops){
+  // no origin -> Google navigates from "My Location" (avoids the fixed-pin vs current-GPS reroute fight)
+  let u='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+encodeURIComponent(toO);
+  if(stops&&stops.length) u+='&waypoints='+stops.map(s=>(s.station_lat!=null?s.station_lat+','+s.station_lon:s.lat+','+s.lon)).join('|');
+  return u;
+}
+function renderTrip(p, gm){
+  const out=$('tripOut');
+  const gbtn = gm? `<a class="gmapbtn" href="${gm}" target="_blank" rel="noopener">▸ ${T('Open in Google Maps')}</a>` : '';
+  if(!p || p.error){ out.innerHTML='<div class="cap" style="text-align:left;margin:14px 0">'+T("Couldn't plan: ")+(p&&p.error?p.error:'error')+'</div>'+gbtn; return; }
+  const ns=(p.stops||[]).length;
+  const stopsHtml=(p.stops||[]).map((s,i)=>{
+    const station = s.station ? (s.station+(s.station_km!=null?' · '+s.station_km+' km '+T('off route'):''))
+                              : ('<span style="color:var(--warn)">'+T('no mapped SPKLU nearby')+'</span>');
+    const arr = s.arrive!=null? ` · ${T('arrive')} ~<b style="color:${s.arrive< (p.reserve||15)+3?'var(--warn)':'var(--accent)'}">${s.arrive}%</b>` : '';
+    const conn = s.conns ? `<div class="tpss">⚡ ${s.conns}${s.avail?` · <b style="color:var(--accent)">${s.avail} ${T('free')}</b>`:''}</div>` : '';
+    return `<div class="tpstop"><div class="tpsk">${T('Stop')} ${i+1} · ${T('at')} ${s.at_km} km${arr}</div>`
+      +`<div class="tpsd">${T('charge to')} <b>${s.charge_to}%</b> · ${s.kwh} kWh · Rp ${s.cost.toLocaleString('id-ID')} · ~${s.min} ${T('min')}</div>`
+      +`<div class="tpss">${station}</div>${conn}</div>`;
+  }).join('');
+  const noteBase = p.src==='google'
+    ? 'Stops are on-route stations you reach with ≥{r}% left (your buffer for traffic). Stations via Google Maps — tap for live availability.'
+    : 'Stops are on-route stations you reach with ≥{r}% left (your buffer). Stations from OpenStreetMap (partial coverage).';
+  const noteT=T(noteBase).split('{r}').join(p.reserve);
+  out.innerHTML = `<div class="tpsum">
+      <div><b>${p.distance}</b><span>km</span></div>
+      <div><b>${p.total_h}</b><span>${T('hours')}</span></div>
+      <div><b>${ns}</b><span>${T('stops')}</span></div>
+      <div><b>${p.arrive_soc}%</b><span>${T('arrive')}</span></div>
+    </div>${drawTripMap(p)}<div class="tproute">${p.from} → ${p.to}</div>`
+    + (ns? stopsHtml + `<div class="tptot">${T('Charging total')}: ${p.total_kwh} kWh · Rp ${p.total_cost.toLocaleString('id-ID')} · ~${Math.round((p.total_h-p.drive_h)*60)} ${T('min')}</div>`
+         : `<div class="cap" style="text-align:left;margin-top:8px">${T('Make it nonstop — no charging needed.')}</div>`)
+    + `<div class="tpnote">${noteT}</div>` + gbtn;
+  initTripMap(p);
+}
+const tripSel={from:null,to:null};
+function autocomplete(inputId, boxId, which){
+  const inp=$(inputId), box=$(boxId); let timer=null;
+  inp.addEventListener('input',()=>{ tripSel[which]=null;        // typing clears the precise pick
+    const q=inp.value.trim(); clearTimeout(timer);
+    if(q.length<3){ box.classList.remove('show'); box.innerHTML=''; return; }
+    timer=setTimeout(async()=>{
+      try{ const r=await (await fetch('api/geocode?q='+encodeURIComponent(q),{cache:'no-store'})).json();
+        if(!r||!r.length){ box.classList.remove('show'); box.innerHTML=''; return; }
+        box.innerHTML=r.map(s=>{ const p=s.name.split(', ');
+          return `<div class="acitem" data-lat="${s.lat}" data-lon="${s.lon}" data-name="${s.name.replace(/"/g,'&quot;')}"><b>${p[0]}</b>${p.length>1?'<small> · '+p.slice(1).join(', ')+'</small>':''}</div>`;
+        }).join('');
+        box.classList.add('show');
+      }catch(e){ box.classList.remove('show'); }
+    }, 340);
+  });
+  box.addEventListener('click',e=>{ const it=e.target.closest('.acitem'); if(!it)return;
+    inp.value=it.dataset.name; tripSel[which]={lat:+it.dataset.lat,lon:+it.dataset.lon,name:it.dataset.name};
+    box.classList.remove('show'); box.innerHTML=''; });
+}
+autocomplete('tripFrom','acFrom','from');
+autocomplete('tripTo','acTo','to');
+document.addEventListener('click',e=>{ if(!e.target.closest('.acwrap')){ $('acFrom').classList.remove('show'); $('acTo').classList.remove('show'); const ac=$('acCenter'); if(ac) ac.classList.remove('show'); } });
+
+async function planTrip(){
+  const from=$('tripFrom').value.trim(), to=$('tripTo').value.trim();
+  if(!from||!to) return;
+  $('acFrom').classList.remove('show'); $('acTo').classList.remove('show');
+  const out=$('tripOut'), btn=$('tripGo');
+  out.innerHTML='<div class="cap" style="text-align:left;margin-top:14px">'+T('Planning…')+'</div>';
+  btn.classList.add('busy');
+  const derate=$('tripHwy').checked?1.18:1.0, res=+$('tripReserve').value||15;
+  const soc=(+$('tripStart').value)||(DATA.battery!=null?DATA.battery:'');
+  const fromO = tripSel.from? tripSel.from.name : from;
+  const toO   = tripSel.to?   tripSel.to.name   : to;   // a name shows properly in Google Maps (not "Dropped pin")
+  let url='api/trip?soc='+soc+'&reserve='+res+'&derate='+derate;
+  url += tripSel.from? ('&fromlat='+tripSel.from.lat+'&fromlon='+tripSel.from.lon+'&from='+encodeURIComponent(tripSel.from.name)) : ('&from='+encodeURIComponent(from));
+  url += tripSel.to?   ('&tolat='+tripSel.to.lat+'&tolon='+tripSel.to.lon+'&to='+encodeURIComponent(tripSel.to.name))       : ('&to='+encodeURIComponent(to));
+  try{
+    const p=await (await fetch(url,{cache:'no-store'})).json();
+    renderTrip(p, gmapsLink(fromO, toO, (p&&p.stops)||null));
+  }catch(e){ out.innerHTML='<div class="cap" style="text-align:left;margin:14px 0">'+T('Trip lookup failed.')+'</div>'
+      +`<a class="gmapbtn" href="${gmapsLink(fromO,toO,null)}" target="_blank" rel="noopener">▸ ${T('Open in Google Maps')}</a>`; }
+  finally{ btn.classList.remove('busy'); }
+}
+$('tripGo').addEventListener('click',planTrip);
+['tripFrom','tripTo'].forEach(id=>$(id).addEventListener('keydown',e=>{ if(e.key==='Enter'){ $('ac'+(id==='tripFrom'?'From':'To')).classList.remove('show'); planTrip(); }}));
+
+// ---- SPKLU browse map (PLN-Mobile-style: pan, tap pin = station card) ----
+let _spkMap=null, _spkMarkers=[], _spkInit=false, _spkData=[];
+function spkColor(s){ if(s.avail){ return (+s.avail.split('/')[0]>0)?'#2d8f5f':'#c2410c'; } return s.dc_kw>=50?'#d08a1e':'#8a8a8a'; }
+function spkIcon(s){ return L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,14],
+  html:`<div class="tppin" style="background:${spkColor(s)};width:26px;height:26px;font-size:13px;border-width:2px">⚡</div>`}); }
+function spkPopup(s){ const dirs='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+s.lat+','+s.lon;
+  return `<div class="tppop"><b>${s.name}</b><br>${s.conns?('⚡ '+s.conns):T('No connector data')}`
+    +(s.avail?` · <b style="color:var(--accent)">${s.avail} ${T('free')}</b>`:'')
+    +`<br>${s.dist} km · <a href="${dirs}" target="_blank" rel="noopener">${T('Directions')}</a></div>`; }
+function spkRow(s){ const c=spkColor(s);
+  return `<div class="spkitem"><div class="spkbolt" style="background:${c}26;color:${c}">⚡</div>`
+    +`<div class="spkmain"><div class="spkname">${s.name}</div>`
+    +`<div class="spksub">${s.conns||T('No connector data')}${s.avail?' · '+s.avail+' '+T('free'):''}</div></div>`
+    +`<div class="spkdist">${s.dist} km</div></div>`; }
+function initSpkMap(lat,lon){ const el=$('spkluMap'); if(!el||typeof L==='undefined') return;
+  if(_spkMap){ _spkMap.setView([lat,lon],13); return; }
+  const dark=document.documentElement.dataset.theme==='dark';
+  _spkMap=L.map(el,{zoomControl:true,scrollWheelZoom:false}).setView([lat,lon],13);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/'+(dark?'dark_all':'voyager')+'/{z}/{x}/{y}{r}.png',
+    {subdomains:'abcd',maxZoom:19,attribution:'&copy; OpenStreetMap, &copy; CARTO'}).addTo(_spkMap);
+  setTimeout(()=>{ try{_spkMap.invalidateSize();}catch(e){} },140); }
+function renderSpklu(arr,clat,clon){ _spkData=arr;
+  _spkMarkers.forEach(m=>_spkMap.removeLayer(m)); _spkMarkers=[];
+  _spkMarkers.push(L.circleMarker([clat,clon],{radius:6,color:'#2563eb',fillColor:'#2563eb',fillOpacity:1,weight:2}).addTo(_spkMap).bindPopup(T('Search this area')));
+  arr.forEach(s=>_spkMarkers.push(L.marker([s.lat,s.lon],{icon:spkIcon(s)}).addTo(_spkMap).bindPopup(spkPopup(s))));
+  $('spkluList').innerHTML = arr.length? arr.map(spkRow).join('') : '';
+  $('spkluNote').textContent = arr.length? T('Tap a station for details · live where the operator reports it.') : T('No SPKLU found here.');
+  [...$('spkluList').querySelectorAll('.spkitem')].forEach((el,i)=>el.onclick=()=>{
+    const s=arr[i]; _spkMap.setView([s.lat,s.lon],15); _spkMarkers[i+1].openPopup();
+    $('spkluMap').scrollIntoView({block:'center',behavior:'smooth'}); buzz(8); }); }
+async function searchSpklu(lat,lon){ initSpkMap(lat,lon); if(_spkMap) _spkMap.setView([lat,lon],_spkMap.getZoom()||13);
+  $('spkluNote').textContent=T('Searching…');
+  try{ const r=await (await fetch('api/spklu?lat='+lat+'&lon='+lon+'&r=12000',{cache:'no-store'})).json();
+    if(!Array.isArray(r)){ $('spkluNote').textContent=T('No SPKLU found here.'); return; }
+    renderSpklu(r,lat,lon);
+  }catch(e){ $('spkluNote').textContent=T('SPKLU lookup failed.'); } }
+function firstSpkluLoad(){
+  const fallback=()=>{ const f=$('tripFrom').value.trim();
+    if(f){ fetch('api/geocode?q='+encodeURIComponent(f),{cache:'no-store'}).then(r=>r.json())
+            .then(r=>searchSpklu(r&&r[0]?r[0].lat:-6.2088, r&&r[0]?r[0].lon:106.8456)).catch(()=>searchSpklu(-6.2088,106.8456)); }
+    else searchSpklu(-6.2088,106.8456); };          // default: Jakarta
+  if(navigator.geolocation){ $('spkluNote').textContent=T('Locating…');
+    navigator.geolocation.getCurrentPosition(p=>searchSpklu(p.coords.latitude,p.coords.longitude), ()=>fallback(), {timeout:6000,maximumAge:60000});
+  } else fallback(); }
+$('tpModeSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  const map=b.dataset.v==='map'; [...$('tpModeSeg').children].forEach(x=>x.classList.toggle('on',x===b));
+  $('tpPlanner').hidden=map; $('tpMapView').hidden=!map; $('tpOver').textContent=T(map?'Find SPKLU':'Trip planner'); $('tpOver').dataset.en=map?'Find SPKLU':'Trip planner'; buzz(8);
+  if(map && !_spkInit){ _spkInit=true; firstSpkluLoad(); }
+  else if(map && _spkMap){ setTimeout(()=>{ try{_spkMap.invalidateSize();}catch(e){} },120); } });
+$('spkluHere').addEventListener('click',()=>{ const btn=$('spkluHere');
+  if(!navigator.geolocation){ $('spkluNote').textContent=T('Location not available.'); return; }
+  btn.classList.add('busy'); $('spkluNote').textContent=T('Locating…');
+  navigator.geolocation.getCurrentPosition(
+    p=>{ btn.classList.remove('busy'); searchSpklu(p.coords.latitude,p.coords.longitude); },
+    ()=>{ btn.classList.remove('busy'); $('spkluNote').textContent=T('Location blocked — type an area or pan the map.'); },
+    {enableHighAccuracy:true,timeout:8000,maximumAge:60000}); });
+$('spkluSearch').addEventListener('click',()=>{ if(!_spkMap){ firstSpkluLoad(); return; } const c=_spkMap.getCenter(); searchSpklu(c.lat,c.lng); });
+autocomplete('spkluCenter','acCenter','center'); tripSel.center=null;
+$('acCenter').addEventListener('click',()=>{ if(tripSel.center) searchSpklu(tripSel.center.lat,tripSel.center.lon); });
+
+// ---- haptics + bottom sheet (tap any card to learn what a number means) ----
+function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
+function srows(arr){ return arr.filter(Boolean).map(r=>`<div class="row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join(''); }
+function sheet(o){
+  if(!o) return;
+  let h=o.html;
+  if(!h){ h=`<h3>${o.title}</h3>`;
+    if(o.lead) h+=`<div class="lead">${o.lead}</div>`;
+    if(o.rows) h+=srows(o.rows);
+    if(o.note) h+=`<div class="note">${o.note}</div>`; }
+  $('sheetBody').innerHTML=h;
+  $('scrim').classList.add('open'); $('sheet').scrollTop=0; $('sheet').classList.add('open');
+  document.body.style.overflow='hidden'; killHint(); buzz(8);
+}
+function closeSheet(){ $('scrim').classList.remove('open'); $('sheet').classList.remove('open'); document.body.style.overflow=''; }
+$('scrim').addEventListener('click',closeSheet);
+// swipe the sheet down to dismiss
+(function(){ let y0=null; const sh=$('sheet');
+  sh.addEventListener('touchstart',e=>{ y0 = sh.scrollTop<=0 ? e.touches[0].clientY : null; },{passive:true});
+  sh.addEventListener('touchmove',e=>{ if(y0==null)return; const dy=e.touches[0].clientY-y0; if(dy>0) sh.style.transform='translateY('+dy+'px)'; },{passive:true});
+  sh.addEventListener('touchend',e=>{ if(y0==null)return; const dy=e.changedTouches[0].clientY-y0; sh.style.transform=''; if(dy>90) closeSheet(); y0=null; });
+})();
+
+const rp = n => n==null?'—':'Rp '+Math.round(n).toLocaleString('id-ID');
+const kfmt = n => Math.round(n/1000)+'k';
+
+// ---- sheet content builders (read the latest DATA) ----
+function bBattery(){ const d=DATA, cap=d.battery_kwh||58.9, soc=d.battery, s=soc==null?'—':soc;
+  return {title:tn('Battery','Baterai'),
+    lead:tn(`${s}% charge · car estimates ${fmt(d.range_km)} km of range.`,`${s}% terisi · mobil estimasi ${fmt(d.range_km)} km jangkauan.`),
+    rows:[[tn('State of charge','Status muatan'), s+'%'],
+      [tn('Energy left','Energi tersisa'), soc!=null?(soc/100*cap).toFixed(1)+' kWh':'—'],
+      [tn('Usable capacity','Kapasitas berguna'), cap+' kWh'],
+      [tn('Range (car estimate)','Jangkauan (estimasi mobil)'), fmt(d.range_km)+' km'],
+      d.drain?[tn('Parked drain','Boros parkir'), d.drain.per_day+'%/'+tn('day','hari')+' ('+d.drain.pct+'% '+tn('over','selama')+' '+d.drain.hours+'h)']:null],
+    note:tn(`LFP pack, <b>${cap} kWh usable</b>. The % comes straight from the car; range is the car's own guess — compare it with <b>Real-world range</b> in Insights.`,
+      `Paket LFP, <b>${cap} kWh berguna</b>. Persen langsung dari mobil; jangkauan adalah tebakan mobil — bandingkan dengan <b>Jangkauan nyata</b> di Wawasan.`)};
+}
+function bRpkm(){ const I=DATA.insights||{}, fc=fuelCfg();
+  return {title:tn('Running cost','Biaya operasional'),
+    lead:tn('What a km actually costs, from your driving and the SPKLU tariff.','Biaya nyata per km, dari cara berkendara dan tarif SPKLU.'),
+    rows:[[tn('Cost per km','Biaya per km'), rp(I.rp_per_km)],
+      [tn('Your consumption','Konsumsi kamu'), (I.consumption!=null?I.consumption:'—')+' kWh/100km'],
+      [tn('Est. this month','Estimasi bulan ini'), I.month_cost_est!=null?'Rp '+kfmt(I.month_cost_est):'—'],
+      [tn('Saved vs petrol','Hemat vs bensin'), I.month_save_est!=null?'~Rp '+kfmt(I.month_save_est)+'/'+tn('mo','bln'):'—']],
+    note:tn(`Formula: consumption × tariff ÷ charge efficiency. Petrol baseline ${fc.fuel} ${fc.kml} km/L @ Rp ${fc.price.toLocaleString('id-ID')}/L (set in Settings). Charging assumed ~89% efficient (meter → pack).`,
+      `Rumus: konsumsi × tarif ÷ efisiensi pengisian. Patokan bensin ${fc.fuel} ${fc.kml} km/L @ Rp ${fc.price.toLocaleString('id-ID')}/L (atur di Pengaturan). Pengisian diasumsikan ~89% efisien (meteran → baterai).`)};
+}
+function bForecast(){ const I=DATA.insights||{}, d=DATA;
+  return {title:tn('Charge forecast','Perkiraan isi ulang'),
+    lead:tn('Roughly how long this charge lasts at your pace.','Kira-kira berapa lama isi ini bertahan dengan pola kamu.'),
+    rows:[[tn('Days to recharge','Hari sampai isi ulang'), I.days_to_charge!=null?I.days_to_charge+' '+tn('days','hari'):'—'],
+      [tn('You drive','Kamu berkendara'), I.avg_daily_km!=null?'~'+I.avg_daily_km+' km/'+tn('day','hari'):'—'],
+      [tn('Range left now','Jangkauan tersisa'), d.range_km!=null?fmt(d.range_km)+' km':'—']],
+    note:tn(`Range left ÷ your average daily distance. It tracks your real habit, so it shortens on heavy days and stretches on light ones.`,
+      `Jangkauan tersisa ÷ jarak harian rata-rata. Mengikuti kebiasaan nyata kamu, jadi memendek saat sering jalan dan memanjang saat jarang.`)};
+}
+function bRange(){ const I=DATA.insights||{};
+  const VD={accurate:tn('Accurate','Akurat'),optimistic:tn('Car is optimistic','Mobil terlalu optimis'),conservative:tn('Conservative','Konservatif')};
+  return {title:tn('Real-world range','Jangkauan nyata'),
+    lead:tn('Our own range figure from your measured consumption.','Angka jangkauan versi kami dari konsumsi terukur kamu.'),
+    rows:[[tn('Our estimate','Estimasi kami'), I.real_range!=null?I.real_range+' km':'—'],
+      [tn('Car rates','Klaim mobil'), I.rated_range!=null?I.rated_range+' km':'—'],
+      [tn('Verdict','Kesimpulan'), VD[I.range_verdict]||'—']],
+    note:tn(`Usable kWh ÷ your real kWh/100km × 100. If the car keeps over-promising, trust this number for trip planning.`,
+      `kWh berguna ÷ kWh/100km nyata kamu × 100. Kalau mobil terus melebih-lebihkan, pakai angka ini untuk rencana perjalanan.`)};
+}
+function bHealth(){ const H=DATA.health||{};
+  return {title:tn('Battery health','Kesehatan baterai'),
+    lead:tn('Pack condition from charge history — no fake percentage.','Kondisi baterai dari riwayat pengisian — tanpa persen palsu.'),
+    rows:[[tn('Usable capacity','Kapasitas berguna'), H.usable_kwh!=null?H.usable_kwh+' kWh':'—'],
+      [tn('Full cycles','Siklus penuh'), H.cycles!=null?H.cycles:'—'],
+      [tn('Total charged','Total diisi'), H.charged_kwh!=null?H.charged_kwh+' kWh':'—'],
+      [tn('Avg charge eff.','Efisiensi isi rata'), H.avg_eff!=null?Math.round(H.avg_eff*100)+'%':'—']],
+    note:tn(`LFP capacity stays flat for years, so a moving SoH % would be noise. We track real usable kWh against receipts instead — still <b>${H.usable_kwh||58.9} kWh</b>, no measurable loss.`,
+      `Kapasitas LFP stabil bertahun-tahun, jadi persen SoH yang berubah cuma noise. Kami lacak kWh berguna nyata vs struk — tetap <b>${H.usable_kwh||58.9} kWh</b>, tanpa penurunan terukur.`)};
+}
+function bEff(){ const e=DATA.energy||{}, d=DATA, cap=d.battery_kwh||58.9;
+  const cons=e.consumption!=null?e.consumption:e.week_consumption;
+  const RTL={optimal:tn('Optimal','Optimal'),normal:tn('Normal','Normal'),boros:tn('Boros (heavy)','Boros (berat)')};
+  return {title:tn('Efficiency','Efisiensi'),
+    lead:tn('How much energy you use, and what is left.','Berapa energi yang dipakai, dan yang tersisa.'),
+    rows:[[tn('Consumption','Konsumsi'), (cons!=null?cons:'—')+' kWh/100km'],
+      [tn('Used today','Terpakai hari ini'), e.today_kwh!=null?e.today_kwh+' kWh':'—'],
+      [tn('Energy left','Energi tersisa'), d.battery!=null?(d.battery/100*cap).toFixed(1)+' kWh':'—'],
+      [tn('Rating','Peringkat'), RTL[e.rating]||'—']],
+    note:tn(`WLTP rates this car at 14.8 kWh/100km. Lower is better — city stop-go and AC push it up, gentle highway brings it down.`,
+      `WLTP menilai mobil ini 14.8 kWh/100km. Makin rendah makin baik — macet kota dan AC menaikkan, jalan tol santai menurunkan.`)};
+}
+function bCharge(){ const c=DATA.charging||{};
+  return {title:tn('Charging','Pengisian'),
+    lead: c.active?tn('Charging right now.','Sedang mengisi sekarang.'):tn('Your charging habit and cost.','Kebiasaan dan biaya pengisian kamu.'),
+    rows:[ c.active?[tn('Charging now','Mengisi kini'), (c.rate_kw!=null?c.rate_kw:'—')+' kW']:null,
+      [tn('Charges / week','Isi / minggu'), c.week!=null?c.week:'—'],
+      [tn('kWh this month','kWh bulan ini'), c.month_kwh!=null?c.month_kwh:'—'],
+      [tn('Cost this month','Biaya bulan ini'), c.month_cost?'Rp '+kfmt(c.month_cost):'Rp 0']],
+    note:tn(`Cost bills delivered (meter) kWh, not what reaches the pack — matched to your real SPKLU receipts within ~1%. Open the charge curve for a session-by-session breakdown.`,
+      `Biaya menagih kWh terkirim (meteran), bukan yang masuk baterai — cocok dengan struk SPKLU nyata kamu dalam ~1%. Buka kurva pengisian untuk rincian per sesi.`)};
+}
+function bTyres(){ const d=DATA;
+  if(d.tyre_indirect) return {title:tn('Tyres','Ban'),
+    lead:tn('This car has indirect TPMS — it flags a problem but gives no PSI.','Mobil ini pakai TPMS tidak langsung — menandai masalah tapi tak memberi PSI.'),
+    rows:[[tn('Status','Status'), d.tyre_status||'—']],
+    note:tn(`Indirect TPMS infers a soft tyre from wheel-speed differences. No live pressure numbers are sent — status only.`,
+      `TPMS tidak langsung menebak ban kempes dari selisih putaran roda. Tak ada angka tekanan dikirim — status saja.`)};
+  const lbl=[tn('Front L','Depan Kiri'),tn('Front R','Depan Kanan'),tn('Rear L','Belakang Kiri'),tn('Rear R','Belakang Kanan')];
+  return {title:tn('Tyres','Ban'),
+    lead: d.tpms_live?tn('Live pressures.','Tekanan langsung.'):tn('Last reported {x}.','Terakhir dilapor {x}.',{x:d.tpms_updated||''}),
+    rows:(d.tpms||[]).map((t,i)=>[lbl[i], t.psi!=null?(t.psi+' psi'+(t.temp!=null?' · '+t.temp+'°':'')):'—']),
+    note:tn(`Tyres report only while driving. Target ~33 psi cold; we flag below 30 or above 38.`,
+      `Ban hanya melapor saat berkendara. Target ~33 psi dingin; ditandai di bawah 30 atau di atas 38.`)};
+}
+function bOdo(){ const d=DATA;
+  return {title:tn('Odometer','Odometer'), lead:tn('Lifetime distance.','Jarak total seumur mobil.'),
+    rows:[[tn('Total','Total'), fmt(d.odometer)+' km'],[tn('This month','Bulan ini'), fmt(d.km&&d.km.month)+' km']],
+    note:tn(`Read from telemetry and validated against the car dash.`,`Dibaca dari telemetri dan divalidasi dengan dasbor mobil.`)};
+}
+function bVolt(){ const d=DATA, vs=d.volt12_status, M={ok:tn('Healthy','Sehat'),low:tn('Getting low','Mulai lemah'),critical:tn('Check 12V','Cek aki 12V')};
+  return {title:tn('12V battery','Aki 12V'),
+    lead:tn('The small accessory battery — not the drive pack.','Aki kecil aksesori — bukan baterai penggerak.'),
+    rows:[[tn('Voltage now','Tegangan kini'), d.volt12!=null?d.volt12+' V':'—'],
+      [tn('7-day low','Terendah 7 hari'), d.volt12_min7d!=null?d.volt12_min7d+' V':'—'],
+      [tn('Status','Status'), M[vs]||'—']],
+    note:tn(`Below 12.5V = weak, below 12.0V = may fail a start. It powers locks, dash and telematics — a dying 12V is the usual reason a car won't wake.`,
+      `Di bawah 12.5V = lemah, di bawah 12.0V = bisa gagal start. Ia memberi daya kunci, dasbor, dan telematik — aki 12V sekarat adalah penyebab umum mobil tak mau menyala.`)};
+}
+function bSpeed(){ const d=DATA;
+  return {title:tn('Average speed','Kecepatan rata-rata'), lead:tn('Across your recent trips.','Dari perjalanan terakhir kamu.'),
+    rows:[[tn('Avg speed','Kecepatan rata'), d.avg_speed!=null?d.avg_speed+' km/h':'—']],
+    note:tn(`Trip distance ÷ time. The car's raw speed byte is unreliable at a standstill, so we derive motion from the odometer instead.`,
+      `Jarak perjalanan ÷ waktu. Byte kecepatan mentah mobil tak andal saat diam, jadi kami turunkan gerak dari odometer.`)};
+}
+function bDay(i){ const d=DATA, h=(d.history||[])[i]; if(!h) return null;
+  const I=d.insights||{}, cons=I.consumption||14.8;
+  const measured = h.eff!=null;                       // server keeps eff only if believable (9-30)
+  const kwh = measured? h.kwh : (h.km? h.km*cons/100 : 0);
+  const cost=(h.km&&I.rp_per_km)? h.km*I.rp_per_km : null;
+  return {title:h.day+' · '+tn('driving','berkendara'), lead: h.km? tn('A breakdown of that day.','Rincian hari itu.'):tn('No distance logged that day.','Tak ada jarak tercatat hari itu.'),
+    rows:[[tn('Distance','Jarak'), fmt(h.km)+' km'],
+      h.km?[measured?tn('Energy used','Energi dipakai'):tn('Energy (est.)','Energi (estimasi)'), (measured?kwh:kwh.toFixed(1))+' kWh']:null,
+      measured?[tn('Efficiency','Efisiensi'), h.eff+' kWh/100km']:null,
+      cost!=null?[tn('Cost (est.)','Biaya (estimasi)'), rp(cost)]:null],
+    note: h.km? (measured ? tn(`Energy measured from the SoC drop; cost at ${rp(I.rp_per_km)}/km.`,`Energi diukur dari penurunan SoC; biaya ${rp(I.rp_per_km)}/km.`)
+                          : tn(`Estimated at ${cons} kWh/100km · ${rp(I.rp_per_km)}/km (SoC too coarse to measure this short a day).`,`Diperkirakan ${cons} kWh/100km · ${rp(I.rp_per_km)}/km (SoC terlalu kasar untuk hari sependek ini).`))
+              : tn(`Either you didn't drive, or the car was offline (basement / poor signal).`,`Kamu tidak berkendara, atau mobil offline (basement / sinyal buruk).`)};
+}
+function bLife(){ const L=DATA.lifetime||{}, I=DATA.insights||{}, sv=calcSaved(L.km), fc=fuelCfg();
+  return {title:tn('Lifetime totals','Total keseluruhan'),
+    lead:tn('Everything tracked since {x}.','Semua tercatat sejak {x}.',{x:L.since||tn('logging started','mulai dicatat')}),
+    rows:[[tn('Energy charged','Energi diisi'), L.kwh_billed!=null?L.kwh_billed+' kWh':'—'],
+      [tn('Into the pack','Masuk baterai'), L.kwh_in!=null?L.kwh_in+' kWh':'—'],
+      [tn('Total spent','Total dipakai'), L.cost!=null?'Rp '+L.cost.toLocaleString('id-ID'):'—'],
+      [tn('Distance driven','Jarak ditempuh'), L.km!=null?fmt(L.km)+' km':'—'],
+      [tn('Saved vs petrol','Hemat vs bensin'), sv!=null?'Rp '+sv.toLocaleString('id-ID'):'—'],
+      I.rp_per_km!=null?[tn('Running cost','Biaya operasional'), rp(I.rp_per_km)+'/km']:null],
+    note:tn(`Spent bills metered kWh at your SPKLU tariff (receipt-matched). Saved compares your Rp/km to ${fc.fuel} at ${fc.kml} km/L · Rp ${fc.price.toLocaleString('id-ID')}/L over the distance actually driven.`,
+      `"Dipakai" menagih kWh meteran pada tarif SPKLU kamu (cocok struk). "Hemat" membandingkan Rp/km kamu vs ${fc.fuel} ${fc.kml} km/L · Rp ${fc.price.toLocaleString('id-ID')}/L atas jarak yang benar-benar ditempuh.`)};
+}
+function bCare(){ const BC=DATA.battery_care||{};
+  return {title:tn('Battery care · LFP','Perawatan baterai · LFP'),
+    lead:tn('Your pack is LFP — care rules differ from common NMC EVs.','Baterai kamu LFP — aturan rawatnya beda dari EV NMC umum.'),
+    rows:[[tn('Last 100% charge','Isi 100% terakhir'), BC.last_full_dt||tn('not seen yet','belum terlihat')],
+      [tn('Days since','Hari sejak'), BC.days_since_full!=null?BC.days_since_full+' '+tn('days','hari'):'—'],
+      [tn('Status','Status'), BC.balance_due?tn('Charge to 100% soon','Segera isi ke 100%'):tn('Balanced','Seimbang')]],
+    note:tn(`LFP <b>likes</b> a full 100% charge every ~1–2 weeks — it balances the cells and recalibrates the SoC gauge (skip it too long and the % starts drifting). Unlike NMC, sitting at 100% does <b>not</b> hurt LFP. So top to 100% weekly, no range anxiety.`,
+      `LFP <b>suka</b> diisi penuh 100% tiap ~1–2 minggu — itu menyeimbangkan sel dan mengkalibrasi ulang gauge SoC (kelamaan dilewati, persennya mulai melenceng). Beda dari NMC, diam di 100% <b>tidak</b> merusak LFP. Jadi isi penuh tiap minggu, tanpa cemas jangkauan.`)};
+}
+function bFlex(){ const d=DATA, L=d.lifetime||{}, I=d.insights||{}, H=d.health||{}, e=d.energy||{}, sv=calcSaved(L.km);
+  const cons = I.consumption!=null?I.consumption:(e.consumption!=null?e.consumption:null);
+  const beat = cons? Math.round((14.8-cons)/14.8*100) : null;
+  const cards=[[tn('Range now','Jangkauan kini'), d.range_km!=null?fmt(d.range_km)+' km':'—'],
+    [tn('Efficiency','Efisiensi'), cons!=null?cons+' kWh/100':'—'],
+    [tn('Driven','Ditempuh'), L.km!=null?fmt(L.km)+' km':'—'],
+    [tn('Saved vs petrol','Hemat vs bensin'), sv!=null?'Rp '+sv.toLocaleString('id-ID'):'—'],
+    [tn('CO₂ avoided','CO₂ dihindari'), L.co2_saved!=null?L.co2_saved+' kg':'—'],
+    [tn('Battery','Baterai'), H.usable_kwh!=null?H.usable_kwh+' kWh · 100%':'—']];
+  const grid=cards.map(c=>`<div class="fc"><b>${c[1]}</b><span>${c[0]}</span></div>`).join('');
+  return {html:`<div class="flexcard">
+      <div class="fk">JAECOO J5 EV</div><div class="ft">${tn('self-hosted telematics','telematik mandiri')}</div>
+      <div class="fgrid">${grid}</div>
+      ${(beat!=null&&beat>0)?`<div class="fbeat">${tn('Beating WLTP by','Mengalahkan WLTP')} ${beat}% · ${cons} vs 14.8 kWh/100km</div>`:''}
+      <div class="ffoot">${tn("Reverse-engineered from the CarLinko cloud —<br>live data the official app won't show you.","Hasil reverse-engineering cloud CarLinko —<br>data langsung yang tak ditampilkan app resmi.")}</div>
+    </div>
+    <div class="sub" style="text-align:center;margin-top:14px">${tn('Screenshot to flex · plate & VIN never shown here','Screenshot buat pamer · plat & VIN tak pernah tampil di sini')}</div>`};
+}
+function bSpec(){ const I=DATA.insights||{};
+  return {title:tn('Jaecoo J5 EV · specs','Jaecoo J5 EV · spesifikasi'), lead:tn('Manufacturer figures (Andalan Motors).','Angka pabrikan (Andalan Motors).'),
+    rows:[[tn('Power','Tenaga'),'210 PS'],[tn('Torque','Torsi'),'288 Nm'],['0–100 km/h','7.3 s'],[tn('DC fast 10–80%','DC cepat 10–80%'),'28 min'],
+      [tn('Battery (gross)','Baterai (kotor)'),'60.9 kWh'],[tn('Range (NEDC)','Jangkauan (NEDC)'),'461 km'],[tn('Drivetrain','Penggerak'),'FWD'],
+      ['L × W × H','4380 × 1860 × 1650 mm'],[tn('Wheelbase','Jarak sumbu roda'),'2620 mm'],[tn('Ground clearance','Jarak ke tanah'),'200 mm']],
+    note:tn(`Two honesty notes: <b>60.9 kWh is gross</b> — usable is ~58.9 kWh (what charges are billed against). <b>NEDC 461 km is an optimistic lab cycle</b> — your measured real-world range is ~${I.real_range||'—'} km. Specs are reference only; everything else in the app is live from your car.`,
+      `Dua catatan jujur: <b>60.9 kWh itu kotor</b> — yang berguna ~58.9 kWh (dasar tagihan pengisian). <b>NEDC 461 km itu siklus lab yang optimis</b> — jangkauan nyata terukur kamu ~${I.real_range||'—'} km. Spesifikasi cuma rujukan; sisanya di app langsung dari mobil.`)};
+}
+const SHEETS={battery:bBattery,rpkm:bRpkm,forecast:bForecast,range:bRange,health:bHealth,eff:bEff,charge:bCharge,tyres:bTyres,odo:bOdo,volt:bVolt,speed:bSpeed,life:bLife,care:bCare,spec:bSpec};
+function bind(el,key){ if(!el)return; el.classList.add('tappable'); el.addEventListener('click',()=>sheet(SHEETS[key]())); }
+function bindStatic(){
+  bind(document.querySelector('.batt'),'battery');
+  const ins=document.querySelectorAll('.ins'); ['rpkm','forecast','range','health'].forEach((k,i)=>bind(ins[i],k));
+  bind($('cons').closest('section'),'eff');
+  bind($('chgWeek').closest('.tiles'),'charge');
+  bind(document.querySelector('.life'),'life');
+  bind(document.querySelector('.care'),'care');
+  bind(document.querySelector('.spec'),'spec');
+  bind(document.querySelector('.car'),'tyres');
+  const st=document.querySelectorAll('.stat'); bind(st[0],'odo'); bind(st[1],'volt'); bind(st[2],'speed');
+}
+
+// ---- first-paint hint + count-up + pull-to-refresh ----
+function killHint(){ const h=$('hint'); if(h && h.style.display!=='none'){ h.style.opacity='0'; setTimeout(()=>h.style.display='none',300); try{localStorage.setItem('tiphint','1');}catch(e){} } }
+try{ if(localStorage.getItem('tiphint')) $('hint').style.display='none'; }catch(e){}
+setTimeout(killHint,6000);
+(function(){ let y0=null,dist=0;
+  addEventListener('touchstart',e=>{ if(window.scrollY<=0 && !$('sheet').classList.contains('open')){ y0=e.touches[0].clientY; dist=0; } else y0=null; },{passive:true});
+  addEventListener('touchmove',e=>{ if(y0==null)return; dist=e.touches[0].clientY-y0; $('ptr').classList.toggle('show', dist>50 && window.scrollY<=0); },{passive:true});
+  addEventListener('touchend',async()=>{ if(y0==null)return; const go=dist>50&&window.scrollY<=0; y0=null;
+    if(go){ buzz(12); const p=$('ptr'); p.classList.add('show','spin'); try{ await load(true); }finally{ p.classList.remove('show','spin'); } }
+    else $('ptr').classList.remove('show'); });
+})();
+
+// ---- privacy: one eye button hides/shows plate + VIN (for screenshots / flex) ----
+let hidePI=true; try{ hidePI=(localStorage.getItem('hidePI')||'1')==='1'; }catch(e){}  // default hidden
+const EYE_ON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.2A10 10 0 0112 5c6.4 0 10 7 10 7a18 18 0 01-2.6 3.4M6.3 6.3A18 18 0 002 12s3.6 7 10 7a10 10 0 003.3-.6"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>';
+const maskPI = s => s? String(s).replace(/\d/g,'•') : s;
+const maskVin = v => (v&&v.length>4) ? ('•'.repeat(v.length-4)+v.slice(-4)) : maskPI(v);  // keep last 4
+function applyPI(){ $('eye').innerHTML = hidePI? EYE_OFF : EYE_ON;
+  const v=DATA.vehicle; if(!v) return;
+  $('plate').textContent = hidePI? maskPI(v.plate) : v.plate;
+  $('vin').textContent   = hidePI? maskVin(v.vin)  : v.vin;
+}
+$('eye').addEventListener('click',()=>{ hidePI=!hidePI; try{localStorage.setItem('hidePI',hidePI?'1':'0');}catch(e){} applyPI(); buzz(8); });
+$('flex').addEventListener('click',()=>sheet(bFlex()));
+applyPI();
+
+// ---- service countdown (stored locally; needs your last-service odo + date) ----
+const SVC={ get(){ try{return JSON.parse(localStorage.getItem('svc')||'{}')}catch(e){return{}} },
+  set(o){ try{localStorage.setItem('svc',JSON.stringify(o))}catch(e){} } };
+function renderSvc(){
+  const c=SVC.get(), odo=DATA.odometer, b=$('svcBadge');
+  if(c.odo==null||!c.date||odo==null){ $('svcKm').textContent='—'; $('svcWhen').textContent=T('tap "Set last service"'); b.textContent=T('Not set'); b.className='badge idle'; return; }
+  const intKm=c.intKm||10000, intMo=c.intMo||12, kmLeft=(c.odo+intKm)-odo;
+  const nd=new Date(c.date); nd.setMonth(nd.getMonth()+intMo);
+  const daysLeft=Math.round((nd-new Date())/86400000);
+  $('svcKm').textContent=fmt(Math.max(0,kmLeft));
+  $('svcWhen').innerHTML=T('or')+' <b>'+(daysLeft>0?daysLeft+' '+T('days'):T('overdue'))+'</b><br>'+T('by')+' '+nd.toISOString().slice(0,10);
+  const overdue=kmLeft<=0||daysLeft<=0, due=kmLeft<=500||daysLeft<=14;
+  b.textContent=overdue?T('Overdue'):due?T('Due soon'):T('OK'); b.className='badge '+(overdue?'bad':due?'warn':'ok');
+}
+function saveSvc(){ SVC.set({odo:+$('svcOdo').value||null, date:$('svcDate').value||null,
+  intKm:+$('svcIntKm').value||10000, intMo:+$('svcIntMo').value||12}); renderSvc(); }
+['svcOdo','svcDate','svcIntKm','svcIntMo'].forEach(id=>$(id).addEventListener('input',saveSvc));
+$('svcToggle').addEventListener('click',()=>{ const o=$('svcForm').style.display!=='none'; $('svcForm').style.display=o?'none':'block'; $('svcToggle').classList.toggle('open',!o); });
+(function(){ const c=SVC.get(); if(c.odo)$('svcOdo').value=c.odo; if(c.date)$('svcDate').value=c.date; if(c.intKm)$('svcIntKm').value=c.intKm; if(c.intMo)$('svcIntMo').value=c.intMo; })();
+
+// ---- petrol comparison: fuel type + price + economy -> recompute savings (real Pertamina prices) ----
+const FUEL_PRESETS={"Pertalite":10000,"Pertamax":16250,"Pertamax Green 95":17000,"Pertamax Turbo":20750,"Dexlite":23000,"Pertamina Dex":24800,"Solar":6800};
+const FUEL={ get(){ try{return JSON.parse(localStorage.getItem('fuel')||'{}')}catch(e){return{}} }, set(o){ try{localStorage.setItem('fuel',JSON.stringify(o))}catch(e){} } };
+function fuelCfg(){ const f=FUEL.get(), fuel=f.fuel||'Pertamax'; return {fuel, price:f.price||FUEL_PRESETS[fuel]||16250, kml:f.kml||12}; }
+function petrolRpkm(){ const c=fuelCfg(); return c.price/(c.kml||12); }
+function calcSaved(km){ const r=DATA.insights&&DATA.insights.rp_per_km; return (km==null||r==null)?null:Math.max(0,Math.round(km*(petrolRpkm()-r))); }
+(function(){ const c=fuelCfg(); $('fuelSel').value=c.fuel; $('fuelPrice').value=c.price; $('fuelKml').value=c.kml; })();
+$('fuelSel').addEventListener('change',()=>{ const fuel=$('fuelSel').value, price=FUEL_PRESETS[fuel]||16250; $('fuelPrice').value=price; FUEL.set({fuel,price,kml:+$('fuelKml').value||12}); load(false); });
+['fuelPrice','fuelKml'].forEach(id=>$(id).addEventListener('input',()=>{ FUEL.set({fuel:$('fuelSel').value,price:+$('fuelPrice').value||0,kml:+$('fuelKml').value||12}); load(false); }));
+
+async function load(live){
+  let d; try{ d=await (await fetch(live?'api/refresh':'api/summary',{cache:'no-store'})).json(); }catch(e){ return; }
+  DATA=d;
+  applyPI();                                            // render plate/VIN (masked if hidden)
+  const st=$('status'); st.classList.toggle('on',d.online);
+  $('statusTxt').textContent = d.updated ? (d.online?T('live'):T('no signal'))+(d.age_min!=null?' · '+ago(d.age_min)+' '+T('ago'):'') : T('no data yet');
+  const soc=d.battery;
+  roll('soc', soc==null?'—':soc);
+  $('appbar').classList.toggle('on', d.online); $('abSoc').textContent = soc==null?'—':soc;
+  $('arc').style.strokeDashoffset = soc==null? ARC : ARC*(1-soc/100);
+  roll('range', fmt(d.range_km));
+  const pill=$('pill');
+  if(d.charging&&d.charging.active){pill.textContent='⚡ '+T('Charging');pill.className='pill';}
+  else if(d.moving){pill.textContent=T('Driving');pill.className='pill';}
+  else if(d.online){pill.textContent=T('Parked');pill.className='pill';}
+  else {pill.textContent=T('No signal');pill.className='pill off';}
+
+  if(d.drain){ $('drain').style.display='block';
+    $('drain').textContent='Parked drain · '+d.drain.pct+'% over '+d.drain.hours+'h (~'+d.drain.per_day+'%/day) · '+d.drain.dt;
+  } else { $('drain').style.display='none'; }
+
+  const indirect=d.tyre_indirect, bad=(d.tyre_status||'').toLowerCase().includes('check');
+  const tb=$('tstatus'); tb.textContent=d.tyre_status||'—'; tb.className='badge '+(bad?'bad':'ok');
+  d.tpms.forEach((t,i)=>{ const el=$('t'+i), v=el.querySelector('.v'), u=el.querySelector('.u'), tp=el.querySelector('.t');
+    let cls;
+    if(indirect){ cls=bad?'bad':'ok'; v.textContent=bad?'!':'OK'; u.textContent=''; tp.textContent=''; }
+    else { cls=t.psi==null?'idle':tyreClass(t.psi); v.textContent=t.psi==null?'—':t.psi; u.textContent='psi'; tp.textContent=t.temp==null?'':t.temp+'°'; }
+    el.className='pad '+POS[i]+' '+cls;
+    const ty=$('ty'+i); if(ty) ty.setAttribute('class','ty '+cls); });
+  $('tcap').textContent = indirect ? T('Indirect TPMS · status only, no PSI')
+    : (d.tpms_live ? T('Live.') : T('As of')+' '+d.tpms_updated+' ('+ago(d.tpms_age_min)+' '+T('ago')+')');
+
+  roll('kmToday', fmt(d.km.today));
+  $('kmWeek').textContent=fmt(d.km.week); $('kmMonth').textContent=fmt(d.km.month);
+  const bars=$('bars'); bars.replaceChildren();
+  const max=Math.max(1,...d.history.map(h=>h.km));
+  d.history.forEach((h,idx)=>{ const w=document.createElement('div'); w.className='bar tappable'+(h.km?'':' z');
+    const i=document.createElement('i'); i.style.height=Math.max(2,h.km/max*56)+'px';
+    const s=document.createElement('span'); s.textContent=h.day;
+    w.append(i,s); w.addEventListener('click',()=>sheet(bDay(idx))); bars.append(w); });
+
+  // lifetime totals + efficiency trend
+  const L=d.lifetime||{}, kk=n=>n!=null?Math.round(n/1000)+'k':'—';
+  $('lifeSince').textContent = L.since? T('since')+' '+L.since : '';
+  $('lifeChg').textContent = L.kwh_billed!=null? L.kwh_billed : '—';
+  $('lifeSpent').textContent = kk(L.cost);
+  $('lifeKm').textContent = fmt(L.km);
+  $('lifeSaved').textContent = kk(calcSaved(L.km));
+  drawSpark(d.history);
+
+  // battery care (LFP) + service countdown
+  const BC=d.battery_care||{}, careb=$('careBadge');
+  if(BC.balance_due){ careb.textContent=T('Charge to 100%'); careb.className='badge warn'; }
+  else { careb.textContent=T('Balanced'); careb.className='badge ok'; }
+  $('careDays').textContent = BC.days_since_full!=null? BC.days_since_full : '—';
+  $('careR').innerHTML = (BC.last_full_dt? T('on')+' <b>'+BC.last_full_dt+'</b>' : T('not logged yet')) + '<br>'+T('LFP likes a weekly 100%');
+  renderSvc();
+
+  $('odo').textContent=fmt(d.odometer);
+  $('volt').textContent = d.volt12==null?'—':d.volt12;
+  const vs=d.volt12_status, vst=$('voltSt'), ve=$('volt');
+  ve.style.color = vs=='critical'?'var(--bad)':vs=='low'?'var(--warn)':'';
+  vst.className='ststat'+(vs=='critical'?' bad':vs=='low'?' low':'');
+  vst.textContent = vs? (T(vs=='ok'?'healthy':vs=='low'?'getting low':'check 12V')+(d.volt12_min7d!=null?' · '+T('min')+' '+d.volt12_min7d+'V':'')) : '';
+  $('avgspeed').textContent = d.avg_speed!=null? d.avg_speed : '—';
+  const H=d.health||{};
+  $('insCap').textContent = H.usable_kwh!=null? H.usable_kwh : '—';
+  $('insCapR').innerHTML = H.usable_kwh!=null
+    ? ('<span class="vd ok">'+T('No degradation')+'</span><br>'+(H.cycles!=null? H.cycles+' '+T('cycles')+' · '+H.charged_kwh+' kWh '+T('in'):''))
+    : '—';
+  const e=d.energy||{}, cons = e.consumption!=null? e.consumption : e.week_consumption;
+  $('cons').textContent = cons!=null? cons : '—';
+  // feed the charge planner with live SoC, real pack size, and real consumption
+  if(d.battery!=null) planSoc=d.battery;
+  if(d.battery_kwh) planCap=d.battery_kwh;
+  if(cons!=null) planCons=cons;
+  if(!planInit && planSoc!=null){ $('pslider').value = planSoc>=80?100:80; planInit=true; }
+  renderPlan();
+  $('usedkwh').textContent = e.today_kwh!=null? e.today_kwh : '—';
+  $('leftkwh').textContent = (d.battery!=null&&d.battery_kwh)? (d.battery/100*d.battery_kwh).toFixed(1) : '—';
+  const eb=$('effbadge'), rt=e.rating, RTL={optimal:'Optimal',normal:'Normal',boros:'Boros'};
+  if(rt){ eb.textContent=T(RTL[rt]||rt); eb.className='badge '+(rt=='optimal'?'ok':rt=='boros'?'bad':'warn'); }
+  else { eb.textContent=T('No data yet'); eb.className='badge idle'; }
+  const c=d.charging||{};
+  $('chgActive').style.display = c.active?'block':'none';
+  const cb=$('chgbadge'); cb.textContent=T(c.active?'Active':'Idle'); cb.className='badge '+(c.active?'ok':'idle');
+  if(c.active){ roll('chgrate', c.rate_kw!=null?c.rate_kw:'—'); roll('chgkwh', c.session_kwh); $('chgsoc').textContent=c.soc!=null?c.soc:'—'; }
+  $('chgWeek').textContent=c.week!=null?c.week:'—';
+  $('chgMonthKwh').textContent=c.month_kwh!=null?c.month_kwh:'—';
+  $('chgMonthCost').textContent = c.month_cost? (Math.round(c.month_cost/1000)+'k') : '0';
+  const s=c.session;
+  $('chgToggle').style.display = s?'flex':'none';
+  if(s){
+    $('chgToggleLbl').textContent = s.ongoing? T('Charge curve')+' · '+T('live') : T('Last charge')+' · '+s.start_dt;
+    drawCharge(s);
+    $('csDur').textContent=(s.dur_min!=null?s.dur_min:'—')+'m';
+    $('csKwh').textContent=s.kwh!=null?s.kwh:'—';
+    $('csAvg').textContent=s.avg_kw!=null?s.avg_kw:'—';
+    $('csPeak').textContent=s.peak_kw!=null?s.peak_kw:'—';
+    $('csRange').textContent = s.soc0+'% → '+s.soc1+'% · '+s.kwh+' kWh '+tn('into battery','masuk baterai')
+      + (s.kwh_billed!=null?' (~'+s.kwh_billed+' '+tn('billed','tertagih')+')':'') + (s.cost!=null?' · Rp '+s.cost.toLocaleString('id-ID'):'');
+    const hh=$('chgHist'); hh.replaceChildren();
+    (c.history||[]).forEach(h=>{ const r=document.createElement('div'); r.className='hrow';
+      const kw = h.kwh_billed!=null? h.kwh_billed : h.kwh;
+      r.innerHTML=`<span>${h.dt} · ${h.soc0}→${h.soc1}%</span><span><b>${kw}</b> kWh · Rp ${h.cost.toLocaleString('id-ID')}</span>`;
+      hh.append(r); });
+  } else { $('chgChart').style.display='none'; $('chgToggle').classList.remove('open'); }
+  // trips
+  const tl=$('tripList'); tl.replaceChildren(); const trips=d.trips||[];
+  trips.forEach(t=>{ const row=document.createElement('div'); row.className='trip';
+    const parts=[t.start_dt, t.min+' min']; if(t.avg_kmh!=null)parts.push(t.avg_kmh+' km/h');
+    row.innerHTML=`<div><div class="km num">${t.km}<u>km</u></div><div class="when">${parts.join(' · ')}</div></div>`+
+      `<div class="r"><div class="eff num">${t.kwh100!=null?t.kwh100:'—'}<u>${t.kwh100!=null?'kWh/100':''}</u></div>`+
+      `<div class="sub2">${t.kwh!=null?t.kwh+' '+T('kWh used'):''}</div></div>`;
+    tl.append(row); });
+  $('tripCount').textContent = trips.length? trips.length+' '+T('shown'):'';
+  if(!trips.length) tl.innerHTML='<div class="cap" style="text-align:left">'+T('No trips yet — drive and they appear here.')+'</div>';
+  // insights
+  const I=d.insights||{}, k=n=>Math.round(n/1000)+'k';
+  $('insCons').textContent = I.consumption!=null? I.consumption+' kWh/100':'';
+  $('insRpkm').textContent = I.rp_per_km!=null? 'Rp '+I.rp_per_km.toLocaleString('id-ID') : '—';
+  const msave=(I.avg_daily_km!=null&&I.rp_per_km!=null)?Math.max(0,Math.round(I.avg_daily_km*30*(petrolRpkm()-I.rp_per_km))):null;
+  $('insRpkmR').innerHTML = I.month_cost_est!=null
+    ? ('≈ Rp '+k(I.month_cost_est)+' / '+T('mo')+'<br>'+T('saves')+' <b>~Rp '+(msave!=null?k(msave):'—')+'</b> '+T('vs petrol')) : '—';
+  $('insDays').textContent = I.days_to_charge!=null? I.days_to_charge : '—';
+  $('insDaysR').innerHTML = (I.avg_daily_km!=null? T('drives')+' ~<b>'+I.avg_daily_km+' km</b>/'+T('day'):'')
+    + (d.range_km!=null? '<br>'+d.range_km+' km '+T('left now'):'');
+  $('insRange').textContent = I.real_range!=null? I.real_range : '—';
+  const VD={accurate:['Accurate','ok'],optimistic:['Car optimistic','warn'],conservative:['Conservative','ok']};
+  const vd=VD[I.range_verdict];
+  $('insRangeR').innerHTML = (I.rated_range!=null? T('car rates')+' <b>'+I.rated_range+' km</b>':'')
+    + (vd? '<br><span class="vd '+vd[1]+'">'+T(vd[0])+'</span>':'');
+
+  $('meta').textContent = d.updated ? T('Updated')+' '+d.updated+' · '+T('self-hosted · live')
+                                    : T('Waiting for the first telemetry frame.');
+}
+$('refresh').addEventListener('click',async()=>{ const b=$('refresh'); b.classList.add('spin'); try{await load(true);}finally{b.classList.remove('spin');} });
+$('abRefresh').addEventListener('click',async()=>{ const b=$('abRefresh'); b.classList.add('spin'); try{await load(true);}finally{b.classList.remove('spin');} });
+// native: frosted app bar fades in once the big title scrolls away; sections reveal on scroll
+if('IntersectionObserver' in window){
+  new IntersectionObserver(([e])=>$('appbar').classList.toggle('show', !e.isIntersecting),
+    {rootMargin:'-6px 0px 0px 0px'}).observe(document.querySelector('header'));
+  const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }),{threshold:.08});
+  document.querySelectorAll('section,.stats,.vinrow').forEach(el=>{ el.classList.add('reveal');
+    if(el.getBoundingClientRect().top < innerHeight*0.92) el.classList.add('in'); else io.observe(el); });
+}
+// ---- bottom tab bar: split the long scroll into Home / Charge / Trips / More ----
+const TABMAP=[['home',['soc','tstatus','kmToday','cons','insRpkm']],
+  ['charging',['chgbadge','planmode','careBadge']],
+  ['trips',['tripList','lifeChg','tripFrom']],
+  ['more',['svcBadge','specBadge','langSeg']]];
+function setupTabs(){
+  TABMAP.forEach(([t,ids])=>ids.forEach(id=>{ const s=$(id)&&$(id).closest('section'); if(s) s.dataset.tab=t; }));
+  ['stats','vinrow'].forEach(c=>{ const el=document.querySelector('.'+c); if(el) el.dataset.tab='more'; });
+  $('flex').dataset.tab='more';
+}
+function showTab(t){
+  document.querySelectorAll('[data-tab]').forEach(el=>{ const on=el.dataset.tab===t; el.style.display=on?'':'none'; if(on) el.classList.add('in'); });
+  document.querySelectorAll('.tabbar .tb').forEach(b=>b.classList.toggle('on', b.dataset.t===t));
+  window.scrollTo(0,0); $('appbar').classList.remove('show');
+}
+document.querySelectorAll('.tabbar .tb').forEach(b=>b.addEventListener('click',()=>{ showTab(b.dataset.t); buzz(8); }));
+applyTheme(); applyLang(); syncSeg();                  // theme + language on boot
+setupTabs();
+bindStatic();                                          // make cards/stats tappable
+showTab('home');                                       // start on Home
+load(true);                                            // live-poll on open
+setInterval(()=>{ if(!document.hidden) load(true); }, 20000);  // keep live-polling the car while watching
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) load(true); });
+</script>
+</body>
+</html>

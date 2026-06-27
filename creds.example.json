@@ -1,0 +1,19 @@
+{
+  "email": "your-carlinko-account@example.com",
+  "password": "your-carlinko-password",
+  "region": "sea",
+
+  "sign_key": "EXTRACT_FROM_YOUR_OWN_APP_CAPTURE__see_README",
+  "v_data": "EXTRACT_FROM_YOUR_OWN_CAPTURE__base64_device_blob",
+
+  "vehicle_id": "00000",
+  "device_sn": "YOUR_DEVICE_SN",
+
+  "vehicle": { "plate": "X 0000 XX", "model": "JAECOO J5 EV", "vin": "YOUR_VIN" },
+
+  "battery_kwh": 58.9,
+  "wltp_kwh_100": 14.8,
+  "tariff_idr": 2540,
+
+  "gmaps_key": "OPTIONAL__google_maps_api_key_for_trip_planner_and_spklu_map"
+}
