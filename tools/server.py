@@ -3,6 +3,7 @@ Serves the mobile PWA in ./web and a JSON API computed from carlinko.db.
 Run: python server.py [port]   (default 8088, binds 0.0.0.0 so Tailscale can reach it)
 """
 import os, sys, json, time, sqlite3, threading, math, urllib.request, urllib.parse
+import hmac, hashlib, base64, secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 _poll_lock = threading.Lock()
@@ -35,6 +36,14 @@ def _creds():
         return json.load(open(os.path.join(_DATA, "creds.json")))
     except Exception:
         return {}
+
+def _ensure_db():
+    """Create the telemetry table if missing so summary() never hits a fresh/empty DB."""
+    try:
+        import logger as L
+        conn = sqlite3.connect(DB); conn.executescript(L.SCHEMA); conn.commit(); conn.close()
+    except Exception:
+        pass
 # Vehicle identity (plate/model/VIN) comes from creds.json; the client hides plate+VIN by
 # default (eye-toggle reveals). Falls back to generic labels so the app still runs unconfigured.
 _V = (_creds().get("vehicle") or {})
@@ -46,7 +55,7 @@ def is_configured():
     c = _creds()
     return bool(c.get("email") and c.get("password") and c.get("vehicle_id"))
 
-def web_login(email, password, region="sea", gmaps_key=None):
+def web_login(email, password, region="sea", gmaps_key=None, dashboard_password=None):
     """Run the same flow as setup.py from a browser POST: log in, auto-detect the car, persist."""
     c = _creds()
     c["email"] = email.strip(); c["password"] = password; c["region"] = (region or "sea").strip() or "sea"
@@ -70,9 +79,63 @@ def web_login(email, password, region="sea", gmaps_key=None):
         try: os.chmod(cpath, 0o600)
         except Exception: pass
         VEHICLE.update(c["vehicle"])                        # reflect immediately, no restart
-    try: live_poll()                                       # grab a first frame so the dashboard isn't empty
+    if dashboard_password and dashboard_password.strip():
+        set_dashboard_password(dashboard_password.strip())  # gate the dashboard for public hosting
+    _ensure_db()                                           # table exists before the dashboard first loads
+    # grab a first frame in the background so login returns instantly even if the car is offline
+    try: threading.Thread(target=live_poll, daemon=True).start()
     except Exception: pass
     return c.get("vehicle", {})
+
+# ---- optional dashboard auth (off by default; set a dashboard_password to gate public hosting) ----
+SESSION_TTL = 30 * 86400
+
+def _gated():
+    return bool(_creds().get("dash_pw_hash"))
+
+def _save_creds(c):
+    cpath = os.path.join(_DATA, "creds.json")
+    json.dump(c, open(cpath, "w"), indent=2)
+    try: os.chmod(cpath, 0o600)
+    except Exception: pass
+
+def _session_secret():
+    c = _creds()
+    if not c.get("session_secret"):
+        c["session_secret"] = secrets.token_hex(32); _save_creds(c)
+    return c["session_secret"].encode()
+
+def _hash_pw(pw, salt):
+    return hashlib.sha256((salt + ":" + pw).encode()).hexdigest()
+
+def set_dashboard_password(pw):
+    c = _creds(); c["dash_salt"] = secrets.token_hex(8)
+    c["dash_pw_hash"] = _hash_pw(pw, c["dash_salt"])
+    c.setdefault("session_secret", secrets.token_hex(32)); _save_creds(c)
+
+def check_dashboard_password(pw):
+    c = _creds(); h, salt = c.get("dash_pw_hash"), c.get("dash_salt")
+    return bool(h and salt) and hmac.compare_digest(h, _hash_pw(pw, salt))
+
+def make_session():
+    exp = str(int(time.time()) + SESSION_TTL)
+    sig = hmac.new(_session_secret(), exp.encode(), hashlib.sha256).hexdigest()
+    return base64.urlsafe_b64encode(f"{exp}.{sig}".encode()).decode()
+
+def valid_session(tok):
+    try:
+        exp, sig = base64.urlsafe_b64decode((tok or "").encode()).decode().split(".", 1)
+        if int(exp) < time.time(): return False
+        good = hmac.new(_session_secret(), exp.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(sig, good)
+    except Exception:
+        return False
+
+def _cookie_sid(cookie_header):
+    for part in (cookie_header or "").split(";"):
+        if part.strip().startswith("sid="):
+            return part.strip()[4:]
+    return ""
 
 def psi(x):  return None if x == 0xFF else round(x * 1.373 * 0.145, 1)
 def temp(x): return None if x == 0xFF else round(x * 0.65 - 40, 1)
@@ -800,15 +863,38 @@ def trip_plan(frm, to, soc, cons, reserve=10.0, target=80.0, derate=1.0, a=None,
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a):  # quiet
         pass
-    def _send(self, code, body, ctype):
+    def _send(self, code, body, ctype, extra=None):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        for k, v in (extra or {}).items():
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(body)
+
+    def _authed(self):
+        return (not _gated()) or valid_session(_cookie_sid(self.headers.get("Cookie")))
+
+    def _set_cookie(self):
+        return {"Set-Cookie": f"sid={make_session()}; HttpOnly; SameSite=Lax; Path=/; Max-Age={SESSION_TTL}"}
+
+    # paths reachable without a session (so the login/unlock page can load + submit)
+    _PUBLIC = {"/login.html", "/icon.svg", "/manifest.webmanifest", "/api/status", "/api/login", "/api/unlock"}
+
     def do_GET(self):
         path = self.path.split("?")[0]
+        if path == "/api/status":
+            self._send(200, json.dumps({"configured": is_configured(), "gated": _gated(),
+                                        "authed": self._authed()}).encode(), "application/json")
+            return
+        if _gated() and not self._authed() and path not in self._PUBLIC:
+            if path == "/" or path == "/index.html":       # gated + locked -> show the unlock page
+                with open(os.path.join(WEB, "login.html"), "rb") as f:
+                    self._send(200, f.read(), "text/html; charset=utf-8")
+                return
+            self._send(401, b'{"error":"locked"}', "application/json")
+            return
         if path == "/api/summary":
             self._send(200, json.dumps(summary()).encode(), "application/json")
             return
@@ -871,9 +957,6 @@ class H(BaseHTTPRequestHandler):
                 _trip_cache["trip:" + qs] = (time.time(), plan)
             self._send(200, json.dumps(plan).encode(), "application/json")
             return
-        if path == "/api/status":
-            self._send(200, json.dumps({"configured": is_configured()}).encode(), "application/json")
-            return
         if path == "/":
             path = "/index.html" if is_configured() else "/login.html"   # first run -> login page
         fp = os.path.normpath(os.path.join(WEB, path.lstrip("/")))
@@ -897,18 +980,32 @@ class H(BaseHTTPRequestHandler):
                 if not email or not password:
                     self._send(400, json.dumps({"ok": False, "error": "email and password required"}).encode(), "application/json")
                     return
-                veh = web_login(email, password, body.get("region") or "sea", body.get("gmaps_key"))
-                self._send(200, json.dumps({"ok": True, "vehicle": veh}).encode(), "application/json")
+                veh = web_login(email, password, body.get("region") or "sea",
+                                body.get("gmaps_key"), body.get("dashboard_password"))
+                self._send(200, json.dumps({"ok": True, "vehicle": veh}).encode(),
+                           "application/json", self._set_cookie())   # log them straight in
             except Exception as e:
                 msg = str(e)
                 if "login failed" in msg.lower() or "code" in msg.lower():
                     msg = "Login failed — check your email and password."
                 self._send(200, json.dumps({"ok": False, "error": msg[:160]}).encode(), "application/json")
             return
+        if path == "/api/unlock":                          # re-enter the dashboard password to get a session
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n).decode() or "{}")
+                if check_dashboard_password(body.get("password") or ""):
+                    self._send(200, b'{"ok":true}', "application/json", self._set_cookie())
+                else:
+                    self._send(200, json.dumps({"ok": False, "error": "Wrong password."}).encode(), "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(), "application/json")
+            return
         self._send(404, b"not found", "text/plain")
 
 def main():
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8088
+    _ensure_db()                                           # so a brand-new install serves without crashing
     print(f"CarLinko dashboard on http://0.0.0.0:{port}  (db={os.path.abspath(DB)})")
     ThreadingHTTPServer(("0.0.0.0", port), H).serve_forever()
 

@@ -87,6 +87,7 @@ def poll_once(conn, _retried=False):
     global TOKEN
     if not _retried:
         reload_config()
+        conn.executescript(SCHEMA)          # idempotent: ensure the table exists for any caller
     ws = connect()
     try:
         ws.send(json.dumps({"action": 1, "data": {"token": TOKEN, "vehicleId": VEHICLE}}))

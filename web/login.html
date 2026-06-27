@@ -35,7 +35,6 @@
   .adv{font-size:13px;color:var(--accent);cursor:pointer;margin-top:14px;display:inline-block;font-weight:600}
   .advbox{display:none} .advbox.show{display:block}
   .hint{font-size:11.5px;color:var(--faint);margin-top:5px;line-height:1.5}
-  .hint a{color:var(--muted)}
   button{width:100%;margin-top:22px;background:var(--accent);color:var(--surface);border:0;
     border-radius:12px;padding:13px;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
   button:active{transform:scale(.99)} button:disabled{opacity:.7;cursor:default}
@@ -46,54 +45,94 @@
     font-size:13px;padding:10px 12px;border-radius:10px;margin-top:16px}
   .err.show{display:block}
   .foot{font-size:11.5px;color:var(--faint);margin-top:18px;line-height:1.6;text-align:center}
+  .hide{display:none}
 </style>
 </head>
 <body>
-  <form class="card" id="f" autocomplete="on">
+  <div class="card">
     <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6 17l1.5-5h9L18 17M7 12l1-4h8l1 4M7.5 17v2M16.5 17v2"/></svg></div>
-    <h1>Sign in</h1>
-    <div class="sub">Connect your CarLinko account to your dashboard.</div>
 
-    <label for="email">CarLinko email</label>
-    <input id="email" name="email" type="email" inputmode="email" autocomplete="username" placeholder="you@example.com" required>
+    <!-- first-run config -->
+    <form id="cfg" class="hide" autocomplete="on">
+      <h1>Sign in</h1>
+      <div class="sub">Connect your CarLinko account to your dashboard.</div>
+      <label for="email">CarLinko email</label>
+      <input id="email" name="email" type="email" inputmode="email" autocomplete="username" placeholder="you@example.com" required>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" placeholder="passwordhere" required>
+      <span class="adv" id="advToggle">Advanced &#9662;</span>
+      <div class="advbox" id="advBox">
+        <label for="dashpw">Dashboard password (for public hosting)</label>
+        <input id="dashpw" type="password" autocomplete="new-password" placeholder="leave blank on a private/Tailscale host">
+        <div class="hint">Set this if the URL is reachable from the internet — it locks the dashboard
+          behind a password. Leave blank for a private/home/Tailscale setup.</div>
+        <label for="region">Region</label>
+        <input id="region" type="text" value="sea" autocomplete="off">
+        <label for="gmaps">Google Maps API key (optional)</label>
+        <input id="gmaps" type="text" autocomplete="off" placeholder="enables trip planner + SPKLU map">
+        <div class="hint">Use <b>your own</b> free key — don't share someone else's (it bills their quota).</div>
+      </div>
+      <div class="err" id="cfgErr"></div>
+      <button type="submit" id="cfgBtn">Sign in</button>
+      <div class="foot">Self-hosted &middot; your login stays on this device &middot; read-only.<br>
+        Signing in may sign you out of the CarLinko app (one session per account) — just log back in there.</div>
+    </form>
 
-    <label for="password">Password</label>
-    <input id="password" name="password" type="password" autocomplete="current-password" placeholder="passwordhere" required>
-
-    <span class="adv" id="advToggle">Advanced &#9662;</span>
-    <div class="advbox" id="advBox">
-      <label for="region">Region</label>
-      <input id="region" name="region" type="text" value="sea" autocomplete="off">
-      <label for="gmaps">Google Maps API key (optional)</label>
-      <input id="gmaps" name="gmaps_key" type="text" autocomplete="off" placeholder="enables trip planner + SPKLU map">
-      <div class="hint">Use <b>your own</b> free key — don't share someone else's (it bills their quota).
-        Without it the map still works on free OpenStreetMap data, minus live charger info.</div>
-    </div>
-
-    <div class="err" id="err"></div>
-    <button type="submit" id="btn">Sign in</button>
-
-    <div class="foot">Self-hosted &middot; your login stays on this device &middot; read-only.<br>
-      Signing in here may sign you out of the CarLinko app (one session per account) — just log back in there.</div>
-  </form>
+    <!-- return visit, locked -->
+    <form id="unlock" class="hide" autocomplete="on">
+      <h1>Locked</h1>
+      <div class="sub">Enter the dashboard password to continue.</div>
+      <label for="upw">Dashboard password</label>
+      <input id="upw" type="password" autocomplete="current-password" placeholder="passwordhere" required>
+      <div class="err" id="unErr"></div>
+      <button type="submit" id="unBtn">Unlock</button>
+    </form>
+  </div>
 <script>
   const $=id=>document.getElementById(id);
+  function show(which){ $('cfg').classList.toggle('hide', which!=='cfg'); $('unlock').classList.toggle('hide', which!=='unlock'); }
+  async function boot(){
+    try{
+      const s=await (await fetch('api/status',{cache:'no-store'})).json();
+      if(!s.configured) show('cfg');
+      else if(s.gated && !s.authed) show('unlock');
+      else location.href='/';
+    }catch(e){ show('cfg'); }
+  }
+  boot();
+
   $('advToggle').onclick=()=>{ const open=$('advBox').classList.toggle('show');
     $('advToggle').textContent = open ? 'Advanced ▴' : 'Advanced ▾'; };
-  $('f').addEventListener('submit', async e=>{
+
+  $('cfg').addEventListener('submit', async e=>{
     e.preventDefault();
-    const btn=$('btn'), err=$('err'); err.classList.remove('show');
+    const btn=$('cfgBtn'), err=$('cfgErr'); err.classList.remove('show');
     btn.disabled=true; btn.classList.add('loading'); btn.textContent='Signing in…';
     try{
       const r=await fetch('api/login',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({email:$('email').value,password:$('password').value,
-          region:$('region').value||'sea',gmaps_key:$('gmaps').value})});
+        body:JSON.stringify({email:$('email').value,password:$('password').value,region:$('region').value||'sea',
+          gmaps_key:$('gmaps').value,dashboard_password:$('dashpw').value})});
       const d=await r.json();
       if(d.ok){ btn.textContent='Loading your car…'; location.href='/'; }
       else{ err.textContent=d.error||'Sign in failed.'; err.classList.add('show');
         btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Sign in'; }
     }catch(ex){ err.textContent='Network error — is the server running?'; err.classList.add('show');
       btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Sign in'; }
+  });
+
+  $('unlock').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const btn=$('unBtn'), err=$('unErr'); err.classList.remove('show');
+    btn.disabled=true; btn.classList.add('loading'); btn.textContent='Unlocking…';
+    try{
+      const r=await fetch('api/unlock',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({password:$('upw').value})});
+      const d=await r.json();
+      if(d.ok){ location.href='/'; }
+      else{ err.textContent=d.error||'Wrong password.'; err.classList.add('show');
+        btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Unlock'; }
+    }catch(ex){ err.textContent='Network error.'; err.classList.add('show');
+      btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Unlock'; }
   });
 </script>
 </body>
