@@ -12,6 +12,16 @@ project just reads your own account and presents it properly.
 > Built and validated against a single real car. Charge-cost output matches the owner's
 > PLN Mobile receipts to **99.6–99.9 %** (see [Accuracy](#accuracy)).
 
+## Screenshots
+
+| Dashboard | Charging |
+| :---: | :---: |
+| ![Home dashboard — battery, range, tyres, efficiency, insights](docs/screenshots/home.png) | ![Charge tab — battery care, charge stats, charge-to planner](docs/screenshots/charge.png) |
+| **Trip planner** | **SPKLU map** |
+| ![Long-trip planner — route, on-route charge stops with connectors and arrival %](docs/screenshots/trip-planner.png) | ![Interactive SPKLU map — pins, live availability, directions](docs/screenshots/spklu-map.png) |
+
+*Plate and VIN are masked by default (privacy eye-toggle). Light theme shown — a dark theme and EN/ID language toggle are built in.*
+
 ---
 
 ## ⚠️ Legal & ethics — read this first
