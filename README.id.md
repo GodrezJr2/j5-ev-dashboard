@@ -66,6 +66,7 @@ Kalau ga setuju sama poin di atas, jangan dipakai.
 - **Peta SPKLU** — geser peta interaktif, ketuk charger untuk konektor, ketersediaan live, dan
   petunjuk arah (gaya PLN Mobile), data dari Google Places.
 - **Perawatan baterai, hitung mundur servis, tampilan ban, toggle privasi, dark mode, i18n EN/ID.**
+- **Home Assistant** — baca semua lewat REST sensor + notif batre-low / charge-selesai. Lihat [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md).
 
 Lihat [PRODUCT.md](PRODUCT.md) untuk alasan produk dan [DESIGN.md](DESIGN.md) untuk sistem visual.
 

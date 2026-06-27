@@ -64,6 +64,7 @@ If you don't accept the above, don't use this.
 - **SPKLU map** — pan an interactive map, tap a charger for connectors, live availability and
   directions (PLN-Mobile-style), data from Google Places.
 - **Battery care, service countdown, tyre view, privacy toggles, dark mode, EN/ID i18n.**
+- **Home Assistant** — read it all over a REST sensor and get battery-low / charge-done notifications. See [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md).
 
 See [PRODUCT.md](PRODUCT.md) for the product rationale and [DESIGN.md](DESIGN.md) for the
 visual system.
