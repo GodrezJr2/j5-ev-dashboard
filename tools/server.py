@@ -371,7 +371,7 @@ def summary():
             out["tpms_live"] = (ts2 == ts)  # newest frame still has live tyres
             break
     valid_psi = [t["psi"] for t in out["tpms"] if t["psi"] is not None]
-    if valid_psi:  # direct TPMS reading present
+    if valid_psi:  # real per-wheel PSI present (never on this car — indirect TPMS, bytes stay FF)
         out["tyre_indirect"] = False
         out["tyre_status"] = "Check tyres" if any(p < 28 or p > 40 for p in valid_psi) else "Normal"
 

@@ -2,9 +2,9 @@
 
 **Product purpose**
 A self-hosted dashboard for one car: a Jaecoo J5 EV, fed by the reverse-engineered
-CarLinko telematics API. It shows battery, range, tyre pressure (TPMS PSI), and how far
-the owner drove (day/week/month) plus charge counts. It exists because CarLinko's own app
-hides the real numbers (tyres only show "normal/abnormal"; no trip totals).
+CarLinko telematics API. It shows battery, range, tyre status (indirect TPMS — status only,
+no PSI), and how far the owner drove (day/week/month) plus charge counts. It exists because
+CarLinko's own app hides the real numbers (tyres only show "normal/abnormal"; no trip totals).
 
 **Register**: product. The design serves a quick glance-and-go task, not a brand statement.
 

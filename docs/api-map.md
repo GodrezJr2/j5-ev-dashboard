@@ -83,21 +83,27 @@ offsets are decoded by the Dart parser in `libapp.so` — still to be fully mapp
 The `FFFFFFFFFFFFFFFF` run = invalid markers (`tirePressureInvalid:["FF"]`,
 `tireTempInvalid:["FF"]`) because the car is asleep → no live tyre data right now.
 
-## TPMS — ANSWERED ✅
+## TPMS — ANSWERED ✅ (INDIRECT, no real PSI)
 
-The J5 EV **does have direct (per-wheel) TPMS** and the raw pressure value is in the
-telemetry blob. The app's own `vehicleControlConfig` ships the conversion formulas:
+The J5 EV uses **indirect TPMS** (inferred from ABS wheel-speed differences, **no pressure
+sensor per wheel**) — so **no real PSI exists** anywhere to read. Proven by driving: the tyre
+block (bytes ~44–51) stayed **`FF` through a full road drive** (slow laps *and* road speed),
+not just while parked. The official CarLinko app confirms it too — it shows tyres as "-.- bar".
+
+The blob *has* pressure/temp fields and the app's `vehicleControlConfig` even ships conversion
+formulas, but the platform **never populates them on this car** — they're permanently `FF`:
 
 ```
-appPsiFormula : data * 1.373 * 0.145   ->  PSI
+appPsiFormula : data * 1.373 * 0.145   ->  PSI   (formula exists…)
 appKpaFormula : data * 1.373           ->  kPa
 appBarFormula : data * 1.373 * 0.01    ->  bar
 tireTempFormula: data * 0.65 - 40      ->  °C
-invalid: pressure byte == FF, temp byte == FF
+invalid: pressure byte == FF, temp byte == FF    (…but the bytes are always FF here)
 ```
-So per-tyre PSI = `rawByte * 1.373 * 0.145`. The data exists; the app just shows only
-“normal/abnormal”. **We can decode and display real PSI per wheel** once the car is awake
-(tyre bytes != FF) and we map their offsets in the blob.
+
+So the dashboard shows tyre **status** (Normal / Check tyres), **not** PSI. The decoder + formula
+are kept so that a car which *does* report real values would display them, but on this vehicle
+the only honest output is status. An abnormal tyre would surface via CarLinko alerts, not telemetry.
 
 ## Standalone access — VALIDATED ✅
 
@@ -109,7 +115,7 @@ So per-tyre PSI = `rawByte * 1.373 * 0.145`. The data exists; the app just shows
 |---|---|---|
 | `battery_pct` | byte 28 | 49 |
 | `range_km` | bytes 29–30 (BE u16) | 248 |
-| tyre block (4 PSI + 4 temp) | ~byte 44–51 (tentative) | all `FF` (parked → invalid) |
+| tyre block (4 PSI + 4 temp) | ~byte 44–51 | always `FF` (indirect TPMS — never populated, see above) |
 
 So the whole product can run off the WebSocket + token, no REST signing needed for reads.
 
