@@ -513,8 +513,14 @@ def summary():
     res = analyze(data)
     out["battery_kwh"] = res["battery_kwh"]
     out["energy"] = res["energy"]
-    # prefer the car's own BMS consumption (byte55) over the coarse SoC-derived estimate
+    # prefer the car's own BMS consumption (byte55) over the coarse SoC-derived estimate.
+    # byte55 only reports while driving; when parked it reads 0, so reuse the last driving value
+    # rather than flip to the noisy 1%-SoC estimate (which lags mid-drive, e.g. shows 10 vs 12).
     rc = dec.get("consumption")
+    if not rc:
+        for _t, _d, _dc in reversed(data):
+            if _dc.get("consumption"):
+                rc = _dc.get("consumption"); break
     if rc:
         out["energy"]["consumption"] = rc
         out["energy"]["rating"] = ("optimal" if rc < WLTP_KWH_100 else "normal" if rc < 18 else "boros")
