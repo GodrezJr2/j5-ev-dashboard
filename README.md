@@ -140,12 +140,12 @@ of the official app. Avoid the clash by giving the dashboard its **own** CarLink
 
 ### Quick start — Docker (recommended)
 ```bash
-docker compose run --rm web python setup.py   # interactive: email, password, sign_key, v_data
-docker compose up -d                          # dashboard on http://localhost:8088
+docker compose up -d        # then open http://localhost:8088
 ```
-`setup.py` logs in and **auto-detects your car** (vehicle id, device SN, VIN, plate, model from
-the API) — you don't fill those by hand. Everything that persists (creds, token, database) lives
-in `./data`.
+On first open the dashboard shows a **login page** — enter your CarLinko **email + password** and
+it logs in and **auto-detects your car** (vehicle id, device SN, VIN, plate, model). That's it.
+Prefer the terminal? `docker compose run --rm web python setup.py` does the same interactively.
+Everything that persists (creds, token, database) lives in `./data`.
 
 ### Quick start — Python (no Docker)
 ```bash

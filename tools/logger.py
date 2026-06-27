@@ -72,8 +72,21 @@ def connect(attempts=3):
             time.sleep(2 + i * 2)
     raise last
 
+def reload_config():
+    """Re-read creds.json + token.txt so a fresh login (e.g. via the web login page) is picked
+    up without restarting the process."""
+    global TOKEN, VEHICLE, SN, WS_URL, _C
+    _C = _cfg()
+    VEHICLE = str(_C.get("vehicle_id") or "") or VEHICLE
+    SN = _C.get("device_sn") or SN
+    WS_URL = f"ws://wss-cqr-{_C.get('region','sea')}.hzhjcl.com:4002/"
+    if os.path.exists(_TOKEN_FILE):
+        TOKEN = open(_TOKEN_FILE).read().strip() or TOKEN
+
 def poll_once(conn, _retried=False):
     global TOKEN
+    if not _retried:
+        reload_config()
     ws = connect()
     try:
         ws.send(json.dumps({"action": 1, "data": {"token": TOKEN, "vehicleId": VEHICLE}}))

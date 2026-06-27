@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f4f1ea">
+<title>Sign in · EV Dashboard</title>
+<link rel="icon" href="icon.svg">
+<style>
+  :root{
+    --canvas: oklch(0.972 0.006 95); --surface: oklch(0.992 0.004 95);
+    --ink: oklch(0.27 0.012 95); --muted: oklch(0.55 0.012 95); --faint: oklch(0.70 0.010 95);
+    --line: oklch(0.90 0.008 95); --accent: oklch(0.52 0.10 158); --bad: oklch(0.58 0.16 27);
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --canvas: oklch(0.18 0.008 95); --surface: oklch(0.225 0.010 95);
+    --ink: oklch(0.93 0.006 95); --muted: oklch(0.68 0.010 95); --faint: oklch(0.52 0.010 95);
+    --line: oklch(0.32 0.010 95); --accent: oklch(0.64 0.11 158);
+  }}
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--canvas);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  body{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);
+    border-radius:20px;padding:28px 24px;box-shadow:0 8px 40px rgb(0 0 0 / .06)}
+  .logo{width:46px;height:46px;border-radius:13px;background:var(--accent);display:flex;align-items:center;
+    justify-content:center;margin-bottom:16px}
+  .logo svg{width:26px;height:26px;stroke:var(--surface)}
+  h1{font-size:20px;font-weight:750;letter-spacing:-.01em}
+  .sub{font-size:13px;color:var(--muted);margin:4px 0 20px}
+  label{display:block;font-size:12px;font-weight:650;color:var(--muted);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.03em}
+  input{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--canvas);
+    border:1px solid var(--line);border-radius:11px;padding:11px 13px;outline:none}
+  input:focus{border-color:var(--accent)}
+  .adv{font-size:13px;color:var(--accent);cursor:pointer;margin-top:14px;display:inline-block;font-weight:600}
+  .advbox{display:none} .advbox.show{display:block}
+  .hint{font-size:11.5px;color:var(--faint);margin-top:5px;line-height:1.5}
+  .hint a{color:var(--muted)}
+  button{width:100%;margin-top:22px;background:var(--accent);color:var(--surface);border:0;
+    border-radius:12px;padding:13px;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+  button:active{transform:scale(.99)} button:disabled{opacity:.7;cursor:default}
+  button.loading::before{content:"";display:inline-block;width:15px;height:15px;border:2px solid currentColor;
+    border-right-color:transparent;border-radius:50%;vertical-align:-2px;margin-right:8px;animation:r .7s linear infinite}
+  @keyframes r{to{transform:rotate(360deg)}}
+  .err{display:none;background:color-mix(in oklch,var(--bad) 14%,transparent);color:var(--bad);
+    font-size:13px;padding:10px 12px;border-radius:10px;margin-top:16px}
+  .err.show{display:block}
+  .foot{font-size:11.5px;color:var(--faint);margin-top:18px;line-height:1.6;text-align:center}
+</style>
+</head>
+<body>
+  <form class="card" id="f" autocomplete="on">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6 17l1.5-5h9L18 17M7 12l1-4h8l1 4M7.5 17v2M16.5 17v2"/></svg></div>
+    <h1>Sign in</h1>
+    <div class="sub">Connect your CarLinko account to your dashboard.</div>
+
+    <label for="email">CarLinko email</label>
+    <input id="email" name="email" type="email" inputmode="email" autocomplete="username" placeholder="you@example.com" required>
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" placeholder="passwordhere" required>
+
+    <span class="adv" id="advToggle">Advanced &#9662;</span>
+    <div class="advbox" id="advBox">
+      <label for="region">Region</label>
+      <input id="region" name="region" type="text" value="sea" autocomplete="off">
+      <label for="gmaps">Google Maps API key (optional)</label>
+      <input id="gmaps" name="gmaps_key" type="text" autocomplete="off" placeholder="enables trip planner + SPKLU map">
+      <div class="hint">Use <b>your own</b> free key — don't share someone else's (it bills their quota).
+        Without it the map still works on free OpenStreetMap data, minus live charger info.</div>
+    </div>
+
+    <div class="err" id="err"></div>
+    <button type="submit" id="btn">Sign in</button>
+
+    <div class="foot">Self-hosted &middot; your login stays on this device &middot; read-only.<br>
+      Signing in here may sign you out of the CarLinko app (one session per account) — just log back in there.</div>
+  </form>
+<script>
+  const $=id=>document.getElementById(id);
+  $('advToggle').onclick=()=>{ const open=$('advBox').classList.toggle('show');
+    $('advToggle').textContent = open ? 'Advanced ▴' : 'Advanced ▾'; };
+  $('f').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const btn=$('btn'), err=$('err'); err.classList.remove('show');
+    btn.disabled=true; btn.classList.add('loading'); btn.textContent='Signing in…';
+    try{
+      const r=await fetch('api/login',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:$('email').value,password:$('password').value,
+          region:$('region').value||'sea',gmaps_key:$('gmaps').value})});
+      const d=await r.json();
+      if(d.ok){ btn.textContent='Loading your car…'; location.href='/'; }
+      else{ err.textContent=d.error||'Sign in failed.'; err.classList.add('show');
+        btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Sign in'; }
+    }catch(ex){ err.textContent='Network error — is the server running?'; err.classList.add('show');
+      btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Sign in'; }
+  });
+</script>
+</body>
+</html>

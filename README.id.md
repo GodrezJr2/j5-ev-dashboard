@@ -139,11 +139,12 @@ resmi-mu. Hindari bentrok dengan kasih dashboard **akun CarLinko-nya sendiri**:
 
 ### Cara cepat — Docker (disarankan)
 ```bash
-docker compose run --rm web python setup.py   # interaktif: email, password, sign_key, v_data
-docker compose up -d                          # dashboard di http://localhost:8088
+docker compose up -d        # lalu buka http://localhost:8088
 ```
-`setup.py` login dan **auto-deteksi mobilmu** (vehicle id, device SN, VIN, plat, model dari API) —
-jadi ga usah diisi tangan. Semua yang persisten (creds, token, database) ada di `./data`.
+Pas pertama buka, dashboard nampilin **halaman login** — isi **email + password** CarLinko-mu,
+nanti dia login dan **auto-deteksi mobilmu** (vehicle id, device SN, VIN, plat, model). Selesai.
+Lebih suka terminal? `docker compose run --rm web python setup.py` melakukan hal yang sama secara
+interaktif. Semua yang persisten (creds, token, database) ada di `./data`.
 
 ### Cara cepat — Python (tanpa Docker)
 ```bash

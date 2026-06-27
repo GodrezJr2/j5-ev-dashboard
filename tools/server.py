@@ -41,6 +41,39 @@ _V = (_creds().get("vehicle") or {})
 VEHICLE = {"plate": _V.get("plate") or "—", "model": _V.get("model") or "EV", "vin": _V.get("vin") or "—"}
 TPMS_POS = ["FL", "FR", "RL", "RR"]
 
+def is_configured():
+    """True once an account is set up — used to decide whether to show the login page."""
+    c = _creds()
+    return bool(c.get("email") and c.get("password") and c.get("vehicle_id"))
+
+def web_login(email, password, region="sea", gmaps_key=None):
+    """Run the same flow as setup.py from a browser POST: log in, auto-detect the car, persist."""
+    c = _creds()
+    c["email"] = email.strip(); c["password"] = password; c["region"] = (region or "sea").strip() or "sea"
+    if gmaps_key and gmaps_key.strip():
+        c["gmaps_key"] = gmaps_key.strip()
+    cpath = os.path.join(_DATA, "creds.json")
+    json.dump(c, open(cpath, "w"), indent=2)
+    try: os.chmod(cpath, 0o600)
+    except Exception: pass
+    import auth, requests
+    auth._C = auth.cfg()
+    token = auth.login()                                   # writes token.txt; raises on bad creds
+    data = requests.get(auth.api_base() + "/user/vehicle",
+                        headers=auth.headers_for({}, token=token), timeout=20).json().get("data")
+    v = data[0] if isinstance(data, list) and data else (data if isinstance(data, dict) else {})
+    if v.get("vehicleId"):
+        c["vehicle_id"] = str(v["vehicleId"]); c["device_sn"] = str(v.get("deviceId") or "")
+        c["vehicle"] = {"plate": v.get("licenseNumber") or "—", "model": v.get("model") or "EV",
+                        "vin": v.get("vin") or "—"}
+        json.dump(c, open(cpath, "w"), indent=2)
+        try: os.chmod(cpath, 0o600)
+        except Exception: pass
+        VEHICLE.update(c["vehicle"])                        # reflect immediately, no restart
+    try: live_poll()                                       # grab a first frame so the dashboard isn't empty
+    except Exception: pass
+    return c.get("vehicle", {})
+
 def psi(x):  return None if x == 0xFF else round(x * 1.373 * 0.145, 1)
 def temp(x): return None if x == 0xFF else round(x * 0.65 - 40, 1)
 
@@ -838,8 +871,11 @@ class H(BaseHTTPRequestHandler):
                 _trip_cache["trip:" + qs] = (time.time(), plan)
             self._send(200, json.dumps(plan).encode(), "application/json")
             return
+        if path == "/api/status":
+            self._send(200, json.dumps({"configured": is_configured()}).encode(), "application/json")
+            return
         if path == "/":
-            path = "/index.html"
+            path = "/index.html" if is_configured() else "/login.html"   # first run -> login page
         fp = os.path.normpath(os.path.join(WEB, path.lstrip("/")))
         if not fp.startswith(os.path.abspath(WEB)) or not os.path.isfile(fp):
             self._send(404, b"not found", "text/plain")
@@ -849,6 +885,27 @@ class H(BaseHTTPRequestHandler):
                  "svg": "image/svg+xml", "png": "image/png"}.get(fp.rsplit(".", 1)[-1], "text/plain")
         with open(fp, "rb") as f:
             self._send(200, f.read(), ctype + ("; charset=utf-8" if ctype.startswith("text") or "manifest" in ctype or ctype.endswith("svg+xml") else ""))
+
+    def do_POST(self):
+        path = self.path.split("?")[0]
+        if path == "/api/login":
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n).decode() or "{}")
+                email = (body.get("email") or "").strip()
+                password = body.get("password") or ""
+                if not email or not password:
+                    self._send(400, json.dumps({"ok": False, "error": "email and password required"}).encode(), "application/json")
+                    return
+                veh = web_login(email, password, body.get("region") or "sea", body.get("gmaps_key"))
+                self._send(200, json.dumps({"ok": True, "vehicle": veh}).encode(), "application/json")
+            except Exception as e:
+                msg = str(e)
+                if "login failed" in msg.lower() or "code" in msg.lower():
+                    msg = "Login failed — check your email and password."
+                self._send(200, json.dumps({"ok": False, "error": msg[:160]}).encode(), "application/json")
+            return
+        self._send(404, b"not found", "text/plain")
 
 def main():
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8088
