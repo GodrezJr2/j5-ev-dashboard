@@ -1,0 +1,11 @@
+**/creds.json
+**/token.txt
+**/__pycache__
+*.pyc
+*.db
+capture/
+data/
+docs/
+apk/
+.git/
+.playwright-mcp/

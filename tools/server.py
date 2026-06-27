@@ -26,12 +26,13 @@ def live_poll():
         _poll_lock.release()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DB   = os.path.join(HERE, "..", "carlinko.db")
+_DATA = os.environ.get("CARLINKO_DATA") or HERE          # Docker data dir; else alongside the code
+DB   = os.path.join(_DATA, "carlinko.db") if os.environ.get("CARLINKO_DATA") else os.path.join(HERE, "..", "carlinko.db")
 WEB  = os.path.join(HERE, "..", "web")
 
 def _creds():
     try:
-        return json.load(open(os.path.join(HERE, "creds.json")))
+        return json.load(open(os.path.join(_DATA, "creds.json")))
     except Exception:
         return {}
 # Vehicle identity (plate/model/VIN) comes from creds.json; the client hides plate+VIN by
@@ -479,7 +480,7 @@ def _ev_info(pl):
     return {"dc_kw": dc_kw, "conns": blurb, "avail": avail, "updated": updated}
 
 def _gkey():
-    try: return json.load(open(os.path.join(HERE, "creds.json"))).get("gmaps_key")
+    try: return json.load(open(os.path.join(_DATA, "creds.json"))).get("gmaps_key")
     except Exception: return None
 
 def _g_post(url, body, fieldmask, timeout=9):

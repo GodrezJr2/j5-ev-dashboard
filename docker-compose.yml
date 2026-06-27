@@ -1,0 +1,25 @@
+# One-command run. First create ./data/creds.json:
+#   docker compose run --rm web python setup.py      # interactive — logs in + auto-detects your car
+# then:
+#   docker compose up -d                             # dashboard on http://localhost:8088
+#
+# ./data holds creds.json, token.txt and carlinko.db (the only things that persist).
+
+services:
+  web:
+    build: .
+    image: j5-ev-dashboard
+    command: python server.py 8088
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+
+  logger:
+    build: .
+    image: j5-ev-dashboard
+    command: python logger.py --adaptive
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

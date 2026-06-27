@@ -1,5 +1,7 @@
 # J5 EV Dashboard — a self-hosted telematics dashboard for the Jaecoo J5 EV
 
+**English** · [Bahasa Indonesia](README.id.md)
+
 A clean, mobile-first PWA that shows the **real** numbers your car already reports —
 battery, range, odometer, charging sessions, efficiency, tyre status, 12 V health, trip
 log, lifetime cost, a long-trip charge planner, and an interactive SPKLU (EV charger) map.
@@ -129,25 +131,30 @@ values **from your own app, once**:
    [reFlutter](https://github.com/Impact-I/reFlutter) + an emulator with `-http-proxy` + mitmproxy /
    HTTP Toolkit). The same capture also reveals your `vehicle_id` and `device_sn`.
 
-### Configure
+### Quick start — Docker (recommended)
 ```bash
-cp creds.example.json tools/creds.json
-chmod 600 tools/creds.json
-# fill in: email, password, sign_key, v_data, vehicle_id, device_sn, vehicle{}, gmaps_key
+docker compose run --rm web python setup.py   # interactive: email, password, sign_key, v_data
+docker compose up -d                          # dashboard on http://localhost:8088
 ```
-`creds.json` and `token.txt` are gitignored — never commit them.
+`setup.py` logs in and **auto-detects your car** (vehicle id, device SN, VIN, plate, model from
+the API) — you don't fill those by hand. Everything that persists (creds, token, database) lives
+in `./data`.
 
-### Run
+### Quick start — Python (no Docker)
 ```bash
+pip install requests websocket-client
 cd tools
-python auth.py                 # logs in, writes token.txt
-python logger.py --loop 600    # poll + record telemetry (or run as a service)
+python setup.py                # interactive config + login + auto-detect car
+python logger.py --adaptive    # record telemetry (fast when awake, slow when parked)
 python server.py 8088          # dashboard at http://<host>:8088
 ```
-For always-on use, install the provided units
+Prefer not to use the helper? `cp creds.example.json tools/creds.json && chmod 600 tools/creds.json`
+and fill it in by hand. `creds.json` and `token.txt` are gitignored — never commit them.
+
+For always-on use, install the provided systemd units
 ([carlinko-logger.service](tools/carlinko-logger.service),
-[carlinko-web.service](tools/carlinko-web.service)) and reach the dashboard over Tailscale so
-it stays private without exposing anything to the internet.
+[carlinko-web.service](tools/carlinko-web.service)) and reach the dashboard over Tailscale so it
+stays private without exposing anything to the internet.
 
 ### `creds.json` reference
 | key | required | what |
@@ -156,8 +163,8 @@ it stays private without exposing anything to the internet.
 | `region` | | API region, default `sea` |
 | `sign_key` | ✅ | request-signing HMAC key (extract from your app) |
 | `v_data` | ✅ | constant device-identity blob (capture once) |
-| `vehicle_id`, `device_sn` | ✅ | your vehicle id + device serial (from the capture) |
-| `vehicle` | | `{plate, model, vin}` for display (UI hides plate+VIN by default) |
+| `vehicle_id`, `device_sn` | auto | your vehicle id + device serial — **`setup.py` fills these for you** |
+| `vehicle` | auto | `{plate, model, vin}` — auto-detected; UI hides plate+VIN by default |
 | `battery_kwh`, `wltp_kwh_100`, `tariff_idr` | | per-model / local overrides (default to J5 values) |
 | `gmaps_key` | | Google Maps key — enables trip planner + SPKLU map (else OSM fallback) |
 

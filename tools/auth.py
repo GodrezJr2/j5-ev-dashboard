@@ -18,8 +18,9 @@ socket.getaddrinfo = _gai_v4
 import requests
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CREDS = os.path.join(HERE, "creds.json")
-TOKEN_FILE = os.path.join(HERE, "token.txt")
+_DATA = os.environ.get("CARLINKO_DATA") or HERE   # Docker mounts a data dir here; else alongside the code
+CREDS = os.path.join(_DATA, "creds.json")
+TOKEN_FILE = os.path.join(_DATA, "token.txt")
 
 def cfg():
     """All instance-specific values live in creds.json (gitignored). See creds.example.json."""

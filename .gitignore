@@ -13,3 +13,6 @@ tools/creds.json
 # Python
 __pycache__/
 *.pyc
+
+# Docker data dir (creds, token, db)
+data/

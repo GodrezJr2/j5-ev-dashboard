@@ -19,19 +19,20 @@ def _gai_v4(host, port, family=0, *a, **k):
 socket.getaddrinfo = _gai_v4
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
+_DATA = os.environ.get("CARLINKO_DATA") or _HERE   # Docker data dir; else alongside the code
 def _cfg():
     try:
-        return json.load(open(os.path.join(_HERE, "creds.json")))
+        return json.load(open(os.path.join(_DATA, "creds.json")))
     except Exception:
         return {}
 _C = _cfg()
 WS_URL  = f"ws://wss-cqr-{_C.get('region','sea')}.hzhjcl.com:4002/"
 # Token comes from token.txt (auto-refreshed by auth.login() on expiry); vehicle id + device SN from creds.json.
-_TOKEN_FILE = os.path.join(_HERE, "token.txt")
+_TOKEN_FILE = os.path.join(_DATA, "token.txt")
 TOKEN   = open(_TOKEN_FILE).read().strip() if os.path.exists(_TOKEN_FILE) else ""
 VEHICLE = str(_C.get("vehicle_id") or "")
 SN      = _C.get("device_sn") or ""
-DB      = os.path.join(_HERE, "..", "carlinko.db")
+DB      = os.path.join(_DATA, "carlinko.db") if os.environ.get("CARLINKO_DATA") else os.path.join(_HERE, "..", "carlinko.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS telemetry (
