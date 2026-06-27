@@ -37,9 +37,10 @@ sendiri**. Disediakan untuk keperluan edukasi & pribadi.
 - Ini ngobrol sama **API vendor yang privat & tak terdokumentasi**. **Tanpa garansi** dan bisa
   rusak kapan saja kalau vendor mengubah backend-nya. **Tidak berafiliasi, tidak didukung**
   oleh Jaecoo, Chery, maupun CarLinko.
-- **Tidak ada rahasia yang disertakan.** Kunci penanda-tangan request, blob identitas device,
-  token, VIN, plat, vehicle id, dan device serial **tidak** ada di repo ini — kamu isi sendiri
-  di `creds.json` yang gitignored (lihat [Setup](#setup)).
+- **Tidak ada data pribadi yang disertakan.** Akun, token, VIN, plat, vehicle id, dan device
+  serial-mu cuma ada di `creds.json` yang gitignored (lihat [Setup](#setup)). Kunci penanda-tangan
+  request itu **konstanta app** (string yang sama di tiap install CarLinko, gampang dibaca dari
+  APK) — di-bundle biar setup cukup email + password; itu bukan rahasia yang terikat ke kamu.
 - **Jangan jalankan ini sebagai layanan publik/multi-user.** Itu berarti menyimpan kredensial
   orang lain (yang bisa membuka/mengontrol mobil mereka) dan hampir pasti melanggar ketentuan
   vendor. Deployment yang dimaksud adalah **satu instance per pemilik**, self-hosted, privat
@@ -117,21 +118,24 @@ Hitungan refund-nya juga cocok: beli Rp 152.448, terpakai Rp 145.694.
 
 ### Prasyarat
 - Python 3.10+, `pip install requests websocket-client`
-- Akun CarLinko + mobil yang terikat ke akun itu
+- Akun CarLinko yang ada mobilmu
 - (opsional) Google Maps API key untuk perencana trip / peta SPKLU
-- Cara untuk intercept trafik app-mu sendiri sekali (lihat di bawah)
 
-### Capture pertama kali (satu-satunya langkah manual)
-API vendor menanda-tangani setiap request dan mengunci identitas dengan blob device. Kamu
-ekstrak dua nilai **dari app-mu sendiri, sekali saja**:
+Tanpa capture app, tanpa MITM, tanpa decompile — cukup login pakai akunmu. (Kunci penanda-tangan
+sudah di-bundle, dan blob `v-data` yang dikirim app ternyata diabaikan server, jadi dibuang.)
 
-1. **`sign_key`** — kunci HMAC yang dipakai app untuk menanda-tangani request. Ada di binary app;
-   pulihkan dengan men-decompile `libapp.so` (repo ini pakai [Blutter](https://github.com/worawit/blutter);
-   offset-nya didokumentasikan di [docs/decompiled/secure_request_utils.dart](docs/decompiled/secure_request_utils.dart)).
-2. **`v_data`** — blob identitas device base64 yang konstan, dikirim di setiap request. Tangkap
-   dengan MITM app-mu sendiri (Flutter mengabaikan system proxy + trust store, jadi pakai
-   [reFlutter](https://github.com/Impact-I/reFlutter) + emulator dengan `-http-proxy` + mitmproxy /
-   HTTP Toolkit). Capture yang sama juga memunculkan `vehicle_id` dan `device_sn`-mu.
+### Pakai akun kedua (disarankan)
+CarLinko cuma izinin **satu sesi aktif per akun**, jadi login dashboard bisa nge-logout app
+resmi-mu. Hindari bentrok dengan kasih dashboard **akun CarLinko-nya sendiri**:
+
+1. Bikin akun CarLinko kedua (email beda).
+2. Dari akun utama, **Me → Authorisation → +** lalu authorise email akun kedua ke mobilmu.
+3. Login-kan dashboard ke akun kedua; app tetap di akun utama.
+
+> Catatan: layar *Authorisation* di app menyebut berbagi kontrol Bluetooth — pastikan akun yang
+> di-authorise juga bisa narik mobil lewat **cloud** (jalankan `python setup.py` di akun itu; kalau
+> auto-deteksi nemu mobilnya, berarti aman). Kalau ga bisa, alternatifnya pakai satu akun saja dan
+> terima sesekali login ulang.
 
 ### Cara cepat — Docker (disarankan)
 ```bash
@@ -162,8 +166,6 @@ tetap privat tanpa mengekspos apa pun ke internet.
 | --- | --- | --- |
 | `email`, `password` | ✅ | login CarLinko-mu (plaintext via TLS; disimpan lokal saja) |
 | `region` | | region API, default `sea` |
-| `sign_key` | ✅ | kunci HMAC penanda-tangan request (ekstrak dari app-mu) |
-| `v_data` | ✅ | blob identitas device konstan (tangkap sekali) |
 | `vehicle_id`, `device_sn` | auto | vehicle id + serial device — **`setup.py` yang ngisiin** |
 | `vehicle` | auto | `{plate, model, vin}` — auto-deteksi; UI sembunyiin plat+VIN default |
 | `battery_kwh`, `wltp_kwh_100`, `tariff_idr` | | override per-model / lokal (default ke nilai J5) |

@@ -3,13 +3,9 @@
   "password": "your-carlinko-password",
   "region": "sea",
 
-  "sign_key": "EXTRACT_FROM_YOUR_OWN_APP_CAPTURE__see_README",
-  "v_data": "EXTRACT_FROM_YOUR_OWN_CAPTURE__base64_device_blob",
-
-  "vehicle_id": "00000",
-  "device_sn": "YOUR_DEVICE_SN",
-
-  "vehicle": { "plate": "X 0000 XX", "model": "JAECOO J5 EV", "vin": "YOUR_VIN" },
+  "vehicle_id": "auto-filled by setup.py",
+  "device_sn": "auto-filled by setup.py",
+  "vehicle": { "plate": "auto", "model": "auto", "vin": "auto" },
 
   "battery_kwh": 58.9,
   "wltp_kwh_100": 14.8,

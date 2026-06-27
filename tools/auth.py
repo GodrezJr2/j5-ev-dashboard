@@ -1,8 +1,9 @@
 """CarLinko auth: request signing + self-login (token auto-refresh).
 Signing recovered from libapp.so (Blutter): see docs/decompiled/secure_*_utils.dart.
-  signature = base64(HMAC-SHA256("<SIGN_KEY>",
+  signature = base64(HMAC-SHA256(SIGN_KEY,
               jsonEncode(sortByKeyAsc({...params, timestamp}))))   # Dart jsonEncode = no spaces
-Login = POST /user/login with a plaintext password body.
+Login = POST /user/login with a plaintext password body. The `v-data` header the app sends is
+NOT validated by the server (tested: login succeeds with it absent/empty/garbage), so we omit it.
 
 Credentials come from creds.json next to this file (NOT committed):
   {"email": "...", "password": "...", "region": "sea"}
@@ -30,10 +31,9 @@ def cfg():
         return {}
 
 _C = cfg()
-# App request-signing key + device blob — extract these once from your own app capture
-# (see README "First-time capture"); they are NOT shipped with the source.
-SIGN_KEY = (_C.get("sign_key") or "").encode()
-VDATA = _C.get("v_data") or ""
+# App-global request-signing key: the same string in every CarLinko install (recovered from the
+# app binary). Override via creds.json "sign_key" only if the vendor ever rotates it.
+SIGN_KEY = (_C.get("sign_key") or "mYj3fzMpn77bir66").encode()
 VEHICLE_ID = str(_C.get("vehicle_id") or "")
 DEVICE_SN = _C.get("device_sn") or ""
 
@@ -66,7 +66,6 @@ def headers_for(params, token=None):
     h = {
         "timestamp": ts,
         "signature": sign({**params, "timestamp": ts}),
-        "v-data": VDATA,
         "user-agent": "Dart/3.10 (dart:io)",
         "language": "en",
     }
@@ -98,7 +97,6 @@ def login():
     h = {
         "timestamp": ts,
         "signature": sign({**body, "timestamp": ts}),
-        "v-data": VDATA,
         "user-agent": "Dart/3.10 (dart:io)",
         "content-type": "application/json",
         "language": "en",

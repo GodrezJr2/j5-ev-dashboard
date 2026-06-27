@@ -3,7 +3,7 @@
 Captured 2026-06-21 via reFlutter-patched app + emulator `-http-proxy` + mitmproxy.
 Raw capture: `capture/flows.mitm`; dumps: `capture/api_dump.txt`, `capture/ws_dump.txt`.
 
-> Contains the owner's live secrets (token, VIN, v-data). Keep local; do not share unsanitised.
+> Contains the owner's live data (token, VIN, vehicle/device ids). Keep local; do not share unsanitised.
 
 ## Hosts
 
@@ -22,10 +22,10 @@ Vehicle was identified, user logged in. Every authenticated REST request carries
 | `token` | `<TOKEN>` | Session token (from login). Constant for session. |
 | `timestamp` | `1782017645767` | Epoch ms. Server validates clock skew (app has `VerifyTimestampUtils` correction). |
 | `signature` | `sbw3BSLR2fxbUtK4xBXnGesN69AL4TnaD9SUhu5vkf0=` | base64, 32 bytes → **HMAC-SHA256**. Differs per request (depends on path/body/timestamp). |
-| `v-data` | `<VDATA>hqW9VcF2QszvVOpMSKzaweZbLhhANeR9+...` | base64 AES blob. **CONSTANT across all requests** → it's a fixed device/app identity blob, not per-request params. Replay verbatim. |
+| `v-data` | `<VDATA>` | base64 device/app blob the app sends. **NOT validated by the server** — login + signed requests succeed with it absent/empty/garbage (tested 2026-06-27), so we omit it entirely. |
 
 Notes:
-- **Responses are plaintext JSON** (not encrypted). Only the request `v-data` is encrypted, and it's constant → we can read everything without breaking response crypto.
+- **Responses are plaintext JSON** (not encrypted). The request `v-data` blob is ignored by the server (not validated), so the only thing gating signed requests is the HMAC signature (app-global key).
 - Envelope: `{"data": ..., "code": "0000", "msg": "请求成功"/"OK"}`. `code != "0000"` = error.
 - Crypto lib = pointycastle (AES + HMAC-SHA256). Signing key (appSecret) still to be recovered → see "Remaining".
 
@@ -133,4 +133,4 @@ So the whole product can run off the WebSocket + token, no REST signing needed f
 2. **Map the telemetry blob byte offsets** (battery%, range, lock, 4× tyre pressure, 4×
    tyre temp). → Blutter on the Dart parser, or empirically diff blob vs app display.
 3. **Capture an awake-car telemetry frame** (real tyre bytes) to validate the PSI formula.
-4. Confirm whether `v-data` can be replayed indefinitely (constant) or expires.
+4. ~~Confirm whether `v-data` can be replayed~~ — RESOLVED: `v-data` is not validated at all (omitted).

@@ -35,9 +35,11 @@ own vehicle and your own account**. It is provided for educational and personal 
 - This talks to a **private, undocumented vendor API**. There is **no warranty** and it can
   break at any time if the vendor changes their backend. It is **not affiliated with,
   endorsed by, or supported by** Jaecoo, Chery, or CarLinko.
-- **No secrets are shipped.** The request-signing key, device identity blob, token, VIN,
-  plate, vehicle id and device serial are **not** in this repo — you supply your own in a
-  gitignored `creds.json` (see [Setup](#setup)).
+- **No personal data is shipped.** Your account, token, VIN, plate, vehicle id and device
+  serial live only in a gitignored `creds.json` (see [Setup](#setup)). The request-signing key
+  is an **app-global constant** (the same string baked into every CarLinko install, trivially
+  readable from the APK) — it's bundled so setup is just email + password; it is not a secret
+  tied to you.
 - **Do not run this as a public/hosted multi-user service.** Doing so means storing other
   people's credentials (which can unlock/control their car) and almost certainly violates the
   vendor's terms. The intended deployment is **one instance per owner**, self-hosted, private
@@ -115,21 +117,26 @@ of a full charge). The refund maths line up too: bought Rp 152,448, used Rp 145,
 
 ### Prerequisites
 - Python 3.10+, `pip install requests websocket-client`
-- A CarLinko account + a car bound to it
+- A CarLinko account with your car on it
 - (optional) a Google Maps API key for the trip planner / SPKLU map
-- A way to intercept your own app traffic once (see below)
 
-### First-time capture (the one manual step)
-The vendor API signs every request and pins identity with a device blob. You extract two
-values **from your own app, once**:
+No app capture, no MITM, no decompiling needed — you just log in with your account. (The
+signing key is bundled, and the `v-data` blob the app sends turned out to be ignored by the
+server, so it's dropped entirely.)
 
-1. **`sign_key`** — the HMAC key the app uses to sign requests. It lives in the app binary;
-   recover it by decompiling `libapp.so` (this repo used [Blutter](https://github.com/worawit/blutter);
-   the offset is documented in [docs/decompiled/secure_request_utils.dart](docs/decompiled/secure_request_utils.dart)).
-2. **`v_data`** — the constant base64 device-identity blob sent with every request. Capture it
-   by MITM-ing your own app (Flutter ignores the system proxy + trust store, so use
-   [reFlutter](https://github.com/Impact-I/reFlutter) + an emulator with `-http-proxy` + mitmproxy /
-   HTTP Toolkit). The same capture also reveals your `vehicle_id` and `device_sn`.
+### Use a second account (recommended)
+CarLinko keeps **one active session per account**, so logging the dashboard in can sign you out
+of the official app. Avoid the clash by giving the dashboard its **own** CarLinko account:
+
+1. Make a second CarLinko account (different email).
+2. From your main account, **Me → Authorisation → +** and authorise the second account's email
+   to your car.
+3. Log the dashboard into the second account; keep the app on your main account.
+
+> Heads-up: the in-app *Authorisation* screen describes Bluetooth control sharing — confirm the
+> authorised account can also pull the car over the **cloud** (run `python setup.py` on it; if
+> auto-detect finds the vehicle, you're good). If it can't, the alternative is to just use one
+> account and accept the occasional re-login.
 
 ### Quick start — Docker (recommended)
 ```bash
@@ -161,8 +168,6 @@ stays private without exposing anything to the internet.
 | --- | --- | --- |
 | `email`, `password` | ✅ | your CarLinko login (plaintext over TLS; stored locally only) |
 | `region` | | API region, default `sea` |
-| `sign_key` | ✅ | request-signing HMAC key (extract from your app) |
-| `v_data` | ✅ | constant device-identity blob (capture once) |
 | `vehicle_id`, `device_sn` | auto | your vehicle id + device serial — **`setup.py` fills these for you** |
 | `vehicle` | auto | `{plate, model, vin}` — auto-detected; UI hides plate+VIN by default |
 | `battery_kwh`, `wltp_kwh_100`, `tariff_idr` | | per-model / local overrides (default to J5 values) |

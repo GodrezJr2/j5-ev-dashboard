@@ -28,14 +28,10 @@ def main():
         except Exception:
             pass
 
-    print("=== CarLinko login ===")
+    print("=== CarLinko login (use a SECOND account linked to your car, not your daily one) ===")
     c["email"] = ask("Email", c.get("email"))
     c["password"] = ask("Password", c.get("password"), secret=True)
     c["region"] = ask("Region", c.get("region") or "sea") or "sea"
-
-    print("\n=== From your app capture (see README → First-time capture) ===")
-    c["sign_key"] = ask("sign_key", c.get("sign_key"), secret=True)
-    c["v_data"] = ask("v_data", c.get("v_data"), secret=True)
 
     print("\n=== Optional ===")
     c["gmaps_key"] = ask("Google Maps key (enables trip planner + SPKLU map)",
@@ -48,20 +44,17 @@ def main():
     except Exception:
         pass
 
-    if not (c.get("email") and c.get("password") and c.get("sign_key") and c.get("v_data")):
-        print("\nSaved creds.json, but email/password/sign_key/v_data are incomplete —")
-        print("fill those to enable login + auto-detect. See the README.")
+    if not (c.get("email") and c.get("password")):
+        print("\nSaved creds.json, but email/password are incomplete — fill them, then re-run.")
         return
 
     print("\nLogging in…")
-    import auth  # imports after creds exist so it reads the right key/blob
+    import auth  # the signing key is bundled; reads creds.json for the account
     auth._C = auth.cfg()
-    auth.SIGN_KEY = (auth._C.get("sign_key") or "").encode()
-    auth.VDATA = auth._C.get("v_data") or ""
     try:
         token = auth.login()
     except Exception as e:
-        print(f"  login failed: {e}\n  Double-check email/password/sign_key/v_data, then re-run.")
+        print(f"  login failed: {e}\n  Double-check email/password, then re-run.")
         return
     print(f"  ok — token saved to token.txt")
 
