@@ -172,6 +172,47 @@ stays private without exposing anything to the internet.
 | `vehicle` | auto | `{plate, model, vin}` — auto-detected; UI hides plate+VIN by default |
 | `battery_kwh`, `wltp_kwh_100`, `tariff_idr` | | per-model / local overrides (default to J5 values) |
 | `gmaps_key` | | Google Maps key — enables trip planner + SPKLU map (else OSM fallback) |
+| `dashboard_password` | | set it (login page → Advanced) to lock the dashboard behind a password — **do this if the URL is reachable from the internet** |
+
+## Where to run it
+
+It needs a host that's on **24/7** (the logger polls continuously to build trends and charge
+history). **A phone alone won't do it** — iOS can't run a background server at all, and Android
+(Termux) gets killed by battery management. So the host runs elsewhere and your phone is just the
+browser (add it to your home screen as a PWA).
+
+| Host | Cost | Notes |
+| --- | --- | --- |
+| A spare PC / old laptop / **Raspberry Pi** at home | free | best privacy; reach it over [Tailscale](https://tailscale.com) |
+| A small **VPS** (Hetzner, Contabo, DigitalOcean…) | ~$4/mo | easiest always-on; keep it private with Tailscale, or set a `dashboard_password` |
+| **Fly.io / Railway / Render** free tier | free | deploy the Docker image; set a `dashboard_password` |
+| **Oracle Cloud Free / Google e2-micro** | free | always-on free VM |
+
+> **Public hosting = set a dashboard password.** On a private/home/Tailscale host you can leave it
+> open. The moment the URL is reachable from the internet, set a `dashboard_password` (login page →
+> Advanced) so only you can open the dashboard.
+
+### Per-OS setup
+The Docker path is identical on every OS — install Docker, then `docker compose up -d` and open
+`http://localhost:8088`:
+- **macOS / Windows**: install [Docker Desktop](https://www.docker.com/products/docker-desktop/), open it, then run the two commands in Terminal / PowerShell from the cloned repo folder.
+- **Linux**: `sudo apt install docker.io docker-compose-plugin` (or your distro's equivalent), then the same two commands.
+
+No Docker? Install **Python 3.10+** ([python.org](https://www.python.org/downloads/) on macOS/Windows, `sudo apt install python3 python3-pip` on Linux) and use the *Quick start — Python* steps above.
+
+### Set it up with an AI coding agent
+If the terminal isn't your thing, paste this into an AI coding agent (Claude Code, Cursor, etc.)
+running on the machine that will host it:
+
+```text
+Set up the open-source project https://github.com/GodrezJr2/j5-ev-dashboard on this machine.
+Clone it, then bring it up with Docker (docker compose up -d). It serves a login page on
+http://localhost:8088 — tell me the URL when it's running. I'll enter my CarLinko email and
+password there myself; do not ask me for them. If Docker isn't available, fall back to the
+Python quick-start in the README (pip install requests websocket-client, then run
+tools/server.py and tools/logger.py). If the host is reachable from the internet, remind me to
+set a dashboard password on the login page's Advanced section.
+```
 
 ## Going multi-user
 

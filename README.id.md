@@ -171,6 +171,46 @@ tetap privat tanpa mengekspos apa pun ke internet.
 | `vehicle` | auto | `{plate, model, vin}` — auto-deteksi; UI sembunyiin plat+VIN default |
 | `battery_kwh`, `wltp_kwh_100`, `tariff_idr` | | override per-model / lokal (default ke nilai J5) |
 | `gmaps_key` | | Google Maps key — aktifin perencana trip + peta SPKLU (kalau ga, fallback OSM) |
+| `dashboard_password` | | set (halaman login → Advanced) untuk kunci dashboard pakai password — **wajib kalau URL-nya bisa diakses dari internet** |
+
+## Mau di-host di mana
+
+Butuh host yang **nyala 24/7** (logger polling terus buat tren + riwayat charge). **HP doang ga
+cukup** — iOS ga bisa jalanin server background sama sekali, Android (Termux) gampang dibunuh OS.
+Jadi host-nya di tempat lain, HP cuma jadi browser (add to home screen jadi PWA).
+
+| Host | Biaya | Catatan |
+| --- | --- | --- |
+| PC nganggur / laptop lama / **Raspberry Pi** di rumah | gratis | paling privat; akses lewat [Tailscale](https://tailscale.com) |
+| **VPS** murah (Hetzner, Contabo, DigitalOcean…) | ~$4/bln | paling gampang nyala terus; privat pakai Tailscale, atau set `dashboard_password` |
+| **Fly.io / Railway / Render** free tier | gratis | deploy Docker image; set `dashboard_password` |
+| **Oracle Cloud Free / Google e2-micro** | gratis | VM nyala terus gratis |
+
+> **Host publik = wajib set dashboard password.** Di host privat/rumah/Tailscale boleh dibiarin
+> kebuka. Begitu URL-nya bisa dicapai dari internet, set `dashboard_password` (halaman login →
+> Advanced) biar cuma kamu yang bisa buka.
+
+### Setup per-OS
+Jalur Docker sama persis di semua OS — install Docker, lalu `docker compose up -d` dan buka
+`http://localhost:8088`:
+- **macOS / Windows**: install [Docker Desktop](https://www.docker.com/products/docker-desktop/), buka, lalu jalanin dua perintah di Terminal / PowerShell dari folder repo yang udah di-clone.
+- **Linux**: `sudo apt install docker.io docker-compose-plugin` (atau setara di distro-mu), lalu dua perintah yang sama.
+
+Ga pakai Docker? Install **Python 3.10+** ([python.org](https://www.python.org/downloads/) di macOS/Windows, `sudo apt install python3 python3-pip` di Linux) lalu pakai langkah *Cara cepat — Python* di atas.
+
+### Setup pakai AI coding agent
+Kalau ga biasa sama terminal, paste ini ke AI coding agent (Claude Code, Cursor, dll) yang jalan
+di mesin yang bakal jadi host:
+
+```text
+Set up the open-source project https://github.com/GodrezJr2/j5-ev-dashboard on this machine.
+Clone it, then bring it up with Docker (docker compose up -d). It serves a login page on
+http://localhost:8088 — tell me the URL when it's running. I'll enter my CarLinko email and
+password there myself; do not ask me for them. If Docker isn't available, fall back to the
+Python quick-start in the README (pip install requests websocket-client, then run
+tools/server.py and tools/logger.py). If the host is reachable from the internet, remind me to
+set a dashboard password on the login page's Advanced section.
+```
 
 ## Menuju multi-user
 
