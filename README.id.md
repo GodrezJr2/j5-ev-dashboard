@@ -15,6 +15,12 @@ project ini cuma baca akunmu sendiri dan nampilinnya dengan benar.
 > Dibangun & divalidasi pada satu mobil nyata. Output biaya charge cocok dengan struk PLN
 > Mobile pemiliknya sampai **99,6–99,9 %** (lihat [Akurasi](#akurasi)).
 
+> **Mobil CarLinko lain?** Lapisan login + koneksi cloud-nya generik, jadi *harusnya* jalan
+> untuk mobil apa pun di CarLinko (Jaecoo model lain, Omoda/Chery EV, dll). Tapi ini **baru
+> diuji di Jaecoo J5 EV (Indonesia)** — decode telemetri (byte mana = baterai / range / odometer)
+> dikalibrasi ke J5 dan bisa meleset di model lain. Kalau mobilmu beda, tolong coba & kirim
+> [laporan kompatibilitas](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md) ya. 🙏
+
 ## Screenshot
 
 | Dashboard | Pengisian |

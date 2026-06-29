@@ -14,6 +14,12 @@ project just reads your own account and presents it properly.
 > Built and validated against a single real car. Charge-cost output matches the owner's
 > PLN Mobile receipts to **99.6–99.9 %** (see [Accuracy](#accuracy)).
 
+> **Other CarLinko cars?** The login + cloud connection layer is generic, so it *should* work
+> for any car on CarLinko (other Jaecoo models, Omoda/Chery EVs, etc.). But this is **only
+> tested on a Jaecoo J5 EV (Indonesia)** — the telemetry decode (which byte is battery / range /
+> odometer) is calibrated to the J5 and may be off on other models. If you have a different car,
+> please try it and file a [compatibility report](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md). 🙏
+
 ## Screenshots
 
 | Dashboard | Charging |

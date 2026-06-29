@@ -420,7 +420,7 @@
 </head>
 <body>
 <div class="appbar" id="appbar">
-  <span class="ttl">J5 EV</span>
+  <span class="ttl" id="abTtl">J5 EV</span>
   <span class="ab-soc"><span class="ab-dot" id="abDot"></span><span id="abSoc" class="num">&mdash;</span>%</span>
   <button class="ab-rf" id="abRefresh" aria-label="Refresh">&#8635;</button>
 </div>
@@ -430,7 +430,7 @@
        font-size:13px;line-height:1.4">🧪 <b>Demo mode</b> — sample data, no real car connected.</div>
   <header>
     <div>
-      <div class="over">Jaecoo J5 EV</div>
+      <div class="over" id="modelLabel">Jaecoo J5 EV</div>
       <div class="plate" id="plate">&mdash;</div>
     </div>
     <div class="hr">
@@ -1284,6 +1284,8 @@ function applyPI(){ $('eye').innerHTML = hidePI? EYE_OFF : EYE_ON;
   const v=DATA.vehicle; if(!v) return;
   $('plate').textContent = hidePI? maskPI(v.plate) : v.plate;
   $('vin').textContent   = hidePI? maskVin(v.vin)  : v.vin;
+  const m=(v.model||'').trim();                          // reflect the auto-detected car (works for other CarLinko models)
+  if(m){ $('modelLabel').textContent=m; $('abTtl').textContent=m.replace(/^Jaecoo\s+/i,''); }
 }
 $('eye').addEventListener('click',()=>{ hidePI=!hidePI; try{localStorage.setItem('hidePI',hidePI?'1':'0');}catch(e){} applyPI(); buzz(8); });
 $('flex').addEventListener('click',()=>sheet(bFlex()));
