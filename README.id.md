@@ -115,6 +115,26 @@ App memperkirakan **58,2 kWh** untuk dibeli di meteran @ **Rp 2.540/kWh**; struk
 per-kWh-nya pas dan volumenya meleset ~1,5 % (sesi di struk berhenti sedikit sebelum penuh).
 Hitungan refund-nya juga cocok: beli Rp 152.448, terpakai Rp 145.694.
 
+## Coba dulu (demo, tanpa akun)
+Mau lihat tampilannya sebelum setup? Jalankan **mode demo** — data palsu tapi realistis, tanpa
+akun CarLinko, tanpa mobil, tanpa database:
+```bash
+cd tools && python server.py --demo      # lalu buka http://localhost:8088
+# atau pakai Docker:  docker compose run --rm -p 8088:8088 web python server.py --demo 8088
+```
+Ada banner 🧪 *Demo mode* biar jelas semua datanya bukan asli. Enak buat lihat-lihat atau screenshot.
+
+## Privasi & keamanan
+Semua jalan **di komputermu sendiri** — tidak ada backend yang aku operasikan, dan datamu tidak
+pernah dikirim ke server manapun yang aku kontrol. Detail lengkap di **[SECURITY.md](SECURITY.md)**; singkatnya:
+- **Email/password** CarLinko kamu disimpan lokal di `tools/creds.json` (di-gitignore) dan dipakai
+  cuma untuk login ke cloud **milik CarLinko** (`*.hzhjcl.com`) lewat TLS — sama seperti appnya.
+- Panggilan keluar lainnya cuma ke **Google Maps** (kalau kamu isi key) dan layanan peta/rute gratis
+  (OpenStreetMap / OSRM) buat perencana trip. Selain itu tidak ada yang keluar dari device-mu.
+- Jaga dashboard tetap privat (LAN / Tailscale). Kalau terpaksa kena internet, set
+  `dashboard_password` biar `/api/summary` tidak terbuka untuk publik.
+- Nemu celah keamanan? Lihat [SECURITY.md](SECURITY.md) — lapor secara privat, jangan buka issue publik.
+
 ## Setup
 
 ### Prasyarat
@@ -226,6 +246,12 @@ bukan nge-host satu layanan yang menyimpan kredensial semua orang. Model berbeda
 - `web/` — PWA-nya (satu `index.html` + `leaflet.*` & `slot-text.js` vendored)
 - `docs/` — peta API dan catatan signing hasil decompile (rahasia sudah diredaksi)
 - `PRODUCT.md`, `DESIGN.md` — catatan produk + desain visual
+
+## Kontribusi
+Pemilik Jaecoo / CarLinko lain dipersilakan — [laporan kompatibilitas](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md)
+(jalan gak di mobil/region kamu?) paling berguna sekarang. Lihat
+[CONTRIBUTING.md](CONTRIBUTING.md), dan [SECURITY.md](SECURITY.md) untuk privasi/keamanan.
+Tanya-tanya → [Discussions](https://github.com/GodrezJr2/j5-ev-dashboard/discussions).
 
 ## Lisensi
 [MIT](LICENSE). Tidak berafiliasi dengan Jaecoo, Chery, maupun CarLinko. Merek dagang milik pemiliknya masing-masing.

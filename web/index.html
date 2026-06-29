@@ -425,6 +425,9 @@
   <button class="ab-rf" id="abRefresh" aria-label="Refresh">&#8635;</button>
 </div>
 <div class="wrap">
+  <div id="demoBanner" style="display:none;margin-bottom:12px;padding:9px 12px;border-radius:12px;
+       background:color-mix(in oklch,var(--accent) 16%,transparent);border:1px solid var(--line);
+       font-size:13px;line-height:1.4">🧪 <b>Demo mode</b> — sample data, no real car connected.</div>
   <header>
     <div>
       <div class="over">Jaecoo J5 EV</div>
@@ -1319,6 +1322,7 @@ $('fuelSel').addEventListener('change',()=>{ const fuel=$('fuelSel').value, pric
 async function load(live){
   let d; try{ d=await (await fetch(live?'api/refresh':'api/summary',{cache:'no-store'})).json(); }catch(e){ return; }
   DATA=d;
+  { const db=$('demoBanner'); if(db) db.style.display = d.demo? 'block':'none'; }
   applyPI();                                            // render plate/VIN (masked if hidden)
   const st=$('status'); st.classList.toggle('on',d.online);
   $('statusTxt').textContent = d.updated ? (d.online?T('live'):T('no signal'))+(d.age_min!=null?' · '+ago(d.age_min)+' '+T('ago'):'') : T('no data yet');

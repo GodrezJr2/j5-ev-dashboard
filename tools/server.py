@@ -27,6 +27,9 @@ def live_poll():
         _poll_lock.release()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# Demo mode: serve a baked, realistic sample so anyone can click around the dashboard with no
+# account, no car, no DB. Turn on with `python server.py --demo` or CARLINKO_DEMO=1.
+DEMO = ("--demo" in sys.argv) or (os.environ.get("CARLINKO_DEMO", "").lower() in ("1", "true", "yes"))
 _DATA = os.environ.get("CARLINKO_DATA") or HERE          # Docker data dir; else alongside the code
 DB   = os.path.join(_DATA, "carlinko.db") if os.environ.get("CARLINKO_DATA") else os.path.join(HERE, "..", "carlinko.db")
 WEB  = os.path.join(HERE, "..", "web")
@@ -52,6 +55,8 @@ TPMS_POS = ["FL", "FR", "RL", "RR"]
 
 def is_configured():
     """True once an account is set up — used to decide whether to show the login page."""
+    if DEMO:
+        return True                                        # demo: skip login, go straight to the dashboard
     c = _creds()
     return bool(c.get("email") and c.get("password") and c.get("vehicle_id"))
 
@@ -91,7 +96,7 @@ def web_login(email, password, region="sea", gmaps_key=None, dashboard_password=
 SESSION_TTL = 30 * 86400
 
 def _gated():
-    return bool(_creds().get("dash_pw_hash"))
+    return (not DEMO) and bool(_creds().get("dash_pw_hash"))   # demo is never gated
 
 def _save_creds(c):
     cpath = os.path.join(_DATA, "creds.json")
@@ -413,7 +418,73 @@ def insights(out):
         ins["range_verdict"] = "accurate" if 0.95 <= r <= 1.06 else ("optimistic" if r < 0.95 else "conservative")
     return ins
 
+def demo_summary():
+    """A self-consistent, fictional J5 payload for demo mode. No real account, car or DB —
+    every number here is made up but plausible, so people can explore the UI before setting up.
+    Timestamps are anchored to 'now' so today/this-week views look alive."""
+    now = time.time()
+    def cd(off): return time.strftime("%d %b %H:%M", time.localtime(now - off))
+    def hm(off): return time.strftime("%a %H:%M", time.localtime(now - off))
+    def day(i):  return time.strftime("%m-%d", time.localtime(now - i * 86400))
+    cap = 58.9
+    # 7-day km + efficiency trend (newest last, matching the real series shape)
+    km7  = [0, 41, 18, 63, 0, 27, 52]
+    eff7 = [None, 12.6, 13.4, 12.1, None, 14.0, 12.9]
+    kwh7 = [0, 5.2, 2.4, 7.6, 0, 3.8, 6.7]
+    history = [{"day": day(6 - i), "km": km7[i], "kwh": kwh7[i], "eff": eff7[i]} for i in range(7)]
+    # charge-curve series (minutes, SoC) for the last session detail chart
+    series = [{"m": round(i * 47 / 24, 1), "soc": round(18 + (88 - 18) * (i / 24))} for i in range(25)]
+    chist = [
+        {"dt": cd(7 * 3600),  "kwh": 41.2, "kwh_billed": 45.6, "dur_min": 47, "avg_kw": 52.6, "soc0": 18, "soc1": 88, "cost": 115800},
+        {"dt": cd(2 * 86400), "kwh": 24.7, "kwh_billed": 27.1, "dur_min": 33, "avg_kw": 44.9, "soc0": 46, "soc1": 88, "cost": 68800},
+        {"dt": cd(4 * 86400), "kwh": 49.4, "kwh_billed": 57.8, "dur_min": 58, "avg_kw": 51.1, "soc0": 16, "soc1": 100, "cost": 146800},
+        {"dt": cd(6 * 86400), "kwh": 18.9, "kwh_billed": 20.7, "dur_min": 22, "avg_kw": 51.5, "soc0": 56, "soc1": 88, "cost": 52600},
+    ]
+    trips = [
+        {"start_dt": hm(5 * 3600),  "km": 52, "min": 71, "avg_kmh": 44, "kwh": 6.7, "kwh100": 12.9},
+        {"start_dt": hm(29 * 3600), "km": 27, "min": 41, "avg_kmh": 39, "kwh": 3.8, "kwh100": 14.0},
+        {"start_dt": hm(54 * 3600), "km": 63, "min": 78, "avg_kmh": 48, "kwh": 7.6, "kwh100": 12.1},
+        {"start_dt": hm(78 * 3600), "km": 18, "min": 33, "avg_kmh": 33, "kwh": 2.4, "kwh100": 13.4},
+    ]
+    out = {
+        "demo": True,
+        "vehicle": {"plate": "B 1234 DEMO", "model": "Jaecoo J5 EV", "vin": "DEMOVIN00000J5EV"},
+        "online": True, "battery": 72, "range_km": 318, "odometer": 8421, "volt12": 13.6,
+        "ignition": 0, "speed": None, "moving": False, "avg_speed": 41,
+        "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
+        "battery_kwh": cap,
+        "energy": {"today_kwh": 6.7, "consumption": 12.9, "rating": "normal",
+                   "week_consumption": 13.0, "source": "car"},
+        "charging": {"active": False, "session_kwh": 0.0, "rate_kw": None, "soc": None,
+                     "week": 2, "month": 9, "week_kwh": 65.9, "month_kwh": 312.4, "month_cost": 921000,
+                     "history": chist,
+                     "session": {"ongoing": False, "start_dt": time.strftime("%H:%M", time.localtime(now - 7 * 3600)),
+                                 "dur_min": 47, "kwh": 41.2, "soc0": 18, "soc1": 88, "avg_kw": 52.6,
+                                 "peak_kw": 61.3, "kwh_billed": 45.6, "cost": 115800, "series": series}},
+        "trips": trips,
+        "tpms": [{"pos": p, "psi": None, "temp": None, "valid": False} for p in TPMS_POS],
+        "tpms_updated": None, "tpms_age_min": None, "tpms_live": False,
+        "tyre_status": "Normal", "tyre_indirect": True,
+        "km": {"today": 52, "week": 201, "month": 1043},
+        "charges": {"week": 2, "month": 9},
+        "history": history,
+        "health": {"usable_kwh": cap, "cycles": 31.4, "charged_kwh": 1612.0, "avg_eff": 89, "sessions": 38},
+        "lifetime": {"kwh_in": 1448.0, "kwh_billed": 1612.0, "cost": 4090000, "km": 8127,
+                     "since": time.strftime("%d %b", time.localtime(now - 96 * 86400)),
+                     "saved": 7240000, "liters_saved": 677.3, "co2_saved": 1564},
+        "battery_care": {"last_full_dt": time.strftime("%d %b", time.localtime(now - 4 * 86400)),
+                         "days_since_full": 4, "balance_due": False},
+        "drain": None, "volt12_min7d": 12.7, "volt12_status": "ok",
+        "insights": {}, "moving": False,
+    }
+    out["insights"] = insights(out)
+    lf = out["lifetime"]
+    lf["saved"] = max(0, round(lf["km"] * (PETROL_RP_L / PETROL_KM_L - out["insights"].get("rp_per_km", 0))))
+    return out
+
 def summary():
+    if DEMO:
+        return demo_summary()
     out = {"vehicle": VEHICLE, "online": False, "battery": None, "range_km": None,
            "odometer": None, "volt12": None, "ignition": None, "speed": None,
            "moving": False, "avg_speed": None, "insights": {}, "health": {}, "drain": None,
@@ -907,7 +978,7 @@ class H(BaseHTTPRequestHandler):
             self._send(200, json.dumps(summary()).encode(), "application/json")
             return
         if path == "/api/refresh":                     # manual button: poll the car live, then return
-            ok, msg = live_poll()
+            (ok, msg) = (True, "demo") if DEMO else live_poll()
             body = summary(); body["refreshed"] = ok; body["refresh_msg"] = msg
             self._send(200, json.dumps(body).encode(), "application/json")
             return
@@ -1012,9 +1083,13 @@ class H(BaseHTTPRequestHandler):
         self._send(404, b"not found", "text/plain")
 
 def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8088
-    _ensure_db()                                           # so a brand-new install serves without crashing
-    print(f"CarLinko dashboard on http://0.0.0.0:{port}  (db={os.path.abspath(DB)})")
+    ports = [a for a in sys.argv[1:] if a.isdigit()]       # ignore flags like --demo
+    port = int(ports[0]) if ports else 8088
+    if DEMO:
+        print(f"CarLinko dashboard (DEMO — fake data) on http://0.0.0.0:{port}")
+    else:
+        _ensure_db()                                       # so a brand-new install serves without crashing
+        print(f"CarLinko dashboard on http://0.0.0.0:{port}  (db={os.path.abspath(DB)})")
     ThreadingHTTPServer(("0.0.0.0", port), H).serve_forever()
 
 if __name__ == "__main__":

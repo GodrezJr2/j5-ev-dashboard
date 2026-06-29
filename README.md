@@ -114,6 +114,26 @@ The app estimates **58.2 kWh** to buy at the meter at **Rp 2,540/kWh**; the rece
 price is exact and the volume lands within ~1.5 % (the receipt session stopped a little short
 of a full charge). The refund maths line up too: bought Rp 152,448, used Rp 145,694.
 
+## Try it first (demo, no account)
+Want to see the UI before setting anything up? Run it in **demo mode** — fake but realistic data,
+no CarLinko account, no car, no database:
+```bash
+cd tools && python server.py --demo      # then open http://localhost:8088
+# or with Docker:  docker compose run --rm -p 8088:8088 web python server.py --demo 8088
+```
+A 🧪 *Demo mode* banner makes clear nothing is real. Nice for a quick look or a screenshot.
+
+## Privacy & security
+This runs **entirely on your machine** — there is no backend operated by me, and your data is
+never sent to any server I control. See **[SECURITY.md](SECURITY.md)** for the full picture; in short:
+- Your CarLinko **email/password** are stored locally in `tools/creds.json` (gitignored) and used
+  only to log in to **CarLinko's own** cloud (`*.hzhjcl.com`) over TLS — same place the app talks to.
+- The only other outbound calls are to **Google Maps** (if you add a key) and free map/route
+  services (OpenStreetMap / OSRM) for the trip planner. Nothing else leaves your device.
+- Keep the dashboard private (LAN / Tailscale). If it must face the internet, set a
+  `dashboard_password` so `/api/summary` isn't open to the world.
+- Found a security issue? See [SECURITY.md](SECURITY.md) — please report privately, don't open a public issue.
+
 ## Setup
 
 ### Prerequisites
@@ -228,6 +248,12 @@ host one service holding everyone's credentials. Different models can override
 - `web/` — the PWA (single `index.html` + vendored `leaflet.*`, `slot-text.js`)
 - `docs/` — API map and decompiled signing notes (secrets redacted)
 - `PRODUCT.md`, `DESIGN.md` — product + visual design notes
+
+## Contributing
+Other Jaecoo / CarLinko owners welcome — a [compatibility report](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md)
+(does it work on your car/region?) is the most useful thing right now. See
+[CONTRIBUTING.md](CONTRIBUTING.md), and [SECURITY.md](SECURITY.md) for privacy/security.
+Questions → [Discussions](https://github.com/GodrezJr2/j5-ev-dashboard/discussions).
 
 ## License
 [MIT](LICENSE). Not affiliated with Jaecoo, Chery, or CarLinko. Trademarks belong to their owners.
