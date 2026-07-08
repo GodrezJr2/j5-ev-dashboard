@@ -585,7 +585,7 @@
         <option value="Solar">Solar (subsidi)</option>
       </select></div>
     <div class="setrow"><span class="sl">Price · economy</span>
-      <span class="fuelin">Rp <input id="fuelPrice" type="number" inputmode="numeric"> /L · <input id="fuelKml" type="number" inputmode="decimal" step="0.1"> km/L</span></div>
+      <span class="fuelin"><span class="cur" data-cur>Rp</span> <input id="fuelPrice" type="number" inputmode="numeric"> /L · <input id="fuelKml" type="number" inputmode="decimal" step="0.1"> km/L</span></div>
   </section>
 
   <section class="tripplan">
@@ -635,7 +635,7 @@
     <div class="tiles">
       <div class="tile"><b class="num" id="chgWeek">&mdash;</b><span>Charges / wk</span></div>
       <div class="tile"><b class="num" id="chgMonthKwh">&mdash;</b><span>kWh / mo</span></div>
-      <div class="tile"><b class="num" id="chgMonthCost">&mdash;</b><span>Rp / mo</span></div>
+      <div class="tile"><b class="num" id="chgMonthCost">&mdash;</b><span data-money-lbl>Rp / mo</span></div>
     </div>
     <div class="expander" id="chgToggle" style="display:none">
       <span id="chgToggleLbl">Charge curve</span><span class="chev" id="chgChev">&rsaquo;</span>
@@ -657,9 +657,9 @@
     <div class="head2"><div class="over">Lifetime</div><span class="over" id="lifeSince"></span></div>
     <div class="tiles two">
       <div class="tile"><b class="num" id="lifeChg">&mdash;</b><span>kWh charged</span></div>
-      <div class="tile"><b class="num" id="lifeSpent">&mdash;</b><span>Rp spent</span></div>
+      <div class="tile"><b class="num" id="lifeSpent">&mdash;</b><span data-money-lbl>Rp spent</span></div>
       <div class="tile"><b class="num" id="lifeKm">&mdash;</b><span>km driven</span></div>
-      <div class="tile"><b class="num" id="lifeSaved">&mdash;</b><span>Rp saved</span></div>
+      <div class="tile"><b class="num" id="lifeSaved">&mdash;</b><span data-money-lbl>Rp saved</span></div>
     </div>
     <svg id="effSpark" viewBox="0 0 400 92" width="100%" style="height:auto;margin-top:18px;display:none"></svg>
     <div class="sub" id="effSparkCap" style="text-align:center;margin-top:8px;display:none"></div>
@@ -678,7 +678,7 @@
       <div class="tile"><b class="num" id="prange">&mdash;</b><span>Range +km</span></div>
     </div>
     <div class="plancost">
-      <label>Rp <input id="pprice" type="number" inputmode="numeric" value="2540"> / kWh</label>
+      <label><span class="cur" data-cur>Rp</span> <input id="pprice" type="number" inputmode="numeric" value="2540"> / kWh</label>
       <span class="rp" id="prupiah">&mdash;</span>
     </div>
     <div class="sub" id="planref" style="margin-top:10px">SPKLU DC ≈ Rp 2.467/kWh + 3% tax (≈2.540 all-in) · admin Rp 0 · home AC cheaper</div>
@@ -711,6 +711,22 @@
 <script>
 const $=id=>document.getElementById(id);
 let DATA={};
+// currency + tyre unit come from the server (creds.json); default to the J5/IDR values.
+function curSym(){ return (DATA.currency&&DATA.currency.symbol)||'Rp'; }
+function curLoc(){ return (DATA.currency&&DATA.currency.locale)||'id-ID'; }
+function money(n){ if(n==null)return '—';
+  const opt = Math.abs(n)>=100 ? {maximumFractionDigits:0} : {maximumFractionDigits:2};
+  return curSym()+' '+Number(n).toLocaleString(curLoc(),opt); }
+function tyreUnit(){ return DATA.tyre_unit||'psi'; }
+// swap the few static "Rp" labels for the configured symbol (no-op for IDR, keeps its i18n intact)
+function applyCurrency(){ const s=curSym();
+  document.querySelectorAll('[data-cur]').forEach(el=>{ el.textContent = s; });                 // bare symbol spans (labels w/ inputs)
+  document.querySelectorAll('[data-money-lbl]').forEach(el=>{ el.textContent = el.textContent.replace(/\bRp\b/g, s); });
+  if(s!=='Rp'){                                                                                  // non-IDR: drop the Indonesia-specific SPKLU note
+    const pr=$('planref'); if(pr) pr.textContent = s+' '+Number(DATA.tariff||0).toLocaleString(curLoc())+' /kWh · set your own tariff below';
+    const pp=$('pprice'); if(pp && DATA.tariff && !pp.dataset.usr) pp.value = DATA.tariff;
+  }
+}
 // rolling-digit numbers for live values; instant on first paint, slot-roll on change
 const slots={};
 function roll(id, text){ const el=$(id); if(!el) return; text=String(text);
@@ -797,14 +813,17 @@ function applyLang(){ document.documentElement.lang=lang;
   const sh=$('spkluHereLbl'); if(sh) sh.textContent=T('My location');
   const ss=$('spkluSearch'); if(ss) ss.textContent=T('Search this area');
   const sm=$('tpModeSeg'); if(sm){ const bs=sm.querySelectorAll('button'); if(bs[0]) bs[0].textContent=T('Planner'); if(bs[1]) bs[1].textContent=T('SPKLU Map'); }
-  const to=$('tpOver'); if(to) to.textContent=T(to.dataset.en||'Trip planner'); }
+  const to=$('tpOver'); if(to) to.textContent=T(to.dataset.en||'Trip planner');
+  applyCurrency(); }
 function syncSeg(){ document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===theme));
   document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===lang)); }
 $('themeSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; theme=b.dataset.v; try{localStorage.setItem('theme',theme)}catch(e){} applyTheme(); syncSeg(); buzz(8); });
 $('langSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; lang=b.dataset.v; try{localStorage.setItem('lang',lang)}catch(e){} applyLang(); syncSeg(); buzz(8); load(false); });
 const ARC=2*Math.PI*46, POS=['fl','fr','rl','rr'];
 function fmt(n){return n==null?'—':Number(n).toLocaleString('en-US')}
-function tyreClass(p){ if(p==null)return 'idle'; if(p<28||p>40)return 'bad'; if(p<30||p>38)return 'warn'; return 'ok'; }
+function tyreClass(p){ if(p==null)return 'idle'; const u=tyreUnit();
+  const psi = u==='bar'? p*14.5038 : u==='kpa'? p*0.145038 : p;   // normalise to PSI for thresholds
+  if(psi<28||psi>40)return 'bad'; if(psi<30||psi>38)return 'warn'; return 'ok'; }
 function ago(m){ if(m==null)return''; if(m<60)return Math.round(m)+'m'; if(m<1440)return Math.round(m/60)+'h'; return Math.round(m/1440)+'d'; }
 
 // ---- charge planner ----
@@ -826,10 +845,10 @@ function renderPlan(){
   $('pbuy').textContent=buy.toFixed(1);
   $('prange').textContent=Math.round(km);
   const price=+$('pprice').value||0;
-  $('prupiah').textContent='Rp '+Math.round(buy*price).toLocaleString('id-ID');
+  $('prupiah').textContent=money(buy*price);
 }
 $('pslider').addEventListener('input',renderPlan);
-$('pprice').addEventListener('input',renderPlan);
+$('pprice').addEventListener('input',()=>{ $('pprice').dataset.usr='1'; renderPlan(); });
 $('planmode').addEventListener('click',()=>{
   planMode = planMode==='AC'?'DC':'AC';
   $('planmode').textContent = T(planMode==='AC'?'AC charging':'DC fast');
@@ -906,7 +925,7 @@ function initTripMap(p){
     const name=s.station||(T('Stop')+' '+(i+1));
     const cn=s.conns?`<br>⚡ ${s.conns}${s.avail?` · ${s.avail} ${T('free')}`:''}`:'';
     const pop=`<div class="tppop"><b>${name}</b><br>${T('arrive')} ~${s.arrive}% · ${T('charge to')} ${s.charge_to}%<br>`
-      +`${s.kwh} kWh · Rp ${s.cost.toLocaleString('id-ID')} · ~${s.min} ${T('min')}${cn}</div>`;
+      +`${s.kwh} kWh · ${money(s.cost)} · ~${s.min} ${T('min')}${cn}</div>`;
     L.marker([lat,lon],{icon:tpPin('#d08a1e',String(i+1))}).addTo(_tripMap).bindPopup(pop);
   });
   _tripMap.fitBounds(L.latLngBounds(route).pad(0.12));
@@ -929,7 +948,7 @@ function renderTrip(p, gm){
     const arr = s.arrive!=null? ` · ${T('arrive')} ~<b style="color:${s.arrive< (p.reserve||15)+3?'var(--warn)':'var(--accent)'}">${s.arrive}%</b>` : '';
     const conn = s.conns ? `<div class="tpss">⚡ ${s.conns}${s.avail?` · <b style="color:var(--accent)">${s.avail} ${T('free')}</b>`:''}</div>` : '';
     return `<div class="tpstop"><div class="tpsk">${T('Stop')} ${i+1} · ${T('at')} ${s.at_km} km${arr}</div>`
-      +`<div class="tpsd">${T('charge to')} <b>${s.charge_to}%</b> · ${s.kwh} kWh · Rp ${s.cost.toLocaleString('id-ID')} · ~${s.min} ${T('min')}</div>`
+      +`<div class="tpsd">${T('charge to')} <b>${s.charge_to}%</b> · ${s.kwh} kWh · ${money(s.cost)} · ~${s.min} ${T('min')}</div>`
       +`<div class="tpss">${station}</div>${conn}</div>`;
   }).join('');
   const noteBase = p.src==='google'
@@ -942,7 +961,7 @@ function renderTrip(p, gm){
       <div><b>${ns}</b><span>${T('stops')}</span></div>
       <div><b>${p.arrive_soc}%</b><span>${T('arrive')}</span></div>
     </div>${drawTripMap(p)}<div class="tproute">${p.from} → ${p.to}</div>`
-    + (ns? stopsHtml + `<div class="tptot">${T('Charging total')}: ${p.total_kwh} kWh · Rp ${p.total_cost.toLocaleString('id-ID')} · ~${Math.round((p.total_h-p.drive_h)*60)} ${T('min')}</div>`
+    + (ns? stopsHtml + `<div class="tptot">${T('Charging total')}: ${p.total_kwh} kWh · ${money(p.total_cost)} · ~${Math.round((p.total_h-p.drive_h)*60)} ${T('min')}</div>`
          : `<div class="cap" style="text-align:left;margin-top:8px">${T('Make it nonstop — no charging needed.')}</div>`)
     + `<div class="tpnote">${noteT}</div>` + gbtn;
   initTripMap(p);
@@ -1078,7 +1097,7 @@ $('scrim').addEventListener('click',closeSheet);
   sh.addEventListener('touchend',e=>{ if(y0==null)return; const dy=e.changedTouches[0].clientY-y0; sh.style.transform=''; if(dy>90) closeSheet(); y0=null; });
 })();
 
-const rp = n => n==null?'—':'Rp '+Math.round(n).toLocaleString('id-ID');
+const rp = n => money(n);
 const kfmt = n => Math.round(n/1000)+'k';
 
 // ---- sheet content builders (read the latest DATA) ----
@@ -1098,10 +1117,10 @@ function bRpkm(){ const I=DATA.insights||{}, fc=fuelCfg();
     lead:tn('What a km actually costs, from your driving and the SPKLU tariff.','Biaya nyata per km, dari cara berkendara dan tarif SPKLU.'),
     rows:[[tn('Cost per km','Biaya per km'), rp(I.rp_per_km)],
       [tn('Your consumption','Konsumsi kamu'), (I.consumption!=null?I.consumption:'—')+' kWh/100km'],
-      [tn('Est. this month','Estimasi bulan ini'), I.month_cost_est!=null?'Rp '+kfmt(I.month_cost_est):'—'],
-      [tn('Saved vs petrol','Hemat vs bensin'), I.month_save_est!=null?'~Rp '+kfmt(I.month_save_est)+'/'+tn('mo','bln'):'—']],
-    note:tn(`Formula: consumption × tariff ÷ charge efficiency. Petrol baseline ${fc.fuel} ${fc.kml} km/L @ Rp ${fc.price.toLocaleString('id-ID')}/L (set in Settings). Charging assumed ~89% efficient (meter → pack).`,
-      `Rumus: konsumsi × tarif ÷ efisiensi pengisian. Patokan bensin ${fc.fuel} ${fc.kml} km/L @ Rp ${fc.price.toLocaleString('id-ID')}/L (atur di Pengaturan). Pengisian diasumsikan ~89% efisien (meteran → baterai).`)};
+      [tn('Est. this month','Estimasi bulan ini'), I.month_cost_est!=null?curSym()+' '+kfmt(I.month_cost_est):'—'],
+      [tn('Saved vs petrol','Hemat vs bensin'), I.month_save_est!=null?'~'+curSym()+' '+kfmt(I.month_save_est)+'/'+tn('mo','bln'):'—']],
+    note:tn(`Formula: consumption × tariff ÷ charge efficiency. Petrol baseline ${fc.fuel} ${fc.kml} km/L @ ${curSym()} ${fc.price.toLocaleString(curLoc())}/L (set in Settings). Charging assumed ~89% efficient (meter → pack).`,
+      `Rumus: konsumsi × tarif ÷ efisiensi pengisian. Patokan bensin ${fc.fuel} ${fc.kml} km/L @ ${curSym()} ${fc.price.toLocaleString(curLoc())}/L (atur di Pengaturan). Pengisian diasumsikan ~89% efisien (meteran → baterai).`)};
 }
 function bForecast(){ const I=DATA.insights||{}, d=DATA;
   return {title:tn('Charge forecast','Perkiraan isi ulang'),
@@ -1150,7 +1169,7 @@ function bCharge(){ const c=DATA.charging||{};
     rows:[ c.active?[tn('Charging now','Mengisi kini'), (c.rate_kw!=null?c.rate_kw:'—')+' kW']:null,
       [tn('Charges / week','Isi / minggu'), c.week!=null?c.week:'—'],
       [tn('kWh this month','kWh bulan ini'), c.month_kwh!=null?c.month_kwh:'—'],
-      [tn('Cost this month','Biaya bulan ini'), c.month_cost?'Rp '+kfmt(c.month_cost):'Rp 0']],
+      [tn('Cost this month','Biaya bulan ini'), c.month_cost?curSym()+' '+kfmt(c.month_cost):curSym()+' 0']],
     note:tn(`Cost bills delivered (meter) kWh, not what reaches the pack — matched to your real SPKLU receipts within ~1%. Open the charge curve for a session-by-session breakdown.`,
       `Biaya menagih kWh terkirim (meteran), bukan yang masuk baterai — cocok dengan struk SPKLU nyata kamu dalam ~1%. Buka kurva pengisian untuk rincian per sesi.`)};
 }
@@ -1163,9 +1182,12 @@ function bTyres(){ const d=DATA;
   const lbl=[tn('Front L','Depan Kiri'),tn('Front R','Depan Kanan'),tn('Rear L','Belakang Kiri'),tn('Rear R','Belakang Kanan')];
   return {title:tn('Tyres','Ban'),
     lead: d.tpms_live?tn('Live pressures.','Tekanan langsung.'):tn('Last reported {x}.','Terakhir dilapor {x}.',{x:d.tpms_updated||''}),
-    rows:(d.tpms||[]).map((t,i)=>[lbl[i], t.psi!=null?(t.psi+' psi'+(t.temp!=null?' · '+t.temp+'°':'')):'—']),
-    note:tn(`Tyres report only while driving. Target ~33 psi cold; we flag below 30 or above 38.`,
-      `Ban hanya melapor saat berkendara. Target ~33 psi dingin; ditandai di bawah 30 atau di atas 38.`)};
+    rows:(d.tpms||[]).map((t,i)=>[lbl[i], t.psi!=null?(t.psi+' '+tyreUnit()+(t.temp!=null?' · '+t.temp+'°':'')):'—']),
+    note: tyreUnit()==='bar'
+      ? tn(`Tyres report only while driving. Target ~2.3 bar cold; we flag a soft or over-hard tyre.`,
+           `Ban hanya melapor saat berkendara. Target ~2,3 bar dingin; ditandai jika terlalu lembek atau keras.`)
+      : tn(`Tyres report only while driving. Target ~33 psi cold; we flag below 30 or above 38.`,
+           `Ban hanya melapor saat berkendara. Target ~33 psi dingin; ditandai di bawah 30 atau di atas 38.`)};
 }
 function bOdo(){ const d=DATA;
   return {title:tn('Odometer','Odometer'), lead:tn('Lifetime distance.','Jarak total seumur mobil.'),
@@ -1206,12 +1228,12 @@ function bLife(){ const L=DATA.lifetime||{}, I=DATA.insights||{}, sv=calcSaved(L
     lead:tn('Everything tracked since {x}.','Semua tercatat sejak {x}.',{x:L.since||tn('logging started','mulai dicatat')}),
     rows:[[tn('Energy charged','Energi diisi'), L.kwh_billed!=null?L.kwh_billed+' kWh':'—'],
       [tn('Into the pack','Masuk baterai'), L.kwh_in!=null?L.kwh_in+' kWh':'—'],
-      [tn('Total spent','Total dipakai'), L.cost!=null?'Rp '+L.cost.toLocaleString('id-ID'):'—'],
+      [tn('Total spent','Total dipakai'), L.cost!=null?money(L.cost):'—'],
       [tn('Distance driven','Jarak ditempuh'), L.km!=null?fmt(L.km)+' km':'—'],
-      [tn('Saved vs petrol','Hemat vs bensin'), sv!=null?'Rp '+sv.toLocaleString('id-ID'):'—'],
+      [tn('Saved vs petrol','Hemat vs bensin'), sv!=null?money(sv):'—'],
       I.rp_per_km!=null?[tn('Running cost','Biaya operasional'), rp(I.rp_per_km)+'/km']:null],
-    note:tn(`Spent bills metered kWh at your SPKLU tariff (receipt-matched). Saved compares your Rp/km to ${fc.fuel} at ${fc.kml} km/L · Rp ${fc.price.toLocaleString('id-ID')}/L over the distance actually driven.`,
-      `"Dipakai" menagih kWh meteran pada tarif SPKLU kamu (cocok struk). "Hemat" membandingkan Rp/km kamu vs ${fc.fuel} ${fc.kml} km/L · Rp ${fc.price.toLocaleString('id-ID')}/L atas jarak yang benar-benar ditempuh.`)};
+    note:tn(`Spent bills metered kWh at your charging tariff (receipt-matched). Saved compares your ${curSym()}/km to ${fc.fuel} at ${fc.kml} km/L · ${curSym()} ${fc.price.toLocaleString(curLoc())}/L over the distance actually driven.`,
+      `"Dipakai" menagih kWh meteran pada tarif pengisian kamu (cocok struk). "Hemat" membandingkan ${curSym()}/km kamu vs ${fc.fuel} ${fc.kml} km/L · ${curSym()} ${fc.price.toLocaleString(curLoc())}/L atas jarak yang benar-benar ditempuh.`)};
 }
 function bCare(){ const BC=DATA.battery_care||{};
   return {title:tn('Battery care · LFP','Perawatan baterai · LFP'),
@@ -1228,7 +1250,7 @@ function bFlex(){ const d=DATA, L=d.lifetime||{}, I=d.insights||{}, H=d.health||
   const cards=[[tn('Range now','Jangkauan kini'), d.range_km!=null?fmt(d.range_km)+' km':'—'],
     [tn('Efficiency','Efisiensi'), cons!=null?cons+' kWh/100':'—'],
     [tn('Driven','Ditempuh'), L.km!=null?fmt(L.km)+' km':'—'],
-    [tn('Saved vs petrol','Hemat vs bensin'), sv!=null?'Rp '+sv.toLocaleString('id-ID'):'—'],
+    [tn('Saved vs petrol','Hemat vs bensin'), sv!=null?money(sv):'—'],
     [tn('CO₂ avoided','CO₂ dihindari'), L.co2_saved!=null?L.co2_saved+' kg':'—'],
     [tn('Battery','Baterai'), H.usable_kwh!=null?H.usable_kwh+' kWh · 100%':'—']];
   const grid=cards.map(c=>`<div class="fc"><b>${c[1]}</b><span>${c[0]}</span></div>`).join('');
@@ -1324,6 +1346,7 @@ $('fuelSel').addEventListener('change',()=>{ const fuel=$('fuelSel').value, pric
 async function load(live){
   let d; try{ d=await (await fetch(live?'api/refresh':'api/summary',{cache:'no-store'})).json(); }catch(e){ return; }
   DATA=d;
+  applyCurrency();                                       // symbol/labels from server currency config
   { const db=$('demoBanner'); if(db) db.style.display = d.demo? 'block':'none'; }
   applyPI();                                            // render plate/VIN (masked if hidden)
   const st=$('status'); st.classList.toggle('on',d.online);
@@ -1348,7 +1371,7 @@ async function load(live){
   d.tpms.forEach((t,i)=>{ const el=$('t'+i), v=el.querySelector('.v'), u=el.querySelector('.u'), tp=el.querySelector('.t');
     let cls;
     if(indirect){ cls=bad?'bad':'ok'; v.textContent=bad?'!':'OK'; u.textContent=''; tp.textContent=''; }
-    else { cls=t.psi==null?'idle':tyreClass(t.psi); v.textContent=t.psi==null?'—':t.psi; u.textContent='psi'; tp.textContent=t.temp==null?'':t.temp+'°'; }
+    else { cls=t.psi==null?'idle':tyreClass(t.psi); v.textContent=t.psi==null?'—':t.psi; u.textContent=tyreUnit(); tp.textContent=t.temp==null?'':t.temp+'°'; }
     el.className='pad '+POS[i]+' '+cls;
     const ty=$('ty'+i); if(ty) ty.setAttribute('class','ty '+cls); });
   $('tcap').textContent = indirect ? T('Indirect TPMS · status only, no PSI')
@@ -1422,11 +1445,11 @@ async function load(live){
     $('csAvg').textContent=s.avg_kw!=null?s.avg_kw:'—';
     $('csPeak').textContent=s.peak_kw!=null?s.peak_kw:'—';
     $('csRange').textContent = s.soc0+'% → '+s.soc1+'% · '+s.kwh+' kWh '+tn('into battery','masuk baterai')
-      + (s.kwh_billed!=null?' (~'+s.kwh_billed+' '+tn('billed','tertagih')+')':'') + (s.cost!=null?' · Rp '+s.cost.toLocaleString('id-ID'):'');
+      + (s.kwh_billed!=null?' (~'+s.kwh_billed+' '+tn('billed','tertagih')+')':'') + (s.cost!=null?' · '+money(s.cost):'');
     const hh=$('chgHist'); hh.replaceChildren();
     (c.history||[]).forEach(h=>{ const r=document.createElement('div'); r.className='hrow';
       const kw = h.kwh_billed!=null? h.kwh_billed : h.kwh;
-      r.innerHTML=`<span>${h.dt} · ${h.soc0}→${h.soc1}%</span><span><b>${kw}</b> kWh · Rp ${h.cost.toLocaleString('id-ID')}</span>`;
+      r.innerHTML=`<span>${h.dt} · ${h.soc0}→${h.soc1}%</span><span><b>${kw}</b> kWh · ${money(h.cost)}</span>`;
       hh.append(r); });
   } else { $('chgChart').style.display='none'; $('chgToggle').classList.remove('open'); }
   // trips
@@ -1442,10 +1465,10 @@ async function load(live){
   // insights
   const I=d.insights||{}, k=n=>Math.round(n/1000)+'k';
   $('insCons').textContent = I.consumption!=null? I.consumption+' kWh/100':'';
-  $('insRpkm').textContent = I.rp_per_km!=null? 'Rp '+I.rp_per_km.toLocaleString('id-ID') : '—';
+  $('insRpkm').textContent = I.rp_per_km!=null? money(I.rp_per_km) : '—';
   const msave=(I.avg_daily_km!=null&&I.rp_per_km!=null)?Math.max(0,Math.round(I.avg_daily_km*30*(petrolRpkm()-I.rp_per_km))):null;
   $('insRpkmR').innerHTML = I.month_cost_est!=null
-    ? ('≈ Rp '+k(I.month_cost_est)+' / '+T('mo')+'<br>'+T('saves')+' <b>~Rp '+(msave!=null?k(msave):'—')+'</b> '+T('vs petrol')) : '—';
+    ? ('≈ '+curSym()+' '+k(I.month_cost_est)+' / '+T('mo')+'<br>'+T('saves')+' <b>~'+curSym()+' '+(msave!=null?k(msave):'—')+'</b> '+T('vs petrol')) : '—';
   $('insDays').textContent = I.days_to_charge!=null? I.days_to_charge : '—';
   $('insDaysR').innerHTML = (I.avg_daily_km!=null? T('drives')+' ~<b>'+I.avg_daily_km+' km</b>/'+T('day'):'')
     + (d.range_km!=null? '<br>'+d.range_km+' km '+T('left now'):'');

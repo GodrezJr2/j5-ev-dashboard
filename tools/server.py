@@ -142,7 +142,16 @@ def _cookie_sid(cookie_header):
             return part.strip()[4:]
     return ""
 
-def psi(x):  return None if x == 0xFF else round(x * 1.373 * 0.145, 1)
+def _psi_raw(x):
+    # raw tyre byte -> PSI, always (used for internal soft/hard thresholds regardless of display unit)
+    return None if x == 0xFF else x * TPMS_SCALE * 0.145038
+def pressure(x):
+    # raw tyre byte -> value in the configured display unit (psi | bar | kpa)
+    if x == 0xFF: return None
+    kpa = x * TPMS_SCALE
+    if TYRE_UNIT == "bar": return round(kpa / 100.0, 2)
+    if TYRE_UNIT == "kpa": return round(kpa)
+    return round(kpa * 0.145038, 1)
 def temp(x): return None if x == 0xFF else round(x * 0.65 - 40, 1)
 
 def decode(hexstr):
@@ -164,11 +173,19 @@ def decode(hexstr):
 _CC = _creds()          # per-model overrides (default to the J5 EV values this was calibrated on)
 CAP_KWH = float(_CC.get("battery_kwh") or 58.9)        # net usable battery (J5: gross 60.9 kWh, LFP)
 WLTP_KWH_100 = float(_CC.get("wltp_kwh_100") or 14.8)  # WLTP reference consumption -> "optimal" baseline
-TARIFF_IDR_CFG = _CC.get("tariff_idr")                 # local SPKLU all-in Rp/kWh override (optional)
+TARIFF_IDR_CFG = _CC.get("tariff_idr") or _CC.get("tariff")   # local all-in tariff/kWh override (optional)
+# --- currency + tyre-unit (open to non-Indonesia cars; default to the J5/IDR values this was calibrated on) ---
+_CUR       = _CC.get("currency") or {}
+CUR_SYMBOL = _CUR.get("symbol") or "Rp"                # display symbol, e.g. "R" (ZAR), "$", "€"
+CUR_LOCALE = _CUR.get("locale") or "id-ID"             # thousands grouping locale, e.g. "en-ZA"
+CUR_CODE   = (_CUR.get("code") or "IDR").upper()
+TYRE_UNIT  = (_CC.get("tyre_unit") or "psi").lower()   # tyre display unit: psi | bar | kpa
+TPMS_SCALE = float(_CC.get("tpms_scale") or 1.373)     # raw tyre byte -> kPa; J5 default, recalibrate per car
 IDLE_GAP = 1800         # parked + no SoC rise for 30 min => charge session ended
 CHARGE_PARK_MIN = 600   # a real charge sits odo-flat >=10 min; regen blips (odo coarse=1km) don't
 MIN_GAIN_PCT = 2        # net SoC gain floor; drops 1% regen/noise that survives the park gate
-TARIFF_IDR = int(TARIFF_IDR_CFG or 2540)  # all-in SPKLU DC Rp/kWh (Rp2.467 base + 3% tax; service Rp0)
+_TARIFF = float(TARIFF_IDR_CFG or 2540)   # all-in DC tariff/kWh, in CUR_CODE (IDR default: Rp2.467 + 3% tax; service Rp0)
+TARIFF_IDR = int(_TARIFF) if _TARIFF == int(_TARIFF) else _TARIFF  # keep cents for decimal currencies (e.g. ZAR 3.10)
 CHG_EFF_AVG = 0.89      # blended DC charge efficiency for the per-km cost insight
 
 def chg_eff(soc_end):
@@ -180,8 +197,12 @@ def chg_eff(soc_end):
     if soc_end <= 85: return 0.91
     return 0.91 + (0.855 - 0.91) * (soc_end - 85) / 10.0
 TRIP_GAP = 180          # parked >3 min => a trip ends (merges short red-light stops)
-PETROL_KM_L = 12.0      # comparable ICE fuel economy (km per litre)
-PETROL_RP_L = 12500     # Pertamax-class petrol price Rp/litre (for savings-vs-petrol insight)
+PETROL_KM_L = float(_CC.get("petrol_kml") or 12.0)        # comparable ICE fuel economy (km per litre)
+PETROL_RP_L = float(_CC.get("petrol_price") or 12500)     # petrol price /litre in CUR_CODE (IDR default: Pertamax-class)
+
+def _m(x):
+    # round money: whole units at IDR scale (>=100), keep 2 dp for sub-unit currencies (e.g. ZAR /km)
+    return round(x) if abs(x) >= 100 else round(x, 2)
 
 def build_trips(data):
     """A trip = a run of moving frames (odometer rising). Bridges brief stops; ends
@@ -400,14 +421,14 @@ def insights(out):
     ins = {}
     cons = (out["energy"].get("consumption") or out["energy"].get("week_consumption") or WLTP_KWH_100)
     ins["consumption"] = cons
-    rpkm = cons * TARIFF_IDR / 100.0 / CHG_EFF_AVG      # Rp/km incl charging loss (you pay delivered)
-    ins["rp_per_km"] = round(rpkm)
+    rpkm = cons * TARIFF_IDR / 100.0 / CHG_EFF_AVG      # cost/km incl charging loss (you pay delivered)
+    ins["rp_per_km"] = _m(rpkm)
     hist = out.get("history") or []
     avg_daily = (sum(h["km"] for h in hist) / len(hist)) if hist else 0.0
     ins["avg_daily_km"] = round(avg_daily)
     ins["month_cost_est"] = round(avg_daily * 30 * rpkm)
-    petrol_rpkm = PETROL_RP_L / PETROL_KM_L            # comparable ICE Rp/km
-    ins["save_per_km"] = round(petrol_rpkm - rpkm)
+    petrol_rpkm = PETROL_RP_L / PETROL_KM_L            # comparable ICE cost/km
+    ins["save_per_km"] = _m(petrol_rpkm - rpkm)
     ins["month_save_est"] = round(avg_daily * 30 * (petrol_rpkm - rpkm))
     rng, batt = out.get("range_km"), out.get("battery")
     ins["days_to_charge"] = round(rng / avg_daily, 1) if (rng and avg_daily > 0.5) else None
@@ -453,6 +474,8 @@ def demo_summary():
         "ignition": 0, "speed": None, "moving": False, "avg_speed": 41,
         "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
         "battery_kwh": cap,
+        "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
+        "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR,
         "energy": {"today_kwh": 6.7, "consumption": 12.9, "rating": "normal",
                    "week_consumption": 13.0, "source": "car"},
         "charging": {"active": False, "session_kwh": 0.0, "rate_kw": None, "soc": None,
@@ -491,6 +514,8 @@ def summary():
            "volt12_min7d": None, "volt12_status": None,
            "updated": None, "age_min": None,
            "battery_kwh": CAP_KWH,
+           "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
+           "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR,
            "energy": {"today_kwh": 0.0, "consumption": None, "rating": None,
                       "week_consumption": None},
            "charging": {"active": False, "session_kwh": 0.0, "rate_kw": None, "soc": None,
@@ -533,16 +558,17 @@ def summary():
     for ts2, dt2, dec2 in reversed(data):
         tb = dec2.get("tyre")
         if tb and any(x != 0xFF for x in tb):
-            out["tpms"] = [{"pos": TPMS_POS[i], "psi": psi(tb[i]), "temp": temp(tb[4 + i]),
+            # "psi" holds the value in the configured display unit; status logic below normalises to PSI
+            out["tpms"] = [{"pos": TPMS_POS[i], "psi": pressure(tb[i]), "temp": temp(tb[4 + i]),
                             "valid": tb[i] != 0xFF} for i in range(4)]
             out["tpms_updated"] = dt2
             out["tpms_age_min"] = round((time.time() - ts2) / 60, 1)
             out["tpms_live"] = (ts2 == ts)  # newest frame still has live tyres
+            raw_psi = [p for p in (_psi_raw(tb[i]) for i in range(4)) if p is not None]
+            if raw_psi:  # real per-wheel pressure present (J5: indirect TPMS, bytes stay FF; some cars send it)
+                out["tyre_indirect"] = False
+                out["tyre_status"] = "Check tyres" if any(p < 28 or p > 40 for p in raw_psi) else "Normal"
             break
-    valid_psi = [t["psi"] for t in out["tpms"] if t["psi"] is not None]
-    if valid_psi:  # real per-wheel PSI present (never on this car — indirect TPMS, bytes stay FF)
-        out["tyre_indirect"] = False
-        out["tyre_status"] = "Check tyres" if any(p < 28 or p > 40 for p in valid_psi) else "Normal"
 
     def km_between(fmt):
         agg = {}

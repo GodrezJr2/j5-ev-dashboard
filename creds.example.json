@@ -11,5 +11,13 @@
   "wltp_kwh_100": 14.8,
   "tariff_idr": 2540,
 
+  "_non_indonesia_cars": "everything below is OPTIONAL — defaults are the Jaecoo J5 / Indonesia values",
+  "tariff": 2540,
+  "currency": { "symbol": "Rp", "locale": "id-ID", "code": "IDR" },
+  "petrol_price": 12500,
+  "petrol_kml": 12.0,
+  "tyre_unit": "psi",
+  "tpms_scale": 1.373,
+
   "gmaps_key": "OPTIONAL__google_maps_api_key_for_trip_planner_and_spklu_map"
 }

@@ -198,8 +198,21 @@ stays private without exposing anything to the internet.
 | `vehicle_id`, `device_sn` | auto | your vehicle id + device serial — **`setup.py` fills these for you** |
 | `vehicle` | auto | `{plate, model, vin}` — auto-detected; UI hides plate+VIN by default |
 | `battery_kwh`, `wltp_kwh_100`, `tariff_idr` | | per-model / local overrides (default to J5 values) |
+| `currency` | | `{symbol, locale, code}` for non-IDR countries, e.g. `{"symbol":"R","locale":"en-ZA","code":"ZAR"}`. Default `Rp` / `id-ID` |
+| `tariff`, `petrol_price`, `petrol_kml` | | your local charging tariff/kWh + petrol price/L + economy, in your currency |
+| `tyre_unit` | | `psi` (default), `bar`, or `kpa` for the tyre display |
+| `tpms_scale` | | raw tyre-byte → kPa scale. J5 is indirect (no real PSI); cars that send real pressure need this recalibrated (see below) |
 | `gmaps_key` | | Google Maps key — enables trip planner + SPKLU map (else OSM fallback) |
 | `dashboard_password` | | set it (login page → Advanced) to lock the dashboard behind a password — **do this if the URL is reachable from the internet** |
+
+> **Different country?** Set `currency` + `tariff` + `petrol_price` and every cost on the
+> dashboard switches to your money (e.g. South Africa: `"currency":{"symbol":"R","locale":"en-ZA","code":"ZAR"}`).
+> The trip planner + charge map are Indonesia-only (they use SPKLU/PLN data).
+>
+> **Tyre pressure on a car with real TPMS?** The J5 has *indirect* TPMS (no per-wheel PSI), so the
+> raw→pressure scale (`tpms_scale`, default `1.373` kPa/byte) was never validated on live data. If
+> your car sends real pressures and the numbers look wrong, compare one wheel against your car's own
+> screen and set `tpms_scale = your_kPa / raw_byte`. Pick the display unit with `tyre_unit` (`psi`/`bar`/`kpa`).
 
 ## Where to run it
 
