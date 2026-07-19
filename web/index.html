@@ -778,6 +778,8 @@ const MAP_ID={
   "shown":"ditampilkan","kWh used":"kWh dipakai","cycles":"siklus","in":"masuk","mo":"bln","day":"hari","days":"hari",
   "saves":"hemat","vs petrol":"vs bensin","drives":"pakai","left now":"tersisa","car rates":"mobil klaim","since":"sejak",
   "on":"pada","not logged yet":"belum tercatat","LFP likes a weekly 100%":"LFP suka diisi 100% tiap minggu",
+  "next in":"berikutnya","due today":"jatuh tempo hari ini","overdue by":"telat","No 100% logged":"Belum ada isi 100%",
+  "NMC — no routine 100% needed":"NMC — tak perlu 100% rutin",
   "Updated":"Diperbarui","self-hosted · live":"mandiri · langsung","Waiting for the first telemetry frame.":"Menunggu data telemetri pertama.",
   "healthy":"sehat","getting low":"mulai lemah","check 12V":"cek aki 12V","min":"min",
   "tap \"Set last service\"":"ketuk \"Atur servis terakhir\"","or":"atau","overdue":"lewat","by":"sblm",
@@ -1235,14 +1237,28 @@ function bLife(){ const L=DATA.lifetime||{}, I=DATA.insights||{}, sv=calcSaved(L
     note:tn(`Spent bills metered kWh at your charging tariff (receipt-matched). Saved compares your ${curSym()}/km to ${fc.fuel} at ${fc.kml} km/L · ${curSym()} ${fc.price.toLocaleString(curLoc())}/L over the distance actually driven.`,
       `"Dipakai" menagih kWh meteran pada tarif pengisian kamu (cocok struk). "Hemat" membandingkan ${curSym()}/km kamu vs ${fc.fuel} ${fc.kml} km/L · ${curSym()} ${fc.price.toLocaleString(curLoc())}/L atas jarak yang benar-benar ditempuh.`)};
 }
-function bCare(){ const BC=DATA.battery_care||{};
-  return {title:tn('Battery care · LFP','Perawatan baterai · LFP'),
-    lead:tn('Your pack is LFP — care rules differ from common NMC EVs.','Baterai kamu LFP — aturan rawatnya beda dari EV NMC umum.'),
-    rows:[[tn('Last 100% charge','Isi 100% terakhir'), BC.last_full_dt||tn('not seen yet','belum terlihat')],
-      [tn('Days since','Hari sejak'), BC.days_since_full!=null?BC.days_since_full+' '+tn('days','hari'):'—'],
-      [tn('Status','Status'), BC.balance_due?tn('Charge to 100% soon','Segera isi ke 100%'):tn('Balanced','Seimbang')]],
-    note:tn(`LFP <b>likes</b> a full 100% charge every ~1–2 weeks — it balances the cells and recalibrates the SoC gauge (skip it too long and the % starts drifting). Unlike NMC, sitting at 100% does <b>not</b> hurt LFP. So top to 100% weekly, no range anxiety.`,
-      `LFP <b>suka</b> diisi penuh 100% tiap ~1–2 minggu — itu menyeimbangkan sel dan mengkalibrasi ulang gauge SoC (kelamaan dilewati, persennya mulai melenceng). Beda dari NMC, diam di 100% <b>tidak</b> merusak LFP. Jadi isi penuh tiap minggu, tanpa cemas jangkauan.`)};
+function bCare(){ const BC=DATA.battery_care||{}, lfp=(BC.chemistry||'lfp')==='lfp';
+  const iv=BC.interval_days||7, dd=BC.days_to_due;
+  const status = BC.state==='overdue' ? tn(`Overdue by ${Math.abs(Math.round(dd))} days`,`Telat ${Math.abs(Math.round(dd))} hari`)
+    : BC.state==='due'     ? tn('Due now — charge to 100%','Saatnya — isi ke 100%')
+    : BC.state==='unknown' ? tn('No 100% charge logged yet','Belum ada isi 100% tercatat')
+    : dd!=null && dd<1     ? tn('Due today','Jatuh tempo hari ini')
+    : tn('Balanced','Seimbang');
+  const rows=[[tn('Last 100% charge','Isi 100% terakhir'), BC.last_full_dt||tn('not seen yet','belum terlihat')],
+    [tn('Days since','Hari sejak'), BC.days_since_full!=null?BC.days_since_full+' '+tn('days','hari'):'—'],
+    [tn('Recommended every','Disarankan tiap'), Math.round(iv)+' '+tn('days','hari')]];
+  if(BC.next_due_dt) rows.push([tn('Next due','Berikutnya'),
+    BC.next_due_dt + (dd!=null && dd>0 ? ' ('+tn(`in ${Math.round(dd)} days`,`${Math.round(dd)} hari lagi`)+')' : '')]);
+  rows.push([tn('Status','Status'), status]);
+  return {title:tn(`Battery care · ${(BC.chemistry||'lfp').toUpperCase()}`,`Perawatan baterai · ${(BC.chemistry||'lfp').toUpperCase()}`),
+    lead: lfp ? tn('Your pack is LFP — care rules differ from common NMC EVs.','Baterai kamu LFP — aturan rawatnya beda dari EV NMC umum.')
+              : tn('Your pack is NMC — different rules to LFP.','Baterai kamu NMC — aturannya beda dari LFP.'),
+    rows: rows,
+    note: lfp
+      ? tn(`LFP's discharge curve is almost flat, so the BMS has no voltage landmark to read SoC from — it drifts. A full 100% charge is that landmark: it re-anchors the gauge and balances the cells. Do it about every ${Math.round(iv)} days. Unlike NMC, sitting at 100% does <b>not</b> hurt LFP, so there's no reason to avoid it. If your % readings have started jumping around, a full charge is usually the fix.`,
+           `Kurva pengosongan LFP hampir datar, jadi BMS tak punya patokan tegangan untuk membaca SoC — lama-lama melenceng. Isi penuh 100% adalah patokan itu: mengunci ulang gauge dan menyeimbangkan sel. Lakukan tiap sekitar ${Math.round(iv)} hari. Beda dari NMC, diam di 100% <b>tidak</b> merusak LFP, jadi tak perlu dihindari. Kalau angka % mulai lompat-lompat, isi penuh biasanya obatnya.`)
+      : tn(`NMC packs don't need a routine 100% — they prefer to live around 20–80%, and sitting full ages them faster. An occasional full charge still helps the BMS recalibrate, but there's no weekly rule.`,
+           `Baterai NMC tak butuh 100% rutin — lebih baik di kisaran 20–80%, dan diam penuh mempercepat penuaan. Sesekali isi penuh tetap membantu kalibrasi BMS, tapi tak ada aturan mingguan.`)};
 }
 function bFlex(){ const d=DATA, L=d.lifetime||{}, I=d.insights||{}, H=d.health||{}, e=d.energy||{}, sv=calcSaved(L.km);
   const cons = I.consumption!=null?I.consumption:(e.consumption!=null?e.consumption:null);
@@ -1396,11 +1412,19 @@ async function load(live){
   drawSpark(d.history);
 
   // battery care (LFP) + service countdown
-  const BC=d.battery_care||{}, careb=$('careBadge');
-  if(BC.balance_due){ careb.textContent=T('Charge to 100%'); careb.className='badge warn'; }
+  const BC=d.battery_care||{}, careb=$('careBadge'), lfp=(BC.chemistry||'lfp')==='lfp';
+  if(BC.state==='overdue'){ careb.textContent=T('Charge to 100%'); careb.className='badge bad'; }
+  else if(BC.state==='due'||BC.balance_due){ careb.textContent=T('Charge to 100%'); careb.className='badge warn'; }
+  else if(BC.state==='unknown'){ careb.textContent=T('No 100% logged'); careb.className='badge'; }
   else { careb.textContent=T('Balanced'); careb.className='badge ok'; }
   $('careDays').textContent = BC.days_since_full!=null? BC.days_since_full : '—';
-  $('careR').innerHTML = (BC.last_full_dt? T('on')+' <b>'+BC.last_full_dt+'</b>' : T('not logged yet')) + '<br>'+T('LFP likes a weekly 100%');
+  // say *when* the next full charge is due, not just that one is overdue
+  const dd=BC.days_to_due, when = dd==null ? '' :
+    dd<0  ? T('overdue by')+' <b>'+Math.abs(Math.round(dd))+'</b> '+T('days') :
+    dd<1  ? '<b>'+T('due today')+'</b>' :
+            T('next in')+' <b>'+Math.round(dd)+'</b> '+T('days')+(BC.next_due_dt?' ('+BC.next_due_dt+')':'');
+  $('careR').innerHTML = (BC.last_full_dt? T('on')+' <b>'+BC.last_full_dt+'</b>' : T('not logged yet'))
+    + '<br>' + (when || (lfp?T('LFP likes a weekly 100%'):T('NMC — no routine 100% needed')));
   renderSvc();
 
   $('odo').textContent=fmt(d.odometer);

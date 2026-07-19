@@ -181,6 +181,12 @@ CUR_LOCALE = _CUR.get("locale") or "id-ID"             # thousands grouping loca
 CUR_CODE   = (_CUR.get("code") or "IDR").upper()
 TYRE_UNIT  = (_CC.get("tyre_unit") or "psi").lower()   # tyre display unit: psi | bar | kpa
 TPMS_SCALE = float(_CC.get("tpms_scale") or 1.373)     # raw tyre byte -> kPa; J5 default, recalibrate per car
+# --- pack chemistry: decides the 100%-charge advice (LFP wants one regularly, NMC does not) ---
+CHEMISTRY = (_CC.get("chemistry") or "lfp").lower()    # lfp | nmc — J5 is LFP
+# LFP's discharge curve is nearly flat, so the BMS loses its SoC reference without a periodic
+# 100% charge (it re-anchors + balances cells there). ~weekly is the common OEM line; NMC has no
+# such need and prefers not to sit full, so don't nag those owners.
+BALANCE_DAYS = float(_CC.get("full_charge_days") or (7 if CHEMISTRY == "lfp" else 90))
 IDLE_GAP = 1800         # parked + no SoC rise for 30 min => charge session ended
 CHARGE_PARK_MIN = 600   # a real charge sits odo-flat >=10 min; regen blips (odo coarse=1km) don't
 MIN_GAIN_PCT = 2        # net SoC gain floor; drops 1% regen/noise that survives the park gate
@@ -379,11 +385,24 @@ def analyze(data):
         "cost": round(sum(s["kwh"] / chg_eff(s["soc1"]) * TARIFF_IDR for s in sess)),
         "km": (fr[-1][2] - fr[0][2]) if len(fr) >= 2 else 0,                      # odometer span
         "since": time.strftime("%d %b", time.localtime(fr[0][0])) if fr else None}
-    full = [s for s in sess if s["soc1"] >= 100]       # LFP wants a periodic 100% for balancing
+    # A 100% charge is what re-anchors an LFP BMS: the discharge curve is so flat that the gauge
+    # drifts without one. Track the interval so the dashboard can say *when*, not just "overdue".
+    full = [s for s in sess if s["soc1"] >= 100]
+    since = (now - full[-1]["start"]) / 86400 if full else None
+    due_in = round(BALANCE_DAYS - since, 1) if since is not None else None
     out["battery_care"] = {
+        "chemistry": CHEMISTRY,
+        "interval_days": BALANCE_DAYS,
         "last_full_dt": time.strftime("%d %b", time.localtime(full[-1]["start"])) if full else None,
-        "days_since_full": round((now - full[-1]["start"]) / 86400) if full else None,
-        "balance_due": (not full) or ((now - full[-1]["start"]) / 86400 >= 14)}
+        "days_since_full": round(since) if since is not None else None,
+        "days_to_due": due_in,                          # negative = overdue by that many days
+        "next_due_dt": (time.strftime("%d %b", time.localtime(full[-1]["start"] + BALANCE_DAYS * 86400))
+                        if full else None),
+        # three states, so "do it this week" reads differently from "you're well past due"
+        "state": ("unknown" if not full else
+                  "overdue" if since >= BALANCE_DAYS * 2 else
+                  "due" if since >= BALANCE_DAYS else "ok"),
+        "balance_due": (not full) or (since >= BALANCE_DAYS)}   # kept for older clients
     ongoing = [s for s in sess if s["ongoing"]]
     if ongoing:
         s = ongoing[-1]; lr = live_rate(s["pts"])
@@ -509,8 +528,11 @@ def demo_summary():
         "lifetime": {"kwh_in": 1448.0, "kwh_billed": 1612.0, "cost": 4090000, "km": 8127,
                      "since": time.strftime("%d %b", time.localtime(now - 96 * 86400)),
                      "saved": 7240000, "liters_saved": 677.3, "co2_saved": 1564},
-        "battery_care": {"last_full_dt": time.strftime("%d %b", time.localtime(now - 4 * 86400)),
-                         "days_since_full": 4, "balance_due": False},
+        "battery_care": {"chemistry": CHEMISTRY, "interval_days": BALANCE_DAYS,
+                         "last_full_dt": time.strftime("%d %b", time.localtime(now - 4 * 86400)),
+                         "days_since_full": 4, "days_to_due": round(BALANCE_DAYS - 4, 1),
+                         "next_due_dt": time.strftime("%d %b", time.localtime(now + (BALANCE_DAYS - 4) * 86400)),
+                         "state": "ok", "balance_due": False},
         "drain": None, "volt12_min7d": 12.7, "volt12_status": "ok",
         "insights": {}, "moving": False,
     }
