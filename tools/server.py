@@ -183,6 +183,10 @@ TYRE_UNIT  = (_CC.get("tyre_unit") or "psi").lower()   # tyre display unit: psi 
 TPMS_SCALE = float(_CC.get("tpms_scale") or 1.373)     # raw tyre byte -> kPa; J5 default, recalibrate per car
 # --- pack chemistry: decides the 100%-charge advice (LFP wants one regularly, NMC does not) ---
 CHEMISTRY = (_CC.get("chemistry") or "lfp").lower()    # lfp | nmc — J5 is LFP
+# Optional path/URL to a picture of YOUR car for the dashboard hero. The bundled render is a
+# Jaecoo J5; showing it to an Omoda/Chery/Tiggo owner is just wrong, so anything we don't have
+# a render for falls back to a neutral silhouette (see web/car-generic.svg) instead.
+CAR_IMAGE = (_CC.get("car_image") or "").strip() or None
 # LFP's discharge curve is nearly flat, so the BMS loses its SoC reference without a periodic
 # 100% charge (it re-anchors + balances cells there). ~weekly is the common OEM line; NMC has no
 # such need and prefers not to sit full, so don't nag those owners.
@@ -509,7 +513,7 @@ def demo_summary():
         "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
         "battery_kwh": cap,
         "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
-        "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR,
+        "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
         "energy": {"today_kwh": 6.7, "consumption": 12.9, "rating": "normal",
                    "week_consumption": 13.0, "source": "car"},
         "charging": {"active": False, "session_kwh": 0.0, "rate_kw": None, "soc": None,
@@ -552,7 +556,7 @@ def summary():
            "updated": None, "age_min": None,
            "battery_kwh": CAP_KWH,
            "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
-           "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR,
+           "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
            "energy": {"today_kwh": 0.0, "consumption": None, "rating": None,
                       "week_consumption": None},
            "charging": {"active": False, "session_kwh": 0.0, "rate_kw": None, "soc": None,

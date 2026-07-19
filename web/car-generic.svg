@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 150" width="330" height="150" role="img" aria-label="Generic car silhouette">
+  <!-- Neutral crossover silhouette, shown when we have no render for the detected model, so a
+       Chery/Omoda/Tiggo owner never sees a Jaecoo J5 pretending to be their car.
+       Loaded via <img>, which cannot inherit the page's currentColor - so the theme is handled
+       inside the file with prefers-color-scheme. -->
+  <style>
+    .body  { fill: #2b2f36; opacity: .26 }
+    .glass { fill: #2b2f36; opacity: .14 }
+    .tyre  { fill: #2b2f36; opacity: .52 }
+    .rim   { fill: #ffffff; opacity: .55 }
+    @media (prefers-color-scheme: dark) {
+      .body  { fill: #e8eaed; opacity: .22 }
+      .glass { fill: #e8eaed; opacity: .12 }
+      .tyre  { fill: #e8eaed; opacity: .40 }
+      .rim   { fill: #14161a; opacity: .55 }
+    }
+  </style>
+  <path class="body" d="M18 104c-5 0-9-4-9-9v-14c0-7 4-13 11-16l30-11 22-24c5-6 12-9 20-9h74c8 0 16 3 22 9l20 21 40 9c14 3 24 12 27 24l2 11c1 6-4 11-10 11h-18a26 26 0 0 0-52 0h-84a26 26 0 0 0-52 0H18z"/>
+  <path class="glass" d="M96 46c-4 0-8 2-11 5l-17 19h58V46H96zM136 46v24h68l-17-19c-3-3-7-5-11-5h-40z"/>
+  <circle class="tyre" cx="92" cy="112" r="20"/>
+  <circle class="tyre" cx="228" cy="112" r="20"/>
+  <circle class="rim" cx="92" cy="112" r="9"/>
+  <circle class="rim" cx="228" cy="112" r="9"/>
+</svg>

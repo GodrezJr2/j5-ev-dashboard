@@ -441,7 +441,7 @@
   <div class="hint" id="hint">Tap any card, bar or stat for the detail behind it.</div>
 
   <section>
-    <div class="hero"><img class="heroimg" src="car-front.png" alt="Jaecoo J5 EV" width="330" height="211"></div>
+    <div class="hero"><img class="heroimg" id="carImg" src="car-generic.svg" alt="Your car" width="330" height="211"></div>
     <div class="batt">
       <div class="gauge">
         <svg width="104" height="104" viewBox="0 0 104 104">
@@ -1326,6 +1326,20 @@ function applyPI(){ $('eye').innerHTML = hidePI? EYE_OFF : EYE_ON;
   $('vin').textContent   = hidePI? maskVin(v.vin)  : v.vin;
   const m=(v.model||'').trim();                          // reflect the auto-detected car (works for other CarLinko models)
   if(m){ $('modelLabel').textContent=m; $('abTtl').textContent=m.replace(/^Jaecoo\s+/i,''); }
+  applyCarImage(m);
+}
+// Hero picture. CarLinko covers a lot of Chery-group cars and we only ship a J5 render, so:
+// your own picture (car_image in creds.json) > the bundled render when the car really is a J5 >
+// a neutral silhouette. Never show one brand's car to another brand's owner.
+function applyCarImage(model){
+  const img=$('carImg'); if(!img) return;
+  const custom=(DATA.car_image||'').trim();
+  const src = custom ? custom
+            : /jaecoo|\bj5\b/i.test(model||'') ? 'car-front.png'
+            : 'car-generic.svg';
+  if(img.getAttribute('src')!==src) img.setAttribute('src',src);
+  img.alt = model || 'Your car';
+  img.onerror=()=>{ img.onerror=null; img.src='car-generic.svg'; };  // bad car_image path -> silhouette
 }
 $('eye').addEventListener('click',()=>{ hidePI=!hidePI; try{localStorage.setItem('hidePI',hidePI?'1':'0');}catch(e){} applyPI(); buzz(8); });
 $('flex').addEventListener('click',()=>sheet(bFlex()));

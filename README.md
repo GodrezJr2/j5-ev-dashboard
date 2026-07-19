@@ -202,6 +202,7 @@ stays private without exposing anything to the internet.
 | `tariff`, `petrol_price`, `petrol_kml` | | your local charging tariff/kWh + petrol price/L + economy, in your currency |
 | `tyre_unit` | | `psi` (default), `bar`, or `kpa` for the tyre display |
 | `tpms_scale` | | raw tyre-byte → kPa scale. J5 is indirect (no real PSI); cars that send real pressure need this recalibrated (see below) |
+| `car_image` | | a picture of *your* car for the dashboard hero — a filename in `web/` or a full URL. Only the Jaecoo J5 render ships with the app; any other model falls back to a neutral silhouette rather than showing the wrong car |
 | `chemistry` | | `lfp` (default) or `nmc` — picks the battery-care advice |
 | `full_charge_days` | | how often to recommend a 100% charge. Default `7` for LFP, `90` for NMC |
 | `gmaps_key` | | Google Maps key — enables trip planner + SPKLU map (else OSM fallback) |
@@ -221,8 +222,19 @@ stays private without exposing anything to the internet.
 >
 > **Tyre pressure on a car with real TPMS?** The J5 has *indirect* TPMS (no per-wheel PSI), so the
 > raw→pressure scale (`tpms_scale`, default `1.373` kPa/byte) was never validated on live data. If
-> your car sends real pressures and the numbers look wrong, compare one wheel against your car's own
-> screen and set `tpms_scale = your_kPa / raw_byte`. Pick the display unit with `tyre_unit` (`psi`/`bar`/`kpa`).
+> your car sends real pressures and the numbers look wrong, open the tyre card — it shows the **raw
+> bytes** — read one wheel off your car's own screen, and set `tpms_scale = your_kPa / raw_byte`.
+> Pick the display unit with `tyre_unit` (`psi`/`bar`/`kpa`).
+
+### Known cars
+
+Settings other owners have confirmed. Please add yours via a
+[compatibility report](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md).
+
+| Car | `battery_kwh` | `tpms_scale` | `tyre_unit` | Notes |
+| --- | --- | --- | --- | --- |
+| Jaecoo J5 EV (ID) | `58.9` | n/a | `psi` | Reference car. *Indirect* TPMS — reports tyre **status only**, never a pressure |
+| Chery Tiggo 8 PHEV 2025 (ZA) | `18.3` | `1.779` | `bar` | Direct TPMS (raw `136` = 2.42 bar). PHEV — EV-only metrics are approximate; fuel range isn't decoded yet |
 
 ## Where to run it
 

@@ -20,6 +20,7 @@
   "tpms_scale": 1.373,
   "chemistry": "lfp",
   "full_charge_days": 7,
+  "car_image": "OPTIONAL__a_picture_of_your_car__file_in_web/_or_a_full_URL",
 
   "gmaps_key": "OPTIONAL__google_maps_api_key_for_trip_planner_and_spklu_map"
 }
