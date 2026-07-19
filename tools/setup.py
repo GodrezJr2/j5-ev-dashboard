@@ -1,22 +1,104 @@
-"""Interactive setup — builds creds.json and auto-detects your vehicle.
+"""Interactive setup - builds creds.json and auto-detects your vehicle.
 
 You only need four things (the rest is fetched from the API for you):
   email, password         your CarLinko login
-  sign_key, v_data        extracted once from your own app capture (see README → First-time capture)
+  sign_key, v_data        extracted once from your own app capture (see README -> First-time capture)
 
 Run:  python setup.py
 """
-import os, json, getpass
+import os, sys, json, getpass
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CREDS = os.path.join(os.environ.get("CARLINKO_DATA") or HERE, "creds.json")
 
 
+def _safe(s):
+    """Windows consoles default to cp1252, which cannot encode a currency symbol like the euro sign.
+    Printing one raises UnicodeEncodeError and would kill setup mid-run, so degrade instead."""
+    enc = (sys.stdout.encoding or "utf-8")
+    try:
+        s.encode(enc)
+        return s
+    except (UnicodeEncodeError, LookupError):
+        return s.encode(enc, "replace").decode(enc, "replace")
+
+
+def say(s=""):
+    print(_safe(s))
+
+
 def ask(label, cur, secret=False, optional=False):
     shown = ("set" if secret else cur) if cur else ""
     suffix = f" [{shown}]" if shown else (" (optional)" if optional else "")
-    val = (getpass.getpass if secret else input)(f"{label}{suffix}: ").strip()
+    val = (getpass.getpass if secret else input)(_safe(f"{label}{suffix}: ")).strip()
     return val or cur  # blank keeps the existing value
+
+
+# Money/unit presets so a non-Indonesian user never has to hand-edit creds.json to get sane costs.
+# Prices are a starting point, not gospel -- they move monthly, and setup lets you override each one.
+COUNTRIES = {
+    "id": {"label": "Indonesia", "tyre_unit": "psi",
+           "currency": {"symbol": "Rp", "locale": "id-ID", "code": "IDR"},
+           "tariff": 2540, "petrol_price": 16250, "petrol_kml": 12.0,
+           "hint": "PLN SPKLU all-in ~Rp2,540/kWh | Pertamax ~Rp16,250/L (Jul 2026)"},
+    "za": {"label": "South Africa", "tyre_unit": "bar",
+           "currency": {"symbol": "R", "locale": "en-ZA", "code": "ZAR"},
+           "tariff": 3.50, "petrol_price": 26.10, "petrol_kml": 12.0,
+           "hint": "home charging ~R3.50/kWh (public DC is ~R7.00) | 95 unleaded inland ~R26.10/L, Jul 2026"},
+    "gb": {"label": "United Kingdom", "tyre_unit": "psi",
+           "currency": {"symbol": "£", "locale": "en-GB", "code": "GBP"},
+           "tariff": 0.27, "petrol_price": 1.35, "petrol_kml": 12.0,
+           "hint": "home rate ~£0.27/kWh | petrol ~£1.35/L"},
+    "eu": {"label": "Eurozone", "tyre_unit": "bar",
+           "currency": {"symbol": "€", "locale": "de-DE", "code": "EUR"},
+           "tariff": 0.35, "petrol_price": 1.75, "petrol_kml": 12.0,
+           "hint": "home rate ~€0.35/kWh | petrol ~€1.75/L"},
+}
+
+
+def ask_region(c):
+    """Currency, charging tariff, petrol baseline and tyre unit -- every cost the dashboard shows
+    depends on these. Buried in creds.json nobody finds them, so ask up front."""
+    say("\n=== Money + units (drives every cost/saving on the dashboard) ===")
+    say("  " + " | ".join(f"{k}={v['label']}" for k, v in COUNTRIES.items()) + " | other=enter by hand")
+    cur_code = ((c.get("currency") or {}).get("code") or "").lower()
+    guess = next((k for k, v in COUNTRIES.items() if v["currency"]["code"].lower() == cur_code), "id")
+    pick = (ask("Country", guess) or guess).lower()
+
+    if pick in COUNTRIES:
+        p = COUNTRIES[pick]
+        say(f"  {p['hint']}")
+        c["currency"] = p["currency"]
+        defaults = p
+    else:                                   # unknown country -> ask for the currency itself
+        cc = c.get("currency") or {}
+        c["currency"] = {
+            "symbol": ask("  Currency symbol (e.g. R, $, €)", cc.get("symbol") or "$"),
+            "code":   (ask("  Currency code (e.g. ZAR, USD)", cc.get("code") or "USD") or "USD").upper(),
+            "locale": ask("  Number locale (e.g. en-ZA, en-US)", cc.get("locale") or "en-US"),
+        }
+        defaults = {"tariff": c.get("tariff") or 0.30, "petrol_price": c.get("petrol_price") or 1.50,
+                    "petrol_kml": c.get("petrol_kml") or 12.0, "tyre_unit": c.get("tyre_unit") or "psi"}
+
+    sym = c["currency"]["symbol"]
+
+    def num(label, key, dflt):
+        raw = ask(label, str(c.get(key) if c.get(key) is not None else dflt))
+        try:
+            return float(raw)
+        except (TypeError, ValueError):
+            say(f"    '{raw}' isn't a number - keeping {dflt}")
+            return float(dflt)
+
+    c["tariff"] = num(f"  Charging tariff ({sym}/kWh)", "tariff", defaults["tariff"])
+    c["petrol_price"] = num(f"  Petrol price ({sym}/litre, for the savings comparison)",
+                            "petrol_price", defaults["petrol_price"])
+    c["petrol_kml"] = num("  Petrol car economy (km/litre)", "petrol_kml", defaults["petrol_kml"])
+    c.pop("tariff_idr", None)               # legacy IDR-only key; "tariff" supersedes it
+
+    unit = (ask("  Tyre unit (psi / bar / kpa)", c.get("tyre_unit") or defaults["tyre_unit"]) or "psi").lower()
+    c["tyre_unit"] = unit if unit in ("psi", "bar", "kpa") else "psi"
+    return c
 
 
 def main():
@@ -33,6 +115,8 @@ def main():
     c["password"] = ask("Password", c.get("password"), secret=True)
     c["region"] = ask("Region", c.get("region") or "sea") or "sea"
 
+    ask_region(c)
+
     print("\n=== Optional ===")
     c["gmaps_key"] = ask("Google Maps key (enables trip planner + SPKLU map)",
                          c.get("gmaps_key"), secret=True, optional=True)
@@ -45,10 +129,10 @@ def main():
         pass
 
     if not (c.get("email") and c.get("password")):
-        print("\nSaved creds.json, but email/password are incomplete — fill them, then re-run.")
+        print("\nSaved creds.json, but email/password are incomplete - fill them, then re-run.")
         return
 
-    print("\nLogging in…")
+    print("\nLogging in...")
     import auth  # the signing key is bundled; reads creds.json for the account
     auth._C = auth.cfg()
     try:
@@ -56,16 +140,16 @@ def main():
     except Exception as e:
         print(f"  login failed: {e}\n  Double-check email/password, then re-run.")
         return
-    print(f"  ok — token saved to token.txt")
+    print(f"  ok - token saved to token.txt")
 
-    print("Detecting your vehicle…")
+    print("Detecting your vehicle...")
     import requests
     h = auth.headers_for({}, token=token)
     try:
         data = requests.get(auth.api_base() + "/user/vehicle", headers=h, timeout=20).json().get("data")
         v = data[0] if isinstance(data, list) and data else (data if isinstance(data, dict) else {})
     except Exception as e:
-        print(f"  couldn't read /user/vehicle ({e}) — fill vehicle_id/device_sn by hand if needed.")
+        print(f"  couldn't read /user/vehicle ({e}) - fill vehicle_id/device_sn by hand if needed.")
         v = {}
 
     if v.get("vehicleId"):

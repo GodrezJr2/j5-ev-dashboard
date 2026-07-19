@@ -197,17 +197,27 @@ stays private without exposing anything to the internet.
 | `region` | | API region, default `sea` |
 | `vehicle_id`, `device_sn` | auto | your vehicle id + device serial — **`setup.py` fills these for you** |
 | `vehicle` | auto | `{plate, model, vin}` — auto-detected; UI hides plate+VIN by default |
-| `battery_kwh`, `wltp_kwh_100`, `tariff_idr` | | per-model / local overrides (default to J5 values) |
+| `battery_kwh`, `wltp_kwh_100` | | per-model overrides (default to J5 values) |
 | `currency` | | `{symbol, locale, code}` for non-IDR countries, e.g. `{"symbol":"R","locale":"en-ZA","code":"ZAR"}`. Default `Rp` / `id-ID` |
 | `tariff`, `petrol_price`, `petrol_kml` | | your local charging tariff/kWh + petrol price/L + economy, in your currency |
 | `tyre_unit` | | `psi` (default), `bar`, or `kpa` for the tyre display |
 | `tpms_scale` | | raw tyre-byte → kPa scale. J5 is indirect (no real PSI); cars that send real pressure need this recalibrated (see below) |
+| `chemistry` | | `lfp` (default) or `nmc` — picks the battery-care advice |
+| `full_charge_days` | | how often to recommend a 100% charge. Default `7` for LFP, `90` for NMC |
 | `gmaps_key` | | Google Maps key — enables trip planner + SPKLU map (else OSM fallback) |
 | `dashboard_password` | | set it (login page → Advanced) to lock the dashboard behind a password — **do this if the URL is reachable from the internet** |
 
-> **Different country?** Set `currency` + `tariff` + `petrol_price` and every cost on the
-> dashboard switches to your money (e.g. South Africa: `"currency":{"symbol":"R","locale":"en-ZA","code":"ZAR"}`).
-> The trip planner + charge map are Indonesia-only (they use SPKLU/PLN data).
+> **Not in Indonesia? `setup.py` now asks.** It offers presets for Indonesia, South Africa, the UK
+> and the Eurozone (and lets you type any other currency), then asks for your charging tariff,
+> petrol price and tyre unit — so every cost on the dashboard is in your money without hand-editing
+> `creds.json`. Re-run `python setup.py` any time to change them; it keeps your existing values.
+> The trip planner + charge map remain Indonesia-only (they use SPKLU/PLN data).
+>
+> Bundled prices are a *starting point* and go stale — Indonesian defaults are Pertamax at
+> Rp16,250/L and PLN SPKLU at Rp2,540/kWh (Jul 2026). Set `petrol_price` / `tariff` to yours.
+
+> **`tariff_idr` is the old name for `tariff`** — still read, so existing configs keep working, but
+> prefer `tariff` now that costs aren't Indonesia-only.
 >
 > **Tyre pressure on a car with real TPMS?** The J5 has *indirect* TPMS (no per-wheel PSI), so the
 > raw→pressure scale (`tpms_scale`, default `1.373` kPa/byte) was never validated on live data. If

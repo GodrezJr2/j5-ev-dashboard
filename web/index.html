@@ -1352,7 +1352,9 @@ $('svcToggle').addEventListener('click',()=>{ const o=$('svcForm').style.display
 (function(){ const c=SVC.get(); if(c.odo)$('svcOdo').value=c.odo; if(c.date)$('svcDate').value=c.date; if(c.intKm)$('svcIntKm').value=c.intKm; if(c.intMo)$('svcIntMo').value=c.intMo; })();
 
 // ---- petrol comparison: fuel type + price + economy -> recompute savings (real Pertamina prices) ----
-const FUEL_PRESETS={"Pertalite":10000,"Pertamax":16250,"Pertamax Green 95":17000,"Pertamax Turbo":20750,"Dexlite":23000,"Pertamina Dex":24800,"Solar":6800};
+// Pertamina list prices, Jawa/Bali, as of 1 Jul 2026. Non-subsidised grades move monthly and vary
+// by province — override yours in Settings (it's stored per-browser and wins over these).
+const FUEL_PRESETS={"Pertalite":10000,"Pertamax":16250,"Pertamax Green 95":17000,"Pertamax Turbo":19300,"Dexlite":19700,"Pertamina Dex":21150,"Solar":6800};
 const FUEL={ get(){ try{return JSON.parse(localStorage.getItem('fuel')||'{}')}catch(e){return{}} }, set(o){ try{localStorage.setItem('fuel',JSON.stringify(o))}catch(e){} } };
 function fuelCfg(){ const f=FUEL.get(), fuel=f.fuel||'Pertamax'; return {fuel, price:f.price||FUEL_PRESETS[fuel]||16250, kml:f.kml||12}; }
 function petrolRpkm(){ const c=fuelCfg(); return c.price/(c.kml||12); }

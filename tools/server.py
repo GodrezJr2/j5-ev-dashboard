@@ -208,7 +208,8 @@ MAX_PAIR_GAP = 1800     # >30 min between two logged frames = a hole in the log 
                         # never saw, so it can't be attributed to a day/week/trip -- skip the pair.
                         # Slow poll is 300 s, so this only ever trips on a genuine outage.
 PETROL_KM_L = float(_CC.get("petrol_kml") or 12.0)        # comparable ICE fuel economy (km per litre)
-PETROL_RP_L = float(_CC.get("petrol_price") or 12500)     # petrol price /litre in CUR_CODE (IDR default: Pertamax-class)
+PETROL_RP_L = float(_CC.get("petrol_price") or 16250)     # petrol price /litre in CUR_CODE
+                                                          # (IDR default: Pertamax, Jawa/Bali, 1 Jul 2026)
 
 def _m(x):
     # round money: whole units at IDR scale (>=100), keep 2 dp for sub-unit currencies (e.g. ZAR /km)
