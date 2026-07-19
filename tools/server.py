@@ -197,6 +197,10 @@ def chg_eff(soc_end):
     if soc_end <= 85: return 0.91
     return 0.91 + (0.855 - 0.91) * (soc_end - 85) / 10.0
 TRIP_GAP = 180          # parked >3 min => a trip ends (merges short red-light stops)
+MAX_PAIR_GAP = 1800     # >30 min between two logged frames = a hole in the log (service down, car
+                        # offline, TBox asleep). The odo/SoC delta across a hole covers driving we
+                        # never saw, so it can't be attributed to a day/week/trip -- skip the pair.
+                        # Slow poll is 300 s, so this only ever trips on a genuine outage.
 PETROL_KM_L = float(_CC.get("petrol_kml") or 12.0)        # comparable ICE fuel economy (km per litre)
 PETROL_RP_L = float(_CC.get("petrol_price") or 12500)     # petrol price /litre in CUR_CODE (IDR default: Pertamax-class)
 
@@ -212,6 +216,10 @@ def build_trips(data):
     trips, cur, last_move = [], None, 0
     for i in range(1, len(fr)):
         ts0, b0, o0 = fr[i-1]; ts1, b1, o1 = fr[i]
+        if ts1 - ts0 > MAX_PAIR_GAP:                   # hole in the log: the odo jump across it is
+            if cur:                                    # days of unseen driving, not one long trip
+                trips.append(cur); cur = None
+            continue
         if o1 > o0:                                    # moving (odometer rising = reliable)
             if cur is None:
                 cur = {"start": ts0, "odo0": o0, "soc0": b0}
@@ -240,6 +248,9 @@ def build_sessions(fr, now):
     raw, cur = [], None
     for i in range(len(fr)):
         ts, soc, odo = fr[i]
+        gap = i > 0 and ts - fr[i-1][0] > MAX_PAIR_GAP  # hole in the log: kWh/rate/duration measured
+        if gap and cur:                                # across it would be fiction -> close, don't span
+            raw.append(cur); cur = None
         moved = i > 0 and odo > fr[i-1][2]
         if moved:                                      # car drove -> close any session
             if cur:
@@ -248,7 +259,7 @@ def build_sessions(fr, now):
                 raw.append(cur); cur = None
             continue
         if cur is None:                                # open when SoC rises vs prev parked frame
-            if i > 0 and odo == fr[i-1][2] and soc > fr[i-1][1]:
+            if i > 0 and not gap and odo == fr[i-1][2] and soc > fr[i-1][1]:
                 cur = {"start": fr[i-1][0], "soc0": fr[i-1][1], "last_rise": ts,
                        "max": soc, "pts": [(fr[i-1][0], fr[i-1][1]), (ts, soc)]}
         else:
@@ -324,6 +335,9 @@ def analyze(data):
     used_today = km_today = used_week = km_week = 0.0
     for i in range(1, len(fr)):
         ts0, b0, o0 = fr[i-1]; ts1, b1, o1 = fr[i]
+        if ts1 - ts0 > MAX_PAIR_GAP: continue          # hole in the log -> delta spans unlogged
+                                                       # driving; bucketing it by ts1 would dump the
+                                                       # whole outage into today/this week
         d_today = time.strftime("%Y-%m-%d", time.localtime(ts1)) == today
         d_week = time.strftime("%Y-W%W", time.localtime(ts1)) == week
         if b1 < b0:                                    # SoC fell = energy used (count ALL drops, not just
@@ -595,6 +609,7 @@ def summary():
     day_used = {}
     for i in range(1, len(frS)):
         t0, b0, o0 = frS[i-1]; t1, b1, o1 = frS[i]
+        if t1 - t0 > MAX_PAIR_GAP: continue            # hole in the log -> a whole outage's SoC drop
         if b0 > b1:                                    # SoC fell = energy spent (every drop, not only the
             k = time.strftime("%Y-%m-%d", time.localtime(t1))   # ones aligned to a 1km odo tick)
             day_used[k] = day_used.get(k, 0.0) + (b0 - b1) / 100.0 * CAP_KWH
