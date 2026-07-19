@@ -519,7 +519,7 @@ def demo_summary():
                                  "peak_kw": 61.3, "kwh_billed": 45.6, "cost": 115800, "series": series}},
         "trips": trips,
         "tpms": [{"pos": p, "psi": None, "temp": None, "valid": False} for p in TPMS_POS],
-        "tpms_updated": None, "tpms_age_min": None, "tpms_live": False,
+        "tpms_updated": None, "tpms_age_min": None, "tpms_live": False, "tpms_raw": None,
         "tyre_status": "Normal", "tyre_indirect": True,
         "km": {"today": 52, "week": 201, "month": 1043},
         "charges": {"week": 2, "month": 9},
@@ -559,7 +559,7 @@ def summary():
                         "month_cost": 0, "history": [], "session": None},
            "trips": [],
            "tpms": [{"pos": p, "psi": None, "temp": None, "valid": False} for p in TPMS_POS],
-           "tpms_updated": None, "tpms_age_min": None, "tpms_live": False,
+           "tpms_updated": None, "tpms_age_min": None, "tpms_live": False, "tpms_raw": None,
            "tyre_status": "Normal", "tyre_indirect": True,
            "km": {"today": None, "week": None, "month": None},
            "charges": {"week": None, "month": None},
@@ -600,6 +600,9 @@ def summary():
             out["tpms_updated"] = dt2
             out["tpms_age_min"] = round((time.time() - ts2) / 60, 1)
             out["tpms_live"] = (ts2 == ts)  # newest frame still has live tyres
+            # the undecoded bytes, so you can calibrate tpms_scale on a car that has real (direct)
+            # TPMS: read one wheel off the car's own screen, then tpms_scale = your_kPa / raw_byte.
+            out["tpms_raw"] = [tb[i] for i in range(4)]
             raw_psi = [p for p in (_psi_raw(tb[i]) for i in range(4)) if p is not None]
             if raw_psi:  # real per-wheel pressure present (J5: indirect TPMS, bytes stay FF; some cars send it)
                 out["tyre_indirect"] = False

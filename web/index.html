@@ -1184,12 +1184,14 @@ function bTyres(){ const d=DATA;
   const lbl=[tn('Front L','Depan Kiri'),tn('Front R','Depan Kanan'),tn('Rear L','Belakang Kiri'),tn('Rear R','Belakang Kanan')];
   return {title:tn('Tyres','Ban'),
     lead: d.tpms_live?tn('Live pressures.','Tekanan langsung.'):tn('Last reported {x}.','Terakhir dilapor {x}.',{x:d.tpms_updated||''}),
-    rows:(d.tpms||[]).map((t,i)=>[lbl[i], t.psi!=null?(t.psi+' '+tyreUnit()+(t.temp!=null?' · '+t.temp+'°':'')):'—']),
-    note: tyreUnit()==='bar'
-      ? tn(`Tyres report only while driving. Target ~2.3 bar cold; we flag a soft or over-hard tyre.`,
-           `Ban hanya melapor saat berkendara. Target ~2,3 bar dingin; ditandai jika terlalu lembek atau keras.`)
-      : tn(`Tyres report only while driving. Target ~33 psi cold; we flag below 30 or above 38.`,
-           `Ban hanya melapor saat berkendara. Target ~33 psi dingin; ditandai di bawah 30 atau di atas 38.`)};
+    rows:(d.tpms||[]).map((t,i)=>[lbl[i], t.psi!=null?(t.psi+' '+tyreUnit()+(t.temp!=null?' · '+t.temp+'°':'')):'—'])
+      // direct-TPMS cars: show the undecoded bytes so a wrong scale is fixable (see note below)
+      .concat(d.tyre_indirect===false&&d.tpms_raw?[[tn('Raw bytes','Byte mentah'), d.tpms_raw.join(' · ')]]:[]),
+    note: d.tyre_indirect===false
+      ? tn(`Your car sends real per-wheel pressure. The raw→pressure scale is a guess (tpms_scale, default 1.373 kPa/byte) — it was never validated, since the car this app was built on has indirect TPMS and sends no pressure at all. If these numbers disagree with your car's own screen, set tpms_scale = your_kPa ÷ raw_byte in creds.json. Pick the unit with tyre_unit (psi/bar/kpa).`,
+           `Mobilmu mengirim tekanan asli per roda. Skala raw→tekanan masih tebakan (tpms_scale, default 1,373 kPa/byte) — belum pernah divalidasi, karena mobil asal aplikasi ini pakai TPMS tidak langsung dan tidak mengirim tekanan sama sekali. Kalau angkanya beda dengan layar mobilmu, set tpms_scale = kPa_kamu ÷ byte_mentah di creds.json. Pilih satuan lewat tyre_unit (psi/bar/kpa).`)
+      : tn(`Indirect TPMS — your car infers a soft tyre from ABS wheel-speed, so it reports status only, never a real pressure. Reports while driving.`,
+           `TPMS tidak langsung — mobil menebak ban kempis dari kecepatan roda ABS, jadi hanya melaporkan status, bukan tekanan asli. Melapor saat berkendara.`)};
 }
 function bOdo(){ const d=DATA;
   return {title:tn('Odometer','Odometer'), lead:tn('Lifetime distance.','Jarak total seumur mobil.'),
