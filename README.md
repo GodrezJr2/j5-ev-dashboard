@@ -221,11 +221,15 @@ stays private without exposing anything to the internet.
 > **`tariff_idr` is the old name for `tariff`** — still read, so existing configs keep working, but
 > prefer `tariff` now that costs aren't Indonesia-only.
 >
-> **Tyre pressure on a car with real TPMS?** The J5 has *indirect* TPMS (no per-wheel PSI), so the
-> raw→pressure scale (`tpms_scale`, default `1.373` kPa/byte) was never validated on live data. If
-> your car sends real pressures and the numbers look wrong, open the tyre card — it shows the **raw
-> bytes** — read one wheel off your car's own screen, and set `tpms_scale = your_kPa / raw_byte`.
-> Pick the display unit with `tyre_unit` (`psi`/`bar`/`kpa`).
+> **Tyre pressure is now calibrated for you.** CarLinko publishes the per-model tyre formula
+> (`appKpaFormula`, e.g. `data * 1.373`), so `setup.py` reads your car's own scale straight off the
+> API — no hand-calibration. If you've already set `tpms_scale` yourself, setup keeps your value and
+> just mentions what CarLinko says; delete the key to adopt theirs. Pick the display unit with
+> `tyre_unit` (`psi`/`bar`/`kpa`).
+>
+> If the numbers still look wrong, the tyre card shows the **raw bytes** — read one wheel off your
+> car's own screen and `tpms_scale = your_kPa / raw_byte`. Note that some cars (the J5 included)
+> have *indirect* TPMS and report tyre **status only**, never a real pressure.
 
 ### Known cars
 

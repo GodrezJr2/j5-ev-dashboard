@@ -124,6 +124,23 @@ the only honest output is status. An abnormal tyre would surface via CarLinko al
 | `fuel_l_100` **(PHEV)** | byte 53 (×0.1) | 0.8 L/100 km — `0` on every BEV frame |
 | `consumption` | byte 55 (×0.1) | 12.4 kWh/100 km (matches J5 dash; **does not** match the PHEV's displayed figure) |
 
+### The platform hands you the per-model constants
+
+`/user/vehicle` → `vehicleControlConfig` publishes what this app used to hard-code, so a new car
+can configure itself:
+
+| Key | J5 value | Use |
+|---|---|---|
+| `appKpaFormula` / `webTirePressureFormula` | `data * 1.373` | the tyre raw→kPa scale, per model — this is where `tpms_scale` comes from |
+| `appPsiFormula` / `appBarFormula` / `webConversionFormula1/2` | `… * 0.145` / `… * 0.01` | the same scale expressed in other units |
+| `tirePressureInvalid` | `["FF"]` | the "sensor asleep" sentinel |
+| `powerConsumption` / `fuelConsumption` | `true` / `false` | powertrain: both true = PHEV, power only = BEV |
+| `Engine` | `false` | BEV confirmation |
+| `chargingTimeInvalidValue` | `["3FE","3FF","7FE","7FF"]` | sentinels for charge-time fields |
+| `A/C`, `WindowsOpen`, `Sunroof`, `Lock`, `Search`, … | | remote-control capability flags |
+
+`setup.py` reads the tyre scale and powertrain from here automatically.
+
 PHEV offsets come from a Chery Tiggo 8 PHEV frame contributed in
 [#2](https://github.com/GodrezJr2/j5-ev-dashboard/issues/2), cross-checked against 13,018 logged
 J5 (BEV) frames where bytes 21, 53 and 54 are `0` in every single one.

@@ -6,7 +6,7 @@ You only need four things (the rest is fetched from the API for you):
 
 Run:  python setup.py
 """
-import os, sys, json, getpass
+import os, sys, re, json, getpass
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CREDS = os.path.join(os.environ.get("CARLINKO_DATA") or HERE, "creds.json")
@@ -101,6 +101,39 @@ def ask_region(c):
     return c
 
 
+def learn_from_config(c, v):
+    """CarLinko publishes the per-model constants this app used to hard-code. Read them off
+    `vehicleControlConfig` so a new car configures itself instead of needing hand-calibration."""
+    cfg = v.get("vehicleControlConfig")
+    if isinstance(cfg, str):
+        try:
+            cfg = json.loads(cfg or "{}")
+        except Exception:
+            return
+    if not isinstance(cfg, dict):
+        return
+
+    # Tyre scale. The platform states it outright, e.g. appKpaFormula = "data * 1.373" -- exactly
+    # the number owners of direct-TPMS cars previously had to derive against their own dashboard.
+    formula = str(cfg.get("appKpaFormula") or cfg.get("webTirePressureFormula") or "")
+    m = re.search(r"data\s*\*\s*([0-9]*\.?[0-9]+)", formula)
+    if m:
+        scale = float(m.group(1))
+        have = c.get("tpms_scale")
+        if have is None:
+            c["tpms_scale"] = scale
+            say(f"  tyre scale from CarLinko: {scale} kPa per raw unit")
+        elif abs(float(have) - scale) > 1e-9:
+            say(f"  note: CarLinko says tyre scale is {scale}, your creds.json has {have} "
+                f"- keeping yours (delete tpms_scale to use theirs)")
+
+    # Powertrain. A BEV reports powerConsumption only; a plug-in hybrid reports both.
+    fuel, power = bool(cfg.get("fuelConsumption")), bool(cfg.get("powerConsumption"))
+    if fuel and power and not c.get("powertrain"):
+        c["powertrain"] = "phev"
+        say("  detected a plug-in hybrid - fuel readouts enabled")
+
+
 def main():
     c = {}
     if os.path.exists(CREDS):
@@ -170,6 +203,7 @@ def main():
                 say("  found your car's own image from CarLinko")
         except Exception:
             pass
+        learn_from_config(c, v)
         json.dump(c, open(CREDS, "w"), indent=2)
         try:
             os.chmod(CREDS, 0o600)
