@@ -18,6 +18,13 @@
   "petrol_kml": 12.0,
   "tyre_unit": "psi",
   "tpms_scale": 1.373,
+  "specs": {
+    "_comment": "OPTIONAL brochure figures for YOUR model. Omit and the spec card is hidden rather than showing another car's numbers.",
+    "label": "Your Car",
+    "source": "manufacturer",
+    "performance": [["Power", 210, "PS"], ["Battery", 60.9, "kWh"]],
+    "dimensions": [["Length", 4380, "mm"]]
+  },
   "powertrain": "auto",
   "chemistry": "lfp",
   "full_charge_days": 7,

@@ -547,26 +547,14 @@
     </div>
   </section>
 
-  <section class="spec">
-    <div class="head2"><div class="over">Specifications</div><span class="badge ok" id="specBadge">Jaecoo J5 EV</span></div>
-    <div class="over specsub" style="margin-top:0">Performance</div>
-    <div class="speclist">
-      <div><span>Power</span><b>210<u>PS</u></b></div>
-      <div><span>Torque</span><b>288<u>Nm</u></b></div>
-      <div><span>0&ndash;100 km/h</span><b>7.3<u>s</u></b></div>
-      <div><span>DC 10&ndash;80%</span><b>28<u>min</u></b></div>
-      <div><span>Battery</span><b>60.9<u>kWh</u></b></div>
-      <div><span>Range NEDC</span><b>461<u>km</u></b></div>
-      <div class="full"><span>Drivetrain</span><b>FWD</b></div>
-    </div>
-    <div class="over specsub">Dimensions</div>
-    <div class="speclist">
-      <div><span>Length</span><b>4380<u>mm</u></b></div>
-      <div><span>Width</span><b>1860<u>mm</u></b></div>
-      <div><span>Height</span><b>1650<u>mm</u></b></div>
-      <div><span>Wheelbase</span><b>2620<u>mm</u></b></div>
-      <div class="full"><span>Ground clearance</span><b>200<u>mm</u></b></div>
-    </div>
+  <!-- Filled from DATA.specs. Hidden entirely when we have no figures for this car — brochure
+       numbers are per-model facts, and the wrong car's are worse than none. -->
+  <section class="spec" style="display:none">
+    <div class="head2"><div class="over">Specifications</div><span class="badge ok" id="specBadge">&mdash;</span></div>
+    <div class="over specsub" style="margin-top:0" id="specPerfHd">Performance</div>
+    <div class="speclist" id="specPerf"></div>
+    <div class="over specsub" id="specDimHd">Dimensions</div>
+    <div class="speclist" id="specDim"></div>
   </section>
 
   <section class="settings">
@@ -1282,13 +1270,37 @@ function bFlex(){ const d=DATA, L=d.lifetime||{}, I=d.insights||{}, H=d.health||
     </div>
     <div class="sub" style="text-align:center;margin-top:14px">${tn('Screenshot to flex · plate & VIN never shown here','Screenshot buat pamer · plat & VIN tak pernah tampil di sini')}</div>`};
 }
-function bSpec(){ const I=DATA.insights||{};
-  return {title:tn('Jaecoo J5 EV · specs','Jaecoo J5 EV · spesifikasi'), lead:tn('Manufacturer figures (Andalan Motors).','Angka pabrikan (Andalan Motors).'),
-    rows:[[tn('Power','Tenaga'),'210 PS'],[tn('Torque','Torsi'),'288 Nm'],['0–100 km/h','7.3 s'],[tn('DC fast 10–80%','DC cepat 10–80%'),'28 min'],
-      [tn('Battery (gross)','Baterai (kotor)'),'60.9 kWh'],[tn('Range (NEDC)','Jangkauan (NEDC)'),'461 km'],[tn('Drivetrain','Penggerak'),'FWD'],
-      ['L × W × H','4380 × 1860 × 1650 mm'],[tn('Wheelbase','Jarak sumbu roda'),'2620 mm'],[tn('Ground clearance','Jarak ke tanah'),'200 mm']],
-    note:tn(`Two honesty notes: <b>60.9 kWh is gross</b> — usable is ~58.9 kWh (what charges are billed against). <b>NEDC 461 km is an optimistic lab cycle</b> — your measured real-world range is ~${I.real_range||'—'} km. Specs are reference only; everything else in the app is live from your car.`,
-      `Dua catatan jujur: <b>60.9 kWh itu kotor</b> — yang berguna ~58.9 kWh (dasar tagihan pengisian). <b>NEDC 461 km itu siklus lab yang optimis</b> — jangkauan nyata terukur kamu ~${I.real_range||'—'} km. Spesifikasi cuma rujukan; sisanya di app langsung dari mobil.`)};
+function bSpec(){ const I=DATA.insights||{}, S=DATA.specs;
+  if(!S) return {title:tn('Specifications','Spesifikasi'), lead:'',
+    rows:[], note:tn(`No brochure figures bundled for this model. They can't be read from the car — nothing in the telemetry carries power, torque or dimensions — so rather than show another car's numbers, this shows none. Add a <code>specs</code> block to creds.json to fill in your own.`,
+      `Belum ada angka brosur untuk model ini. Angka itu tak bisa dibaca dari mobil — telemetri tidak membawa tenaga, torsi atau dimensi — jadi daripada menampilkan angka mobil lain, tidak ditampilkan sama sekali. Tambahkan blok <code>specs</code> di creds.json untuk mengisinya sendiri.`)};
+  const unit=r=>r[2]?r[1]+' '+r[2]:String(r[1]);
+  const rows=(S.performance||[]).map(r=>[tn(r[0],r[0]),unit(r)])
+              .concat((S.dimensions||[]).map(r=>[tn(r[0],r[0]),unit(r)]));
+  const notes=(S.notes||[]);
+  let note=tn(`Manufacturer figures${S.source?' ('+S.source+')':''}. Reference only — everything else in the app is live from your car.`,
+              `Angka pabrikan${S.source?' ('+S.source+')':''}. Hanya rujukan — sisanya di app langsung dari mobil.`);
+  if(notes.includes('gross_vs_usable')||notes.includes('nedc_optimistic'))
+    note=tn(`Two honesty notes: the quoted battery is <b>gross</b> — usable is ~${DATA.battery_kwh||'—'} kWh (what charges are billed against). A quoted <b>NEDC range is an optimistic lab cycle</b> — your measured real-world range is ~${I.real_range||'—'} km. Specs are reference only; everything else in the app is live from your car.`,
+            `Dua catatan jujur: kapasitas baterai yang tertulis itu <b>kotor</b> — yang berguna ~${DATA.battery_kwh||'—'} kWh (dasar tagihan pengisian). <b>Jangkauan NEDC itu siklus lab yang optimis</b> — jangkauan nyata terukur kamu ~${I.real_range||'—'} km. Spesifikasi cuma rujukan; sisanya di app langsung dari mobil.`);
+  return {title:(S.label||tn('Specifications','Spesifikasi'))+tn(' · specs',' · spesifikasi'),
+    lead:tn('Manufacturer figures.','Angka pabrikan.'), rows:rows, note:note};
+}
+// Build the spec card from DATA.specs, or hide it when we have nothing true to show.
+function applySpecs(){
+  const sec=document.querySelector('.spec'); if(!sec) return;
+  const S=DATA.specs;
+  sec.style.display = S ? '' : 'none';
+  if(!S) return;
+  $('specBadge').textContent = S.label || (DATA.vehicle&&DATA.vehicle.model) || '—';
+  const fill=(el,list)=>{ el.innerHTML=''; (list||[]).forEach((r,i,arr)=>{
+      const d=document.createElement('div');
+      if(arr.length%2 && i===arr.length-1) d.className='full';
+      d.innerHTML='<span>'+r[0]+'</span><b>'+r[1]+(r[2]?'<u>'+r[2]+'</u>':'')+'</b>';
+      el.appendChild(d); }); };
+  fill($('specPerf'),S.performance); fill($('specDim'),S.dimensions);
+  $('specPerfHd').style.display=(S.performance||[]).length?'':'none';
+  $('specDimHd').style.display =(S.dimensions ||[]).length?'':'none';
 }
 const SHEETS={battery:bBattery,rpkm:bRpkm,forecast:bForecast,range:bRange,health:bHealth,eff:bEff,charge:bCharge,tyres:bTyres,odo:bOdo,volt:bVolt,speed:bSpeed,life:bLife,care:bCare,spec:bSpec};
 function bind(el,key){ if(!el)return; el.classList.add('tappable'); el.addEventListener('click',()=>sheet(SHEETS[key]())); }
@@ -1330,6 +1342,7 @@ function applyPI(){ $('eye').innerHTML = hidePI? EYE_OFF : EYE_ON;
   if(m){ $('modelLabel').textContent=m; $('abTtl').textContent=m.replace(/^Jaecoo\s+/i,''); }
   applyCarImage(m);
   applyFuel();
+  applySpecs();
 }
 // PHEV only: the car reports a fuel tank alongside the battery. Hidden entirely on a BEV, where
 // both fuel bytes are always 0. Fuel *range* isn't decoded yet, so "Range" above stays EV-only —

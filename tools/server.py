@@ -198,6 +198,37 @@ CHEMISTRY = (_CC.get("chemistry") or "lfp").lower()    # lfp | nmc — J5 is LFP
 # a render for falls back to a neutral silhouette (see web/car-generic.svg) instead.
 #   your own picture  >  CarLinko's render of your actual car  >  (client picks J5 or silhouette)
 CAR_IMAGE = (_CC.get("car_image") or "").strip() or ("/car-photo" if VEHICLE_IMG else None)
+
+# Brochure specs. These are per-model facts nothing in the telemetry can tell us, so they can only
+# come from a table or from you. Showing the J5's numbers to a Tiggo owner is stating a falsehood,
+# so an unknown model gets no spec card at all -- see issue #3.
+MODEL_SPECS = {
+    "jaecoo j5 ev": {
+        "label": "Jaecoo J5 EV", "source": "Andalan Motors",
+        "performance": [["Power", 210, "PS"], ["Torque", 288, "Nm"], ["0-100 km/h", 7.3, "s"],
+                        ["DC 10-80%", 28, "min"], ["Battery", 60.9, "kWh"],
+                        ["Range NEDC", 461, "km"], ["Drivetrain", "FWD", ""]],
+        "dimensions": [["Length", 4380, "mm"], ["Width", 1860, "mm"], ["Height", 1650, "mm"],
+                       ["Wheelbase", 2620, "mm"], ["Ground clearance", 200, "mm"]],
+        "notes": ["gross_vs_usable", "nedc_optimistic"],
+    },
+}
+
+def model_specs(model=None):
+    """Specs for this car, or None. creds.json `specs` wins, so an owner can fill in a model we
+    don't ship -- and nothing is shown if neither we nor they know. `model` is passed explicitly
+    by demo mode, which has its own vehicle rather than the one in creds.json."""
+    if isinstance(_CC.get("specs"), dict):
+        return _CC["specs"]
+    name = (model if model is not None else VEHICLE.get("model") or "").strip().lower()
+    if not name:
+        return None
+    for key, spec in MODEL_SPECS.items():                  # tolerate "JAECOO 5 EV" vs "Jaecoo J5 EV"
+        a = name.replace("j5", "5").replace(" ", "")
+        b = key.replace("j5", "5").replace(" ", "")
+        if a == b or a.startswith(b) or b.startswith(a):
+            return spec
+    return None
 # bev | phev | auto. "auto" calls it a PHEV once a frame reports a non-zero fuel tank or fuel
 # consumption -- both are hard 0 on every BEV frame we've seen, so a BEV never trips it.
 POWERTRAIN = (_CC.get("powertrain") or "auto").lower()
@@ -528,6 +559,7 @@ def demo_summary():
         "battery_kwh": cap, "powertrain": "bev", "fuel": None,
         "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
         "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
+        "specs": model_specs("Jaecoo J5 EV"),   # demo car, not whatever creds.json says
         "energy": {"today_kwh": 6.7, "consumption": 12.9, "rating": "normal",
                    "week_consumption": 13.0, "source": "car"},
         "charging": {"active": False, "session_kwh": 0.0, "rate_kw": None, "soc": None,
@@ -571,6 +603,7 @@ def summary():
            "battery_kwh": CAP_KWH, "powertrain": "bev", "fuel": None,
            "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
            "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
+           "specs": model_specs(),
            "energy": {"today_kwh": 0.0, "consumption": None, "rating": None,
                       "week_consumption": None},
            "charging": {"active": False, "session_kwh": 0.0, "rate_kw": None, "soc": None,

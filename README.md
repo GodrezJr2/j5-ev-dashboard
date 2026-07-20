@@ -212,6 +212,7 @@ stays private without exposing anything to the internet.
 | `tyre_unit` | | `psi` (default), `bar`, or `kpa` for the tyre display |
 | `tpms_scale` | | raw tyre-byte → kPa scale. J5 is indirect (no real PSI); cars that send real pressure need this recalibrated (see below) |
 | `car_image` | auto | override for the dashboard hero picture. Normally unnecessary — `setup.py` saves the render CarLinko hosts of *your* car (right model, right colour) and the server caches it at `/car-photo`. Set this to a filename in `web/` or a full URL only if you'd rather use your own photo |
+| `specs` | | brochure figures for the **Specifications** card — `{label, source, performance:[[name,value,unit]], dimensions:[…]}`. Only the J5's are bundled; any other model hides the card rather than showing another car's numbers, so fill this in if you want it |
 | `powertrain` | | `auto` (default), `bev` or `phev`. On `auto` the car is treated as a PHEV once it reports a fuel tank — a BEV never does, so this stays off unless it should be on |
 | `chemistry` | | `lfp` (default) or `nmc` — picks the battery-care advice |
 | `full_charge_days` | | how often to recommend a 100% charge. Default `7` for LFP, `90` for NMC |
