@@ -167,6 +167,11 @@ def decode(hexstr):
         d["speed"] = round(int.from_bytes(b[14:16], "big") / 16.0, 1)  # km/h: bytes14-15 BE /16 (calibrated live: raw 320 = 20 km/h)
     if len(b) > 55:
         d["consumption"] = round(b[55] * 0.1, 1)           # car's own avg kWh/100km (byte55 x0.1; matches dash 12.2)
+        # PHEV-only fields. Both bytes are 0 in all 13,018 logged J5 (BEV) frames, and on a Chery
+        # Tiggo 8 PHEV they read exactly what its dash showed (58% tank, 0.80 L/100km) -- see #2.
+        # Kept raw here; summary() decides whether this car has a fuel tank at all.
+        d["fuel_pct"]   = b[21]                            # fuel tank %
+        d["fuel_l_100"] = round(b[53] * 0.1, 1)            # fuel consumption L/100km
     d["tyre"] = b[44:52] if len(b) >= 52 else None         # 4 psi + 4 temp, FF=parked
     return d
 
@@ -187,6 +192,9 @@ CHEMISTRY = (_CC.get("chemistry") or "lfp").lower()    # lfp | nmc — J5 is LFP
 # Jaecoo J5; showing it to an Omoda/Chery/Tiggo owner is just wrong, so anything we don't have
 # a render for falls back to a neutral silhouette (see web/car-generic.svg) instead.
 CAR_IMAGE = (_CC.get("car_image") or "").strip() or None
+# bev | phev | auto. "auto" calls it a PHEV once a frame reports a non-zero fuel tank or fuel
+# consumption -- both are hard 0 on every BEV frame we've seen, so a BEV never trips it.
+POWERTRAIN = (_CC.get("powertrain") or "auto").lower()
 # LFP's discharge curve is nearly flat, so the BMS loses its SoC reference without a periodic
 # 100% charge (it re-anchors + balances cells there). ~weekly is the common OEM line; NMC has no
 # such need and prefers not to sit full, so don't nag those owners.
@@ -511,7 +519,7 @@ def demo_summary():
         "online": True, "battery": 72, "range_km": 318, "odometer": 8421, "volt12": 13.6,
         "ignition": 0, "speed": None, "moving": False, "avg_speed": 41,
         "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
-        "battery_kwh": cap,
+        "battery_kwh": cap, "powertrain": "bev", "fuel": None,
         "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
         "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
         "energy": {"today_kwh": 6.7, "consumption": 12.9, "rating": "normal",
@@ -554,7 +562,7 @@ def summary():
            "moving": False, "avg_speed": None, "insights": {}, "health": {}, "drain": None,
            "volt12_min7d": None, "volt12_status": None,
            "updated": None, "age_min": None,
-           "battery_kwh": CAP_KWH,
+           "battery_kwh": CAP_KWH, "powertrain": "bev", "fuel": None,
            "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
            "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
            "energy": {"today_kwh": 0.0, "consumption": None, "rating": None,
@@ -588,6 +596,16 @@ def summary():
                ignition=dec.get("ignition"), speed=None, updated=dt)
     out["age_min"] = round((time.time() - ts) / 60, 1)
     out["online"] = out["age_min"] is not None and out["age_min"] < 40
+    # Fuel side of a PHEV. Decided over the whole window, not the latest frame, so a car sitting at
+    # an empty tank still counts as a PHEV. A BEV reports 0 for both bytes forever and stays "bev",
+    # which keeps the fuel UI off every existing install.
+    phev = POWERTRAIN == "phev" or (POWERTRAIN == "auto" and
+           any(d2.get("fuel_pct") or d2.get("fuel_l_100") for _t, _d, d2 in data))
+    out["powertrain"] = "phev" if phev else "bev"
+    if phev:
+        out["fuel"] = {"pct": dec.get("fuel_pct"), "l_100": dec.get("fuel_l_100")}
+        # NOTE: fuel *range* is not decoded yet -- the only candidate byte pair mirrors EV range on
+        # every BEV frame, so one PHEV sample can't tell the two apart. Tracked in issue #2.
     # reliable "moving now": latest odometer rose vs the prior fresh frame (speed byte is garbage)
     if len(data) >= 2:
         (tsa, _, da), (tsb, _, db) = data[-2], data[-1]

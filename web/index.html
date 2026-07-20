@@ -454,6 +454,7 @@
       </div>
       <div class="side">
         <div class="kv"><span class="over">Range</span><div class="val num"><span id="range">&mdash;</span><u>km</u></div></div>
+        <div class="kv" id="fuelKv" style="display:none"><span class="over" id="fuelLbl">Fuel</span><div class="val num"><span id="fuelPct">&mdash;</span><u>%</u></div></div>
         <div class="kv"><span class="over">State</span><div><span class="pill" id="pill">&mdash;</span></div></div>
       </div>
     </div>
@@ -779,6 +780,7 @@ const MAP_ID={
   "saves":"hemat","vs petrol":"vs bensin","drives":"pakai","left now":"tersisa","car rates":"mobil klaim","since":"sejak",
   "on":"pada","not logged yet":"belum tercatat","LFP likes a weekly 100%":"LFP suka diisi 100% tiap minggu",
   "next in":"berikutnya","due today":"jatuh tempo hari ini","overdue by":"telat","No 100% logged":"Belum ada isi 100%",
+  "Fuel":"Bensin",
   "NMC — no routine 100% needed":"NMC — tak perlu 100% rutin",
   "Updated":"Diperbarui","self-hosted · live":"mandiri · langsung","Waiting for the first telemetry frame.":"Menunggu data telemetri pertama.",
   "healthy":"sehat","getting low":"mulai lemah","check 12V":"cek aki 12V","min":"min",
@@ -1327,6 +1329,18 @@ function applyPI(){ $('eye').innerHTML = hidePI? EYE_OFF : EYE_ON;
   const m=(v.model||'').trim();                          // reflect the auto-detected car (works for other CarLinko models)
   if(m){ $('modelLabel').textContent=m; $('abTtl').textContent=m.replace(/^Jaecoo\s+/i,''); }
   applyCarImage(m);
+  applyFuel();
+}
+// PHEV only: the car reports a fuel tank alongside the battery. Hidden entirely on a BEV, where
+// both fuel bytes are always 0. Fuel *range* isn't decoded yet, so "Range" above stays EV-only —
+// don't imply it's a combined figure.
+function applyFuel(){
+  const kv=$('fuelKv'); if(!kv) return;
+  const f=DATA.fuel, on=DATA.powertrain==='phev' && f && f.pct!=null;
+  kv.style.display = on ? '' : 'none';
+  if(!on) return;
+  $('fuelPct').textContent = f.pct;
+  $('fuelLbl').textContent = f.l_100!=null ? T('Fuel')+' · '+f.l_100+' L/100' : T('Fuel');
 }
 // Hero picture. CarLinko covers a lot of Chery-group cars and we only ship a J5 render, so:
 // your own picture (car_image in creds.json) > the bundled render when the car really is a J5 >

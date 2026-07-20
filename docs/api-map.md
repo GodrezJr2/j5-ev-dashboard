@@ -113,9 +113,27 @@ the only honest output is status. An abnormal tyre would surface via CarLinko al
 
 | Field | Blob offset | Value |
 |---|---|---|
+| `ignition` | byte 3 | 0 = off/parked |
+| `volt12` | bytes 12–13 (BE u16 ×0.01) | 13.84 V |
+| `speed_kmh` | bytes 14–15 (BE u16 ÷16) | raw 320 = 20 km/h |
+| `odometer` | bytes 18–20 (BE u24) | 882 |
+| `fuel_pct` **(PHEV)** | byte 21 | 58 % — `0` on every BEV frame |
 | `battery_pct` | byte 28 | 49 |
-| `range_km` | bytes 29–30 (BE u16) | 248 |
-| tyre block (4 PSI + 4 temp) | ~byte 44–51 | always `FF` (indirect TPMS — never populated, see above) |
+| `range_km` (EV) | bytes 29–30 (BE u16) | 248 |
+| tyre block (4 pressure + 4 temp) | bytes 44–51 | `FF` on indirect TPMS (J5); real values on direct TPMS. temp = `raw × 0.65 − 40` |
+| `fuel_l_100` **(PHEV)** | byte 53 (×0.1) | 0.8 L/100 km — `0` on every BEV frame |
+| `consumption` | byte 55 (×0.1) | 12.4 kWh/100 km (matches J5 dash; **does not** match the PHEV's displayed figure) |
+
+PHEV offsets come from a Chery Tiggo 8 PHEV frame contributed in
+[#2](https://github.com/GodrezJr2/j5-ev-dashboard/issues/2), cross-checked against 13,018 logged
+J5 (BEV) frames where bytes 21, 53 and 54 are `0` in every single one.
+
+**Still unidentified:**
+- **fuel range.** The candidate pair (bytes 70–71 BE) reads 652 on the PHEV, matching its
+  fuel range — but on the BEV it mirrors `range_km` exactly in all 13,018 frames, so a single
+  PHEV sample can't separate "fuel range" from "the car's headline range". Needs a second PHEV
+  capture at a different fuel level.
+- **byte 54** — 20 on the PHEV, `0` on every BEV frame. Meaning unknown.
 
 So the whole product can run off the WebSocket + token, no REST signing needed for reads.
 

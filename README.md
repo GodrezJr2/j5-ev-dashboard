@@ -203,6 +203,7 @@ stays private without exposing anything to the internet.
 | `tyre_unit` | | `psi` (default), `bar`, or `kpa` for the tyre display |
 | `tpms_scale` | | raw tyre-byte → kPa scale. J5 is indirect (no real PSI); cars that send real pressure need this recalibrated (see below) |
 | `car_image` | | a picture of *your* car for the dashboard hero — a filename in `web/` or a full URL. Only the Jaecoo J5 render ships with the app; any other model falls back to a neutral silhouette rather than showing the wrong car |
+| `powertrain` | | `auto` (default), `bev` or `phev`. On `auto` the car is treated as a PHEV once it reports a fuel tank — a BEV never does, so this stays off unless it should be on |
 | `chemistry` | | `lfp` (default) or `nmc` — picks the battery-care advice |
 | `full_charge_days` | | how often to recommend a 100% charge. Default `7` for LFP, `90` for NMC |
 | `gmaps_key` | | Google Maps key — enables trip planner + SPKLU map (else OSM fallback) |
@@ -234,7 +235,13 @@ Settings other owners have confirmed. Please add yours via a
 | Car | `battery_kwh` | `tpms_scale` | `tyre_unit` | Notes |
 | --- | --- | --- | --- | --- |
 | Jaecoo J5 EV (ID) | `58.9` | n/a | `psi` | Reference car. *Indirect* TPMS — reports tyre **status only**, never a pressure |
-| Chery Tiggo 8 PHEV 2025 (ZA) | `18.3` | `1.779` | `bar` | Direct TPMS (raw `136` = 2.42 bar). PHEV — EV-only metrics are approximate; fuel range isn't decoded yet |
+| Chery Tiggo 8 PHEV 2025 (ZA) | `18.3` | `1.779` | `bar` | Direct TPMS (raw `136` = 2.42 bar). PHEV — fuel level + fuel consumption are decoded; fuel *range* isn't yet ([#2](https://github.com/GodrezJr2/j5-ev-dashboard/issues/2)) |
+
+**PHEVs.** Fuel tank % (byte 21) and fuel consumption L/100 km (byte 53) are decoded and shown
+next to the battery. Both bytes read `0` on every BEV frame, so BEV owners see no fuel UI. The
+`range_km` figure stays **EV-only** — the car's fuel range hasn't been pinned down yet, so nothing
+here pretends to be a combined range. Because a PHEV also covers distance on petrol, kWh/100 km and
+savings-vs-petrol are approximate on one.
 
 ## Where to run it
 
