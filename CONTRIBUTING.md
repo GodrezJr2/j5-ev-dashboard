@@ -4,6 +4,11 @@ Thanks for taking a look! This started as a personal reverse-engineering project
 Jaecoo J5 EV and grew into something other owners can use. Contributions — especially from people
 with **other CarLinko cars, regions, or firmware** — are very welcome.
 
+By participating, you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md). Pull requests get
+a [template](.github/PULL_REQUEST_TEMPLATE.md) — the parts about *which car you validated against*
+and *confirmed vs inferred* matter most here, because wrong telemetry silently lies to people about
+their own vehicle.
+
 ## Good first contributions
 
 - **Confirm compatibility.** Run it on your car and open a

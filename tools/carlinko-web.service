@@ -1,13 +1,18 @@
+# Reference unit. tools/install.sh generates this for your own user and paths -- prefer that.
+# By hand: replace YOUR_USER and /path/to/j5-ev-dashboard, then
+#   sudo cp carlinko-web.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now carlinko-web
 [Unit]
-Description=CarLinko dashboard (J5 EV telemetry)
+Description=CarLinko dashboard (EV telemetry)
 After=network-online.target
+Wants=network-online.target
 
 [Service]
-User=jay
-WorkingDirectory=/home/jay/carlinko
-ExecStart=/home/jay/carlinko/venv/bin/python /home/jay/carlinko/server.py 8088
+User=YOUR_USER
+WorkingDirectory=/path/to/j5-ev-dashboard/tools
+ExecStart=/path/to/j5-ev-dashboard/venv/bin/python /path/to/j5-ev-dashboard/tools/server.py 8088
 Restart=always
-RestartSec=3
+RestartSec=5
 Environment=PYTHONUNBUFFERED=1
 
 [Install]

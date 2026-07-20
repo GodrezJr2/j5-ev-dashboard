@@ -1,3 +1,7 @@
+# Reference unit. tools/install.sh generates this for your own user and paths -- prefer that.
+# By hand: replace YOUR_USER and /path/to/j5-ev-dashboard, then
+#   sudo cp carlinko-logger.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now carlinko-logger
 [Unit]
 Description=CarLinko adaptive telemetry logger (fast when awake, slow when parked)
 After=network-online.target
@@ -5,13 +9,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=jay
-WorkingDirectory=/home/jay/carlinko
-ExecStart=/home/jay/carlinko/venv/bin/python -u /home/jay/carlinko/logger.py --adaptive
+User=YOUR_USER
+WorkingDirectory=/path/to/j5-ev-dashboard/tools
+ExecStart=/path/to/j5-ev-dashboard/venv/bin/python -u /path/to/j5-ev-dashboard/tools/logger.py --adaptive
 Restart=always
 RestartSec=10
-StandardOutput=append:/home/jay/carlinko/logger.log
-StandardError=append:/home/jay/carlinko/logger.log
+Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target

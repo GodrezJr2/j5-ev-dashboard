@@ -183,7 +183,34 @@ it logs in and **auto-detects your car** (vehicle id, device SN, VIN, plate, mod
 Prefer the terminal? `docker compose run --rm web python setup.py` does the same interactively.
 Everything that persists (creds, token, database) lives in `./data`.
 
-### Quick start — Python (no Docker)
+### Quick start — one command (Linux, always-on)
+
+If you have a machine that stays on — a home server, a mini PC, a Raspberry Pi — this does the
+whole thing: virtualenv, dependencies, login, and both systemd services so it survives reboots.
+
+```bash
+git clone https://github.com/GodrezJr2/j5-ev-dashboard.git
+cd j5-ev-dashboard
+./tools/install.sh                 # add --tailscale to reach it from your phone anywhere
+```
+
+It only asks what it can't work out: your CarLinko login, and your country/currency. Everything
+scoped to the current user and this folder — no paths assumed, nothing installed globally except
+Tailscale if you ask for it.
+
+```
+./tools/install.sh --tailscale     # + private access from anywhere, nothing exposed publicly
+./tools/install.sh --port 9000     # different port
+./tools/install.sh --no-service    # just set it up; don't install systemd units
+```
+
+**Why `--tailscale`?** The logger needs to run 24/7 to build trends, charge history and cost. You'll
+want the dashboard on your phone — but this reads your car's data, so you should *not* port-forward
+it to the open internet. Tailscale puts the machine and your phone on a private network, so the
+dashboard is reachable from anywhere while staying invisible to everyone else. It's free for
+personal use.
+
+### Quick start — Python (manual)
 ```bash
 pip install requests websocket-client
 cd tools
@@ -194,10 +221,9 @@ python server.py 8088          # dashboard at http://<host>:8088
 Prefer not to use the helper? `cp creds.example.json tools/creds.json && chmod 600 tools/creds.json`
 and fill it in by hand. `creds.json` and `token.txt` are gitignored — never commit them.
 
-For always-on use, install the provided systemd units
-([carlinko-logger.service](tools/carlinko-logger.service),
-[carlinko-web.service](tools/carlinko-web.service)) and reach the dashboard over Tailscale so it
-stays private without exposing anything to the internet.
+Reference systemd units are in [`tools/`](tools/) if you'd rather write them yourself
+([logger](tools/carlinko-logger.service), [web](tools/carlinko-web.service)) — but `install.sh`
+generates correct ones for your user and paths, so you shouldn't need to.
 
 ### `creds.json` reference
 | key | required | what |

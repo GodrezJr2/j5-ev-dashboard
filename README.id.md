@@ -183,7 +183,33 @@ nanti dia login dan **auto-deteksi mobilmu** (vehicle id, device SN, VIN, plat, 
 Lebih suka terminal? `docker compose run --rm web python setup.py` melakukan hal yang sama secara
 interaktif. Semua yang persisten (creds, token, database) ada di `./data`.
 
-### Cara cepat — Python (tanpa Docker)
+### Cara cepat — satu perintah (Linux, selalu nyala)
+
+Kalau punya mesin yang nyala terus — home server, mini PC, Raspberry Pi — ini mengurus semuanya:
+virtualenv, dependensi, login, dan dua service systemd biar selamat dari reboot.
+
+```bash
+git clone https://github.com/GodrezJr2/j5-ev-dashboard.git
+cd j5-ev-dashboard
+./tools/install.sh                 # tambah --tailscale untuk akses dari HP di mana pun
+```
+
+Yang ditanya cuma yang memang tak bisa ditebak: login CarLinko dan negara/mata uangmu. Semuanya
+terikat ke user dan folder ini — tak ada path yang diasumsikan, tak ada yang dipasang global
+kecuali Tailscale kalau kamu minta.
+
+```
+./tools/install.sh --tailscale     # + akses privat dari mana saja, tanpa ekspos ke publik
+./tools/install.sh --port 9000     # port lain
+./tools/install.sh --no-service    # cuma setup; tanpa systemd
+```
+
+**Kenapa `--tailscale`?** Logger perlu jalan 24/7 untuk membangun tren, riwayat pengisian dan biaya.
+Kamu pasti mau dashboard-nya di HP — tapi ini membaca data mobilmu, jadi **jangan** di-port-forward
+ke internet terbuka. Tailscale menaruh mesin dan HP-mu di satu jaringan privat, jadi dashboard bisa
+diakses dari mana saja tapi tetap tak terlihat oleh siapa pun. Gratis untuk pemakaian pribadi.
+
+### Cara cepat — Python (manual)
 ```bash
 pip install requests websocket-client
 cd tools
@@ -194,10 +220,9 @@ python server.py 8088          # dashboard di http://<host>:8088
 Ga mau pakai helper? `cp creds.example.json tools/creds.json && chmod 600 tools/creds.json`
 lalu isi manual. `creds.json` dan `token.txt` gitignored — jangan pernah di-commit.
 
-Untuk selalu-nyala, pasang unit systemd yang disediakan
-([carlinko-logger.service](tools/carlinko-logger.service),
-[carlinko-web.service](tools/carlinko-web.service)) dan akses dashboard lewat Tailscale supaya
-tetap privat tanpa mengekspos apa pun ke internet.
+Unit systemd rujukan ada di [`tools/`](tools/) kalau mau menulis sendiri
+([logger](tools/carlinko-logger.service), [web](tools/carlinko-web.service)) — tapi `install.sh`
+sudah membuatkan yang benar sesuai user dan path-mu, jadi harusnya tak perlu.
 
 ### Referensi `creds.json`
 | key | wajib | apa |
