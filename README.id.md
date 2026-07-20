@@ -12,14 +12,24 @@ Ini dibikin karena app bawaan CarLinko nyembunyiin sebagian besar info ini (ban 
 trip). Semua di sini diturunkan dari data yang **memang sudah** dikirim mobil ke cloud-nya —
 project ini cuma baca akunmu sendiri dan nampilinnya dengan benar.
 
-> Dibangun & divalidasi pada satu mobil nyata. Output biaya charge cocok dengan struk PLN
-> Mobile pemiliknya sampai **99,6–99,9 %** (lihat [Akurasi](#akurasi)).
+> Dibangun dari mobil nyata, bukan dari lembar spesifikasi. Output biaya charge cocok dengan struk
+> PLN Mobile pemiliknya sampai **99,6–99,9 %** (lihat [Akurasi](#akurasi)) — angka itu dari satu
+> mobil, karena butuh struk asli untuk diuji. Decode telemetrinya sendiri sudah terkonfirmasi di dua.
 
-> **Mobil CarLinko lain?** Lapisan login + koneksi cloud-nya generik, jadi *harusnya* jalan
-> untuk mobil apa pun di CarLinko (Jaecoo model lain, Omoda/Chery EV, dll). Tapi ini **baru
-> diuji di Jaecoo J5 EV (Indonesia)** — decode telemetri (byte mana = baterai / range / odometer)
-> dikalibrasi ke J5 dan bisa meleset di model lain. Kalau mobilmu beda, tolong coba & kirim
-> [laporan kompatibilitas](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md) ya. 🙏
+> **Mobil CarLinko lain?** Sudah terkonfirmasi di **dua mobil, dua merek, dua jenis penggerak,
+> dua negara** — Jaecoo J5 EV (BEV, Indonesia) dan Chery Tiggo 8 PHEV (Afrika Selatan). Semua
+> offset byte telemetri identik di keduanya, yang menunjukkan layout blob-nya berasal dari
+> platform CarLinko sendiri, bukan dari modelnya. Konstanta yang memang beda per model (skala
+> ban, jenis penggerak, foto mobilnya) dibaca dari API saat setup, jadi mobil baru sebagian besar
+> mengatur dirinya sendiri.
+>
+> Catatan yang perlu disebut terus terang: Jaecoo, Omoda, Exeed dan Chery semuanya merek
+> **Chery Group**, dan CarLinko itu aplikasi Chery Group — jadi "jalan di CarLinko" realistisnya
+> berarti "jalan se-Chery Group", bukan harfiah mobil apa pun. Dua mobil itu sinyal kuat, bukan
+> bukti: byte yang belum kami petakan bisa saja beda, dan mobil ICE murni belum pernah dicoba.
+> Kalau mobilmu beda, tolong coba & kirim
+> [laporan kompatibilitas](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md) ya — satu mobil kedua
+> jauh lebih berharga buat proyek ini daripada berapa lama pun menatap yang pertama. 🙏
 
 ## Screenshot
 

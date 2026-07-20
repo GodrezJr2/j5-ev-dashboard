@@ -11,14 +11,23 @@ It exists because the stock CarLinko app hides most of this (tyres only show
 Everything here is derived from data the car **already** sends to its own cloud — this
 project just reads your own account and presents it properly.
 
-> Built and validated against a single real car. Charge-cost output matches the owner's
-> PLN Mobile receipts to **99.6–99.9 %** (see [Accuracy](#accuracy)).
+> Built against real cars, not a spec sheet. Charge-cost output matches the owner's PLN Mobile
+> receipts to **99.6–99.9 %** (see [Accuracy](#accuracy)) — that figure is from one car, since it
+> needs real receipts to check against. The telemetry decode itself is confirmed on two.
 
-> **Other CarLinko cars?** The login + cloud connection layer is generic, so it *should* work
-> for any car on CarLinko (other Jaecoo models, Omoda/Chery EVs, etc.). But this is **only
-> tested on a Jaecoo J5 EV (Indonesia)** — the telemetry decode (which byte is battery / range /
-> odometer) is calibrated to the J5 and may be off on other models. If you have a different car,
-> please try it and file a [compatibility report](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md). 🙏
+> **Other CarLinko cars?** Confirmed on **two cars, two brands, two powertrains, two countries** —
+> a Jaecoo J5 EV (BEV, Indonesia) and a Chery Tiggo 8 PHEV (South Africa). Every telemetry byte
+> offset held identical across both, which suggests the blob layout comes from the CarLinko
+> platform itself rather than the model. The per-model constants that *do* differ (tyre scale,
+> powertrain, the car's own photo) are read from the API at setup, so a new car largely configures
+> itself.
+>
+> Caveat worth stating plainly: Jaecoo, Omoda, Exeed and Chery are all **Chery Group** brands, and
+> CarLinko is Chery Group's app — so "works on CarLinko" realistically means "works across Chery
+> Group", not literally any car. Two cars is a strong signal, not proof: bytes we haven't mapped
+> may well differ, and no pure-ICE car has been tried. If you have a different car, please try it
+> and file a [compatibility report](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md) — a second car
+> was worth more to this project than any amount of staring at the first. 🙏
 
 ## Screenshots
 
@@ -272,6 +281,18 @@ The Docker path is identical on every OS — install Docker, then `docker compos
 - **Linux**: `sudo apt install docker.io docker-compose-plugin` (or your distro's equivalent), then the same two commands.
 
 No Docker? Install **Python 3.10+** ([python.org](https://www.python.org/downloads/) on macOS/Windows, `sudo apt install python3 python3-pip` on Linux) and use the *Quick start — Python* steps above.
+
+### Updating a self-hosted box
+
+If you run it from systemd rather than Docker (files copied to the host, no git checkout there),
+`tools/deploy.sh` pushes the working tree, restarts the units, checks `/api/status`, and then
+diffs every file against the box so nothing silently stays behind:
+
+```bash
+./tools/deploy.sh user@host          # or set CARLINKO_HOST
+```
+
+Override paths with `CARLINKO_REMOTE` / `CARLINKO_WEB` / `CARLINKO_SERVICES` if your layout differs.
 
 ### Set it up with an AI coding agent
 If the terminal isn't your thing, paste this into an AI coding agent (Claude Code, Cursor, etc.)
