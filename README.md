@@ -202,7 +202,7 @@ stays private without exposing anything to the internet.
 | `tariff`, `petrol_price`, `petrol_kml` | | your local charging tariff/kWh + petrol price/L + economy, in your currency |
 | `tyre_unit` | | `psi` (default), `bar`, or `kpa` for the tyre display |
 | `tpms_scale` | | raw tyre-byte → kPa scale. J5 is indirect (no real PSI); cars that send real pressure need this recalibrated (see below) |
-| `car_image` | | a picture of *your* car for the dashboard hero — a filename in `web/` or a full URL. Only the Jaecoo J5 render ships with the app; any other model falls back to a neutral silhouette rather than showing the wrong car |
+| `car_image` | auto | override for the dashboard hero picture. Normally unnecessary — `setup.py` saves the render CarLinko hosts of *your* car (right model, right colour) and the server caches it at `/car-photo`. Set this to a filename in `web/` or a full URL only if you'd rather use your own photo |
 | `powertrain` | | `auto` (default), `bev` or `phev`. On `auto` the car is treated as a PHEV once it reports a fuel tank — a BEV never does, so this stays off unless it should be on |
 | `chemistry` | | `lfp` (default) or `nmc` — picks the battery-care advice |
 | `full_charge_days` | | how often to recommend a 100% charge. Default `7` for LFP, `90` for NMC |

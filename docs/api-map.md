@@ -36,7 +36,7 @@ Notes:
 | GET | `/pub/timestamp` | Server time | No auth. `data` = epoch ms. |
 | GET | `/pub/checkAppUpdate?platform=2&type=1&version=1.12.0` | App update check | |
 | GET | `/user/info` | User profile | id 88504, email, nickname Jay, areaCode IDN |
-| GET | `/user/vehicle` | **Vehicle list + full config** | VIN, model, deviceSn, control config, TPMS formulas, images |
+| GET | `/user/vehicle` | **Vehicle list + full config** | VIN, model, deviceSn, control config, TPMS formulas, images. Also `brand` (`OMODA\|JAECOO`), `modelId`, `oldModel` (platform code, e.g. `T13J BEV`), `year`, `areaCode`. `vehicleImgConfig` is a **JSON string** holding `{Front, Side, Top}` CDN URLs for this exact car, and `vehicleImgConfigs` repeats them per `vehicleColor` — so the correct render is available for any CarLinko car, no bundled art needed |
 | GET | `/user/vehicle/terminal/{vehicleId}` | Terminal feature flags | |
 | GET | `/user/device/manage/terminalNoticeConfig/{vehicleId}` | Alert toggles | lowVoltage, illegalOpened, forgetToLock, targetSoc=100... |
 | PUT | `/user/jPush/{regId}` | Register push id | |

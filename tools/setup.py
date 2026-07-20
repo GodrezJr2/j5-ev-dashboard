@@ -160,6 +160,16 @@ def main():
             "model": v.get("model") or "EV",
             "vin": v.get("vin") or "—",
         }
+        # CarLinko hosts a render of YOUR car (right model, right colour). Keep the front view so
+        # the dashboard shows your actual car instead of the bundled J5. Server caches it locally.
+        try:
+            img = json.loads(v.get("vehicleImgConfig") or "{}")
+            front = img.get("Front") or img.get("Side") or img.get("Top")
+            if front:
+                c["vehicle"]["img"] = front
+                say("  found your car's own image from CarLinko")
+        except Exception:
+            pass
         json.dump(c, open(CREDS, "w"), indent=2)
         try:
             os.chmod(CREDS, 0o600)

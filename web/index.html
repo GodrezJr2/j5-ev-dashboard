@@ -1342,9 +1342,10 @@ function applyFuel(){
   $('fuelPct').textContent = f.pct;
   $('fuelLbl').textContent = f.l_100!=null ? T('Fuel')+' · '+f.l_100+' L/100' : T('Fuel');
 }
-// Hero picture. CarLinko covers a lot of Chery-group cars and we only ship a J5 render, so:
-// your own picture (car_image in creds.json) > the bundled render when the car really is a J5 >
-// a neutral silhouette. Never show one brand's car to another brand's owner.
+// Hero picture, best source first. car_image is either your own override or /car-photo — the
+// server-cached copy of CarLinko's own render of this exact car, right model and right colour.
+// Falls back to the bundled J5 render only when the car really is a J5, else a neutral
+// silhouette. Never show one brand's car to another brand's owner.
 function applyCarImage(model){
   const img=$('carImg'); if(!img) return;
   const custom=(DATA.car_image||'').trim();

@@ -51,6 +51,11 @@ def _ensure_db():
 # default (eye-toggle reveals). Falls back to generic labels so the app still runs unconfigured.
 _V = (_creds().get("vehicle") or {})
 VEHICLE = {"plate": _V.get("plate") or "—", "model": _V.get("model") or "EV", "vin": _V.get("vin") or "—"}
+# CarLinko hosts a render of the exact car (model + colour) on its own CDN; setup.py saves the URL.
+# We proxy it through /car-photo and cache it on disk rather than pointing the browser at the
+# vendor's CDN -- keeps the dashboard self-hosted and offline-friendly, and leaks no referer.
+VEHICLE_IMG = (_V.get("img") or "").strip() or None
+_CAR_PHOTO = os.path.join(_DATA, "car-photo.img")
 TPMS_POS = ["FL", "FR", "RL", "RR"]
 
 def is_configured():
@@ -191,7 +196,8 @@ CHEMISTRY = (_CC.get("chemistry") or "lfp").lower()    # lfp | nmc — J5 is LFP
 # Optional path/URL to a picture of YOUR car for the dashboard hero. The bundled render is a
 # Jaecoo J5; showing it to an Omoda/Chery/Tiggo owner is just wrong, so anything we don't have
 # a render for falls back to a neutral silhouette (see web/car-generic.svg) instead.
-CAR_IMAGE = (_CC.get("car_image") or "").strip() or None
+#   your own picture  >  CarLinko's render of your actual car  >  (client picks J5 or silhouette)
+CAR_IMAGE = (_CC.get("car_image") or "").strip() or ("/car-photo" if VEHICLE_IMG else None)
 # bev | phev | auto. "auto" calls it a PHEV once a frame reports a non-zero fuel tank or fuel
 # consumption -- both are hard 0 on every BEV frame we've seen, so a BEV never trips it.
 POWERTRAIN = (_CC.get("powertrain") or "auto").lower()
@@ -1065,6 +1071,23 @@ class H(BaseHTTPRequestHandler):
             return
         if path == "/api/summary":
             self._send(200, json.dumps(summary()).encode(), "application/json")
+            return
+        if path == "/car-photo":     # cached proxy for CarLinko's own render of this exact car.
+            try:                     # Behind the gate: the render gives away model + colour.
+                if not os.path.exists(_CAR_PHOTO):
+                    if not VEHICLE_IMG:
+                        self._send(404, b"no vehicle image", "text/plain"); return
+                    req = urllib.request.Request(VEHICLE_IMG, headers={"User-Agent": "carlinko-dash"})
+                    with urllib.request.urlopen(req, timeout=20) as r:
+                        blob = r.read(8 * 1024 * 1024)    # cap: it's a car render, not a payload
+                    tmp = _CAR_PHOTO + ".part"            # write-then-rename, so an interrupted
+                    with open(tmp, "wb") as f: f.write(blob)   # fetch can't leave a truncated cache
+                    os.replace(tmp, _CAR_PHOTO)
+                with open(_CAR_PHOTO, "rb") as f: blob = f.read()
+                kind = "image/png" if blob[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
+                self._send(200, blob, kind)
+            except Exception as e:
+                self._send(502, ("car image fetch failed: %r" % (e,)).encode(), "text/plain")
             return
         if path == "/api/refresh":                     # manual button: poll the car live, then return
             (ok, msg) = (True, "demo") if DEMO else live_poll()

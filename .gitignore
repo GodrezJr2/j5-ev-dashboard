@@ -10,6 +10,12 @@ tools/token.txt
 creds.json
 tools/creds.json
 
+# cached copy of the car render fetched from CarLinko's CDN
+car-photo.img
+car-photo.img.part
+tools/car-photo.img
+tools/car-photo.img.part
+
 # Python
 __pycache__/
 *.pyc
