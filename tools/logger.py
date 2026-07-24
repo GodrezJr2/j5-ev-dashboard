@@ -138,21 +138,26 @@ def poll_once(conn, _retried=False):
     print(f"{dt}  (no blob — car offline/basement)")
     return None
 
-# adaptive cadence: poll fast while the car is awake (driving/charging), slow when asleep
-FAST = 15          # seconds between polls when active (driving / ignition on)
-CHARGE_FAST = 5    # near-real-time while plugged in. The cloud has its own push lag, so polling
-                   # below ~5 s just re-fetches the same frame and hammers CarLinko -- 5 s is the floor.
-SLOW = 300         # seconds when parked + idle (online)
-HOLD = 600         # stay in FAST this long after the last sign of activity
-OFFLINE_SLOW = 900 # back off when persistently dark (basement = no signal), reconnect fast on return
-OFFLINE_AFTER = 3  # consecutive empty polls before backing off
+# adaptive cadence (seconds). Near-real-time while the car is doing anything -- on the road,
+# charging, or ignition on -- and ease off only when it's parked+idle or genuinely dark. All three
+# tiers are overridable from creds.json so you can tune without editing code.
+ACTIVE = int(_C.get("poll_active")  or 5)   # driving / charging / ignition on -> near real-time.
+                                            # The cloud has its own push lag, so below ~5 s just
+                                            # re-fetches the same frame and hammers CarLinko.
+PARK   = int(_C.get("poll_parked")  or 30)  # parked, engine off, not charging: cloud just replays
+                                            # the last frame, so 5 s would spam identical bytes. 30 s
+                                            # still catches a wake (ignition/plug-in) within 30 s,
+                                            # then it jumps to ACTIVE. Set to 5 for always-real-time.
+OFFLINE_SLOW = int(_C.get("poll_offline") or 900)  # genuinely dark (basement, no signal) -> back off
+HOLD = 600         # keep ACTIVE this long after the last sign of activity (bridges a brief stop)
+OFFLINE_AFTER = 3  # consecutive empty polls before the car counts as dark
 CHG_LOOKBACK = 900 # window (s) to spot an ongoing charge from a SoC rise. SoC is 1%-coarse, so a
-                   # slow AC charge won't tick a whole percent between two 15 s polls -- comparing
-                   # the latest reading to the *prior* one reads "flat" and drops us out of FAST
+                   # slow AC charge won't tick a whole percent between two polls -- comparing the
+                   # latest reading to the *prior* one reads "flat" and drops us out of real-time
                    # mid-charge. Compare to the window's low instead, which still sees the gain.
 
 def adaptive_loop(conn):
-    print(f"adaptive logging to {os.path.abspath(DB)}  (fast={FAST}s active / slow={SLOW}s idle)")
+    print(f"adaptive logging to {os.path.abspath(DB)}  (active={ACTIVE}s / parked={PARK}s / dark={OFFLINE_SLOW}s)")
     active_until = 0.0
     last_odo = None
     soc_hist = []      # (ts, soc) within CHG_LOOKBACK, to spot a slow charge the prior frame can't
@@ -167,29 +172,28 @@ def adaptive_loop(conn):
         if st:
             miss = 0
             soc = st.get("battery"); odo = st.get("odo_guess")
-            # awake = driving (odometer rising, reliable) or charging (see below) or ignition flag.
-            # speed/ignition bytes are unreliable at a standstill, so odometer is the primary signal.
-            driving = last_odo is not None and odo is not None and odo > last_odo
+            # on the road = ignition on (reliable while the car is driving) or the odometer just
+            # advanced. Charging is handled separately below (ignition is 0 on some cars while charging).
+            driving = bool(st.get("ignition")) or (last_odo is not None and odo is not None and odo > last_odo)
             if soc is not None:
                 soc_hist.append((now, soc))
-            if driving or st.get("ignition"):
+            if driving:
                 active_until = now + HOLD
             if odo is not None: last_odo = odo
         else:
             miss += 1
         # charge detector: SoC now above the window's low => still gaining => plugged in. Survives
-        # the 1%-coarse SoC that looks flat frame-to-frame, so a slow charge keeps us in FAST. When
+        # the 1%-coarse SoC that looks flat frame-to-frame, so a slow charge stays real-time. When
         # the charge ends (or the car unplugs) the low catches up within CHG_LOOKBACK and releases.
         soc_hist = [(t, s) for (t, s) in soc_hist if now - t <= CHG_LOOKBACK]
         charging = bool(soc_hist) and soc_hist[-1][1] > min(s for _t, s in soc_hist)
-        if charging:                                   # plugged in -> near-real-time; a momentary
-            delay = CHARGE_FAST                        # empty frame keeps this cadence (transient WS
-        elif time.time() < active_until:               # hiccup, not a basement), so no 15-min stall
-            delay = FAST                               # recently driving / ignition on
-        elif miss >= OFFLINE_AFTER:                    # dark for a while (basement) -> back off
-            delay = OFFLINE_SLOW
+        awake = charging or time.time() < active_until
+        if awake:                                      # on the road or plugged in -> near real-time.
+            delay = ACTIVE                             # a momentary empty frame here is a transient WS
+        elif miss >= OFFLINE_AFTER:                    # hiccup (car still awake), so we stay fast.
+            delay = OFFLINE_SLOW                       # genuinely dark for a while -> back off
         else:
-            delay = SLOW
+            delay = PARK                               # parked + idle + online
         time.sleep(delay)
 
 def main():
