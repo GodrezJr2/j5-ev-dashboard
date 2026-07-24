@@ -196,14 +196,103 @@ def adaptive_loop(conn):
             delay = PARK                               # parked + idle + online
         time.sleep(delay)
 
+# ---- persistent stream (recommended): hold ONE socket, like the CarLinko app does ----
+# The probe proved the cloud PUSHES an action:6 frame whenever the car reports a change, as long as
+# the socket is kept warm with an action:0 heartbeat. So instead of reconnecting + logging in every
+# few seconds (the source of the WebSocketTimeouts and the stale gaps), open once and receive. New
+# data lands the instant the car reports -- bounded only by the car's own report cadence, which no
+# amount of polling can beat.
+HEARTBEAT       = 5   # action:0 keepalive cadence -- matches the app; keeps the push subscription alive
+STREAM_BACKSTOP = int(_C.get("stream_backstop") or 20)  # re-request action:6 this often, purely as a
+                                                        # safety net for a missed push (pushes do the work)
+TOUCH           = 30  # re-store the last frame at least this often so a parked car still reads
+                      # "live · <30s ago" even when nothing changes and nothing is pushed
+RECONNECT_WAIT  = 3   # backoff before reopening a dropped socket
+
+def _store_blob(conn, blob):
+    ts = int(time.time()); dt = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
+    d = decode(blob)
+    conn.execute("INSERT OR REPLACE INTO telemetry VALUES (?,?,?,?,?,?,?,?)",
+                 (ts, dt, d.get("battery"), d.get("range_km"), d.get("odo_guess"),
+                  d.get("tyre_raw"), 1, blob))
+    conn.commit()
+    return d
+
+def _stream_session(conn):
+    """One connection's lifetime: login, prime a frame, then heartbeat + receive pushes until the
+    socket drops or errors (which bubbles up to stream_loop, which reconnects)."""
+    global TOKEN
+    reload_config()
+    ws = connect()
+    try:
+        ws.send(json.dumps({"action": 1, "data": {"token": TOKEN, "vehicleId": VEHICLE}}))
+        login = json.loads(ws.recv())
+        if login.get("code") != "0000":                    # token expired -> self-login, as poll_once does
+            print(f"token invalid ({login.get('code')}); self-logging in...")
+            import auth
+            TOKEN = auth.login()
+            ws.send(json.dumps({"action": 1, "data": {"token": TOKEN, "vehicleId": VEHICLE}}))
+            login = json.loads(ws.recv())
+            if login.get("code") != "0000":
+                print("LOGIN FAILED after refresh:", login); return
+        ws.send(json.dumps({"action": 6}))                 # prime: pull the current frame immediately
+        ws.send(json.dumps({"action": 0, "data": {"sn": SN}}))
+        ws.settimeout(2)
+        last_hb = last_req = last_store = time.time()
+        last_blob = None
+        while True:
+            now = time.time()
+            if now - last_hb >= HEARTBEAT:
+                ws.send(json.dumps({"action": 0, "data": {"sn": SN}})); last_hb = now
+            if now - last_req >= STREAM_BACKSTOP:
+                ws.send(json.dumps({"action": 6})); last_req = now
+            try:
+                msg = ws.recv()
+            except websocket.WebSocketTimeoutException:
+                if last_blob and time.time() - last_store >= TOUCH:   # keep the freshness stamp live
+                    _store_blob(conn, last_blob); last_store = time.time()
+                continue
+            try:
+                j = json.loads(msg)
+            except Exception:
+                continue
+            if j.get("action") == 6 and isinstance(j.get("data"), str):
+                blob = j["data"]
+                changed = blob != last_blob
+                if changed or time.time() - last_store >= TOUCH:
+                    d = _store_blob(conn, blob); last_store = time.time()
+                    print(f"{time.strftime('%H:%M:%S')}  batt={d.get('battery')}%  "
+                          f"range={d.get('range_km')}km  odo?={d.get('odo_guess')}  "
+                          f"{'push' if changed else 'touch'}")
+                last_blob = blob
+    finally:
+        try: ws.close()
+        except Exception: pass
+
+def stream_loop(conn):
+    """Persistent-socket ingest: one WS, action:0 heartbeat, receive pushed frames. Reconnects on any
+    drop. Low-latency and low-load -- no per-cycle handshake, so no reconnect-induced timeouts."""
+    reload_config()
+    conn.executescript(SCHEMA)
+    print(f"streaming to {os.path.abspath(DB)}  (push + {HEARTBEAT}s heartbeat, auto-reconnect)")
+    while True:
+        try:
+            _stream_session(conn)
+        except Exception as e:
+            print("stream error, reconnecting:", repr(e))
+        time.sleep(RECONNECT_WAIT)
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--loop", type=int, default=0, help="fixed seconds between polls; 0 = single")
     ap.add_argument("--adaptive", action="store_true", help="fast when awake, slow when parked")
+    ap.add_argument("--stream", action="store_true", help="persistent WS socket, push-driven (recommended)")
     args = ap.parse_args()
     conn = sqlite3.connect(DB)
     conn.executescript(SCHEMA)
-    if args.adaptive:
+    if args.stream:
+        stream_loop(conn)
+    elif args.adaptive:
         adaptive_loop(conn)
     elif args.loop <= 0:
         poll_once(conn); conn.commit()
