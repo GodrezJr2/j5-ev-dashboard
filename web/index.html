@@ -1406,7 +1406,9 @@ $('fuelSel').addEventListener('change',()=>{ const fuel=$('fuelSel').value, pric
 ['fuelPrice','fuelKml'].forEach(id=>$(id).addEventListener('input',()=>{ FUEL.set({fuel:$('fuelSel').value,price:+$('fuelPrice').value||0,kml:+$('fuelKml').value||12}); load(false); }));
 
 async function load(live){
-  let d; try{ d=await (await fetch(live?'api/refresh':'api/summary',{cache:'no-store'})).json(); }catch(e){ return; }
+  // Always read the box's own DB, which the --stream logger keeps <30s fresh. Never api/refresh:
+  // that opens a 2nd CarLinko socket per call, which fights the streamer's persistent one.
+  let d; try{ d=await (await fetch('api/summary',{cache:'no-store'})).json(); }catch(e){ return; }
   DATA=d;
   applyCurrency();                                       // symbol/labels from server currency config
   { const db=$('demoBanner'); if(db) db.style.display = d.demo? 'block':'none'; }
@@ -1581,9 +1583,11 @@ applyTheme(); applyLang(); syncSeg();                  // theme + language on bo
 setupTabs();
 bindStatic();                                          // make cards/stats tappable
 showTab('home');                                       // start on Home
-load(true);                                            // live-poll on open
-setInterval(()=>{ if(!document.hidden) load(true); }, 20000);  // keep live-polling the car while watching
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) load(true); });
+load();                                                // read the stream-fresh DB on open
+setInterval(()=>{ if(!document.hidden) load(); }, 5000);  // the box streams the car over one socket;
+                                                       // just re-read its always-fresh DB every 5s ->
+                                                       // live screen, zero extra load on CarLinko
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) load(); });
 </script>
 </body>
 </html>
