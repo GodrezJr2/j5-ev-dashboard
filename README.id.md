@@ -231,7 +231,7 @@ sudah membuatkan yang benar sesuai user dan path-mu, jadi harusnya tak perlu.
 | `region` | | region API, default `sea` |
 | `vehicle_id`, `device_sn` | auto | vehicle id + serial device — **`setup.py` yang ngisiin** |
 | `vehicle` | auto | `{plate, model, vin}` — auto-deteksi; UI sembunyiin plat+VIN default |
-| `battery_kwh`, `wltp_kwh_100`, `tariff_idr` | | override per-model / lokal (default ke nilai J5) |
+| `battery_kwh`, `wltp_kwh_100`, `tariff_idr` | | kapasitas paket berguna + rujukan WLTP + tarif lokal. **Mobil tidak pernah mengirim ukuran paket**, jadi angkanya dari kamu atau dari tabel mobil dikenal di [`tools/known_cars.py`](tools/known_cars.py); model yang belum dikenal ditanya saat setup dan ditandai *asumsi* di UI sampai diisi. Angka ini menskalakan semua kWh, biaya dan efisiensi |
 | `gmaps_key` | | Google Maps key — aktifin perencana trip + peta SPKLU (kalau ga, fallback OSM) |
 | `dashboard_password` | | set (halaman login → Advanced) untuk kunci dashboard pakai password — **wajib kalau URL-nya bisa diakses dari internet** |
 

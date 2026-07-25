@@ -5,6 +5,7 @@ Run: python server.py [port]   (default 8088, binds 0.0.0.0 so Tailscale can rea
 import os, sys, json, time, sqlite3, threading, math, urllib.request, urllib.parse
 import hmac, hashlib, base64, secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import known_cars          # per-model constants the telemetry never carries (pack size, tyre scale)
 
 _poll_lock = threading.Lock()
 
@@ -180,9 +181,22 @@ def decode(hexstr):
     d["tyre"] = b[44:52] if len(b) >= 52 else None         # 4 psi + 4 temp, FF=parked
     return d
 
-_CC = _creds()          # per-model overrides (default to the J5 EV values this was calibrated on)
-CAP_KWH = float(_CC.get("battery_kwh") or 58.9)        # net usable battery (J5: gross 60.9 kWh, LFP)
-WLTP_KWH_100 = float(_CC.get("wltp_kwh_100") or 14.8)  # WLTP reference consumption -> "optimal" baseline
+_CC = _creds()          # per-model overrides; anything not set falls back to known_cars.CARS
+
+def match_model(table, model=None):
+    """Value from `table` for this car. `model` is passed explicitly by demo mode, which has its
+    own car rather than the one in creds.json."""
+    return known_cars.match(table, model if model is not None else VEHICLE.get("model"))
+
+KNOWN = match_model(known_cars.CARS) or {}
+
+# creds.json  >  a car we know  >  the J5's number, which on any other car is a guess and is
+# labelled as one all the way out to the UI (battery_kwh_source) rather than stated as fact.
+CAP_KWH = float(_CC.get("battery_kwh") or KNOWN.get("battery_kwh") or 58.9)
+CAP_SOURCE = ("creds" if _CC.get("battery_kwh") else
+              "known" if KNOWN.get("battery_kwh") else "guess")
+WLTP_KWH_100 = float(_CC.get("wltp_kwh_100") or KNOWN.get("wltp_kwh_100") or 14.8)  # "optimal" baseline
+WLTP_KNOWN = bool(_CC.get("wltp_kwh_100") or KNOWN.get("wltp_kwh_100"))
 TARIFF_IDR_CFG = _CC.get("tariff_idr") or _CC.get("tariff")   # local all-in tariff/kWh override (optional)
 # --- currency + tyre-unit (open to non-Indonesia cars; default to the J5/IDR values this was calibrated on) ---
 _CUR       = _CC.get("currency") or {}
@@ -190,9 +204,12 @@ CUR_SYMBOL = _CUR.get("symbol") or "Rp"                # display symbol, e.g. "R
 CUR_LOCALE = _CUR.get("locale") or "id-ID"             # thousands grouping locale, e.g. "en-ZA"
 CUR_CODE   = (_CUR.get("code") or "IDR").upper()
 TYRE_UNIT  = (_CC.get("tyre_unit") or "psi").lower()   # tyre display unit: psi | bar | kpa
-TPMS_SCALE = float(_CC.get("tpms_scale") or 1.373)     # raw tyre byte -> kPa; J5 default, recalibrate per car
+# raw tyre byte -> kPa. setup.py writes CarLinko's own appKpaFormula here; the table covers cars
+# whose config doesn't publish one. 1.373 is the J5's, and needs recalibrating on any other car.
+TPMS_SCALE = float(_CC.get("tpms_scale") or KNOWN.get("tpms_scale") or 1.373)
 # --- pack chemistry: decides the 100%-charge advice (LFP wants one regularly, NMC does not) ---
-CHEMISTRY = (_CC.get("chemistry") or "lfp").lower()    # lfp | nmc — J5 is LFP
+CHEMISTRY = (_CC.get("chemistry") or KNOWN.get("chemistry") or "lfp").lower()   # lfp | nmc — J5 is LFP
+CHEMISTRY_KNOWN = bool(_CC.get("chemistry") or KNOWN.get("chemistry"))
 # Optional path/URL to a picture of YOUR car for the dashboard hero. The bundled render is a
 # Jaecoo J5; showing it to an Omoda/Chery/Tiggo owner is just wrong, so anything we don't have
 # a render for falls back to a neutral silhouette (see web/car-generic.svg) instead.
@@ -216,22 +233,13 @@ MODEL_SPECS = {
 
 def model_specs(model=None):
     """Specs for this car, or None. creds.json `specs` wins, so an owner can fill in a model we
-    don't ship -- and nothing is shown if neither we nor they know. `model` is passed explicitly
-    by demo mode, which has its own vehicle rather than the one in creds.json."""
+    don't ship -- and nothing is shown if neither we nor they know."""
     if isinstance(_CC.get("specs"), dict):
         return _CC["specs"]
-    name = (model if model is not None else VEHICLE.get("model") or "").strip().lower()
-    if not name:
-        return None
-    for key, spec in MODEL_SPECS.items():                  # tolerate "JAECOO 5 EV" vs "Jaecoo J5 EV"
-        a = name.replace("j5", "5").replace(" ", "")
-        b = key.replace("j5", "5").replace(" ", "")
-        if a == b or a.startswith(b) or b.startswith(a):
-            return spec
-    return None
+    return match_model(MODEL_SPECS, model)
 # bev | phev | auto. "auto" calls it a PHEV once a frame reports a non-zero fuel tank or fuel
 # consumption -- both are hard 0 on every BEV frame we've seen, so a BEV never trips it.
-POWERTRAIN = (_CC.get("powertrain") or "auto").lower()
+POWERTRAIN = (_CC.get("powertrain") or KNOWN.get("powertrain") or "auto").lower()
 # LFP's discharge curve is nearly flat, so the BMS loses its SoC reference without a periodic
 # 100% charge (it re-anchors + balances cells there). ~weekly is the common OEM line; NMC has no
 # such need and prefers not to sit full, so don't nag those owners.
@@ -556,7 +564,8 @@ def demo_summary():
         "online": True, "battery": 72, "range_km": 318, "odometer": 8421, "volt12": 13.6,
         "ignition": 0, "speed": None, "moving": False, "avg_speed": 41,
         "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
-        "battery_kwh": cap, "powertrain": "bev", "fuel": None,
+        "battery_kwh": cap, "battery_kwh_source": "known", "wltp_kwh_100": 14.8,
+        "chemistry_known": True, "powertrain": "bev", "fuel": None,
         "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
         "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
         "specs": model_specs("Jaecoo J5 EV"),   # demo car, not whatever creds.json says
@@ -600,7 +609,9 @@ def summary():
            "moving": False, "avg_speed": None, "insights": {}, "health": {}, "drain": None,
            "volt12_min7d": None, "volt12_status": None,
            "updated": None, "age_min": None,
-           "battery_kwh": CAP_KWH, "powertrain": "bev", "fuel": None,
+           "battery_kwh": CAP_KWH, "battery_kwh_source": CAP_SOURCE,
+           "wltp_kwh_100": WLTP_KWH_100 if WLTP_KNOWN else None,
+           "chemistry_known": CHEMISTRY_KNOWN, "powertrain": "bev", "fuel": None,
            "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
            "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
            "specs": model_specs(),

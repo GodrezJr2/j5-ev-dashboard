@@ -1093,16 +1093,23 @@ const rp = n => money(n);
 const kfmt = n => Math.round(n/1000)+'k';
 
 // ---- sheet content builders (read the latest DATA) ----
-function bBattery(){ const d=DATA, cap=d.battery_kwh||58.9, soc=d.battery, s=soc==null?'—':soc;
+function bBattery(){ const d=DATA, cap=d.battery_kwh, soc=d.battery, s=soc==null?'—':soc;
+  // Pack size is the one number nothing in the telemetry carries, so say where ours came from.
+  // A guess is the J5's pack applied to a car we don't know, which would make every kWh figure
+  // below it wrong by whatever the real pack differs by — so it says so rather than looking solid.
+  const guessed = d.battery_kwh_source==='guess', chem = d.chemistry_known!==false;
   return {title:tn('Battery','Baterai'),
     lead:tn(`${s}% charge · car estimates ${fmt(d.range_km)} km of range.`,`${s}% terisi · mobil estimasi ${fmt(d.range_km)} km jangkauan.`),
     rows:[[tn('State of charge','Status muatan'), s+'%'],
-      [tn('Energy left','Energi tersisa'), soc!=null?(soc/100*cap).toFixed(1)+' kWh':'—'],
-      [tn('Usable capacity','Kapasitas berguna'), cap+' kWh'],
+      [tn('Energy left','Energi tersisa'), (soc!=null&&cap)?(soc/100*cap).toFixed(1)+' kWh':'—'],
+      [tn('Usable capacity','Kapasitas berguna'), cap?(cap+' kWh'+(guessed?tn(' (assumed)',' (asumsi)'):'')):'—'],
       [tn('Range (car estimate)','Jangkauan (estimasi mobil)'), fmt(d.range_km)+' km'],
       d.drain?[tn('Parked drain','Boros parkir'), d.drain.per_day+'%/'+tn('day','hari')+' ('+d.drain.pct+'% '+tn('over','selama')+' '+d.drain.hours+'h)']:null],
-    note:tn(`LFP pack, <b>${cap} kWh usable</b>. The % comes straight from the car; range is the car's own guess — compare it with <b>Real-world range</b> in Insights.`,
-      `Paket LFP, <b>${cap} kWh berguna</b>. Persen langsung dari mobil; jangkauan adalah tebakan mobil — bandingkan dengan <b>Jangkauan nyata</b> di Wawasan.`)};
+    note: guessed
+      ? tn(`The % and range come straight from the car. <b>${cap} kWh usable is not your car's figure</b> — it's the default, because nothing in the telemetry reports pack size and this model isn't in our table. Every kWh, cost and efficiency number is scaled by it, so set <code>battery_kwh</code> in creds.json to your real usable capacity.`,
+           `Persen dan jangkauan langsung dari mobil. <b>${cap} kWh berguna itu bukan angka mobilmu</b> — itu nilai bawaan, karena kapasitas paket tidak dikirim mobil dan model ini belum ada di tabel kami. Semua angka kWh, biaya dan efisiensi diskalakan dengan itu, jadi isi <code>battery_kwh</code> di creds.json dengan kapasitas berguna sebenarnya.`)
+      : tn(`${chem?'LFP pack, ':''}<b>${cap} kWh usable</b>. The % comes straight from the car; range is the car's own guess — compare it with <b>Real-world range</b> in Insights.`,
+           `${chem?'Paket LFP, ':''}<b>${cap} kWh berguna</b>. Persen langsung dari mobil; jangkauan adalah tebakan mobil — bandingkan dengan <b>Jangkauan nyata</b> di Wawasan.`)};
 }
 function bRpkm(){ const I=DATA.insights||{}, fc=fuelCfg();
   return {title:tn('Running cost','Biaya operasional'),
@@ -1140,20 +1147,31 @@ function bHealth(){ const H=DATA.health||{};
       [tn('Full cycles','Siklus penuh'), H.cycles!=null?H.cycles:'—'],
       [tn('Total charged','Total diisi'), H.charged_kwh!=null?H.charged_kwh+' kWh':'—'],
       [tn('Avg charge eff.','Efisiensi isi rata'), H.avg_eff!=null?Math.round(H.avg_eff*100)+'%':'—']],
-    note:tn(`LFP capacity stays flat for years, so a moving SoH % would be noise. We track real usable kWh against receipts instead — still <b>${H.usable_kwh||58.9} kWh</b>, no measurable loss.`,
-      `Kapasitas LFP stabil bertahun-tahun, jadi persen SoH yang berubah cuma noise. Kami lacak kWh berguna nyata vs struk — tetap <b>${H.usable_kwh||58.9} kWh</b>, tanpa penurunan terukur.`)};
+    note: ((DATA.battery_care||{}).chemistry||'lfp')==='lfp'
+      ? tn(`LFP capacity stays flat for years, so a moving SoH % would be noise. We track real usable kWh against receipts instead — still <b>${H.usable_kwh||DATA.battery_kwh||'—'} kWh</b>, no measurable loss.`,
+           `Kapasitas LFP stabil bertahun-tahun, jadi persen SoH yang berubah cuma noise. Kami lacak kWh berguna nyata vs struk — tetap <b>${H.usable_kwh||DATA.battery_kwh||'—'} kWh</b>, tanpa penurunan terukur.`)
+      : tn(`We track real usable kWh against charge receipts rather than showing an invented SoH percentage — currently <b>${H.usable_kwh||DATA.battery_kwh||'—'} kWh</b>.`,
+           `Kami lacak kWh berguna nyata dari struk pengisian, bukan menampilkan persen SoH karangan — sekarang <b>${H.usable_kwh||DATA.battery_kwh||'—'} kWh</b>.`)};
 }
-function bEff(){ const e=DATA.energy||{}, d=DATA, cap=d.battery_kwh||58.9;
+function bEff(){ const e=DATA.energy||{}, d=DATA, cap=d.battery_kwh;
   const cons=e.consumption!=null?e.consumption:e.week_consumption;
   const RTL={optimal:tn('Optimal','Optimal'),normal:tn('Normal','Normal'),boros:tn('Boros (heavy)','Boros (berat)')};
+  const wltp=d.wltp_kwh_100;   // only stated when it's this car's figure, not the J5's
   return {title:tn('Efficiency','Efisiensi'),
     lead:tn('How much energy you use, and what is left.','Berapa energi yang dipakai, dan yang tersisa.'),
     rows:[[tn('Consumption','Konsumsi'), (cons!=null?cons:'—')+' kWh/100km'],
       [tn('Used today','Terpakai hari ini'), e.today_kwh!=null?e.today_kwh+' kWh':'—'],
-      [tn('Energy left','Energi tersisa'), d.battery!=null?(d.battery/100*cap).toFixed(1)+' kWh':'—'],
+      [tn('Energy left','Energi tersisa'), (d.battery!=null&&cap)?(d.battery/100*cap).toFixed(1)+' kWh':'—'],
       [tn('Rating','Peringkat'), RTL[e.rating]||'—']],
-    note:tn(`WLTP rates this car at 14.8 kWh/100km. Lower is better — city stop-go and AC push it up, gentle highway brings it down.`,
-      `WLTP menilai mobil ini 14.8 kWh/100km. Makin rendah makin baik — macet kota dan AC menaikkan, jalan tol santai menurunkan.`)};
+    note: (wltp
+      ? tn(`WLTP rates this car at ${wltp} kWh/100km. Lower is better — city stop-go and AC push it up, gentle highway brings it down.`,
+           `WLTP menilai mobil ini ${wltp} kWh/100km. Makin rendah makin baik — macet kota dan AC menaikkan, jalan tol santai menurunkan.`)
+      : tn(`Lower is better — city stop-go and AC push it up, gentle highway brings it down. We have no WLTP figure for your model, so the rating is judged against a generic baseline; set <code>wltp_kwh_100</code> in creds.json for a rating that means something.`,
+           `Makin rendah makin baik — macet kota dan AC menaikkan, jalan tol santai menurunkan. Kami belum punya angka WLTP untuk model kamu, jadi peringkat dinilai pakai patokan umum; isi <code>wltp_kwh_100</code> di creds.json biar peringkatnya berarti.`))
+      + (d.powertrain==='phev'
+         ? tn(` <b>On a plug-in hybrid this is approximate</b> — the odometer also advances on petrol, which flatters every kWh/100km here.`,
+              ` <b>Di plug-in hybrid ini perkiraan</b> — odometer juga jalan pakai bensin, yang bikin semua kWh/100km di sini kelihatan lebih bagus dari aslinya.`)
+         : '')};
 }
 function bCharge(){ const c=DATA.charging||{};
   return {title:tn('Charging','Pengisian'),
@@ -1204,7 +1222,7 @@ function bSpeed(){ const d=DATA;
       `Jarak perjalanan ÷ waktu. Byte kecepatan mentah mobil tak andal saat diam, jadi kami turunkan gerak dari odometer.`)};
 }
 function bDay(i){ const d=DATA, h=(d.history||[])[i]; if(!h) return null;
-  const I=d.insights||{}, cons=I.consumption||14.8;
+  const I=d.insights||{}, cons=I.consumption||d.wltp_kwh_100||14.8;
   const measured = h.eff!=null;                       // server keeps eff only if believable (9-30)
   const kwh = measured? h.kwh : (h.km? h.km*cons/100 : 0);
   const cost=(h.km&&I.rp_per_km)? h.km*I.rp_per_km : null;
@@ -1254,7 +1272,8 @@ function bCare(){ const BC=DATA.battery_care||{}, lfp=(BC.chemistry||'lfp')==='l
 }
 function bFlex(){ const d=DATA, L=d.lifetime||{}, I=d.insights||{}, H=d.health||{}, e=d.energy||{}, sv=calcSaved(L.km);
   const cons = I.consumption!=null?I.consumption:(e.consumption!=null?e.consumption:null);
-  const beat = cons? Math.round((14.8-cons)/14.8*100) : null;
+  const wltp = d.wltp_kwh_100;   // no WLTP figure for this model -> no "beating WLTP" claim
+  const beat = (cons&&wltp)? Math.round((wltp-cons)/wltp*100) : null;
   const cards=[[tn('Range now','Jangkauan kini'), d.range_km!=null?fmt(d.range_km)+' km':'—'],
     [tn('Efficiency','Efisiensi'), cons!=null?cons+' kWh/100':'—'],
     [tn('Driven','Ditempuh'), L.km!=null?fmt(L.km)+' km':'—'],
@@ -1263,9 +1282,9 @@ function bFlex(){ const d=DATA, L=d.lifetime||{}, I=d.insights||{}, H=d.health||
     [tn('Battery','Baterai'), H.usable_kwh!=null?H.usable_kwh+' kWh · 100%':'—']];
   const grid=cards.map(c=>`<div class="fc"><b>${c[1]}</b><span>${c[0]}</span></div>`).join('');
   return {html:`<div class="flexcard">
-      <div class="fk">JAECOO J5 EV</div><div class="ft">${tn('self-hosted telematics','telematik mandiri')}</div>
+      <div class="fk">${((d.vehicle||{}).model||'EV').toUpperCase()}</div><div class="ft">${tn('self-hosted telematics','telematik mandiri')}</div>
       <div class="fgrid">${grid}</div>
-      ${(beat!=null&&beat>0)?`<div class="fbeat">${tn('Beating WLTP by','Mengalahkan WLTP')} ${beat}% · ${cons} vs 14.8 kWh/100km</div>`:''}
+      ${(beat!=null&&beat>0)?`<div class="fbeat">${tn('Beating WLTP by','Mengalahkan WLTP')} ${beat}% · ${cons} vs ${wltp} kWh/100km</div>`:''}
       <div class="ffoot">${tn("Reverse-engineered from the CarLinko cloud —<br>live data the official app won't show you.","Hasil reverse-engineering cloud CarLinko —<br>data langsung yang tak ditampilkan app resmi.")}</div>
     </div>
     <div class="sub" style="text-align:center;margin-top:14px">${tn('Screenshot to flex · plate & VIN never shown here','Screenshot buat pamer · plat & VIN tak pernah tampil di sini')}</div>`};

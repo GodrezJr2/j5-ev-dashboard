@@ -134,6 +134,30 @@ def learn_from_config(c, v):
         say("  detected a plug-in hybrid - fuel readouts enabled")
 
 
+def ask_battery(c, model):
+    """Usable pack size. CarLinko never sends it, and it scales every kWh, cost, efficiency and
+    savings figure on the dashboard -- so a car we don't recognise gets asked rather than quietly
+    inheriting the reference car's 58.9 kWh, which on a PHEV is about 3x too big."""
+    import known_cars
+    known = known_cars.match(known_cars.CARS, model) or {}
+    if c.get("battery_kwh"):
+        return
+    if known.get("battery_kwh"):
+        c["battery_kwh"] = known["battery_kwh"]
+        say(f"  usable battery {known['battery_kwh']} kWh (confirmed by another {model} owner)")
+        return
+    say("\n=== Battery ===")
+    say("  Your car doesn't report its pack size, and we have no figure for this model. It scales")
+    say("  every kWh, cost and efficiency number, so a wrong one is worse than none.")
+    say("  Usable (net) capacity, not the gross brochure figure - a PHEV is typically 12-20 kWh.")
+    raw = ask("  Usable battery (kWh, blank = skip)", "", optional=True)
+    try:
+        if raw:
+            c["battery_kwh"] = float(raw)
+    except ValueError:
+        say(f"    '{raw}' isn't a number - skipping, set battery_kwh in creds.json later")
+
+
 def main():
     c = {}
     if os.path.exists(CREDS):
@@ -204,6 +228,7 @@ def main():
         except Exception:
             pass
         learn_from_config(c, v)
+        ask_battery(c, c["vehicle"]["model"])
         json.dump(c, open(CREDS, "w"), indent=2)
         try:
             os.chmod(CREDS, 0o600)
