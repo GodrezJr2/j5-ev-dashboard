@@ -1451,7 +1451,7 @@ setTimeout(killHint,6000);
   addEventListener('touchstart',e=>{ if(window.scrollY<=0 && !$('sheet').classList.contains('open')){ y0=e.touches[0].clientY; dist=0; } else y0=null; },{passive:true});
   addEventListener('touchmove',e=>{ if(y0==null)return; dist=e.touches[0].clientY-y0; $('ptr').classList.toggle('show', dist>50 && window.scrollY<=0); },{passive:true});
   addEventListener('touchend',async()=>{ if(y0==null)return; const go=dist>50&&window.scrollY<=0; y0=null;
-    if(go){ buzz(12); const p=$('ptr'); p.classList.add('show','spin'); try{ await load(true); }finally{ p.classList.remove('show','spin'); } }
+    if(go){ buzz(12); const p=$('ptr'); p.classList.add('show','spin'); try{ await forceRefresh(); }finally{ p.classList.remove('show','spin'); } }
     else $('ptr').classList.remove('show'); });
 })();
 
@@ -1680,8 +1680,16 @@ async function load(live){
   $('meta').textContent = d.updated ? T('Updated')+' '+d.updated+' · '+T('self-hosted · live')
                                     : T('Waiting for the first telemetry frame.');
 }
-$('refresh').addEventListener('click',async()=>{ const b=$('refresh'); b.classList.add('spin'); try{await load(true);}finally{b.classList.remove('spin');} });
-$('abRefresh').addEventListener('click',async()=>{ const b=$('abRefresh'); b.classList.add('spin'); try{await load(true);}finally{b.classList.remove('spin');} });
+// Manual refresh = POKE the car with the benign init (0x77 = CarLinko's own "initializing car") so it
+// reports now, then re-read the box DB. The auto 5s loop stays a plain DB read; only user-triggered
+// refresh pokes the car. Falls through to a DB read even if the car is unreachable (50043).
+async function forceRefresh(){
+  try{ await fetch('api/forcerefresh',{method:'POST'}); }catch(e){}
+  await new Promise(r=>setTimeout(r,1500));   // give the forced report time to land in the DB
+  await load();
+}
+$('refresh').addEventListener('click',async()=>{ const b=$('refresh'); b.classList.add('spin'); try{await forceRefresh();}finally{b.classList.remove('spin');} });
+$('abRefresh').addEventListener('click',async()=>{ const b=$('abRefresh'); b.classList.add('spin'); try{await forceRefresh();}finally{b.classList.remove('spin');} });
 // native: frosted app bar fades in once the big title scrolls away; sections reveal on scroll
 if('IntersectionObserver' in window){
   new IntersectionObserver(([e])=>$('appbar').classList.toggle('show', !e.isIntersecting),

@@ -187,7 +187,8 @@ def send_control(opcode, timeout=20):
                              data=json.dumps(body, separators=(",", ":"), ensure_ascii=False),
                              headers=h, timeout=timeout + 8).json()
     d = _post(_read_token())
-    if str(d.get("code")) in ("40001", "40003", "401", "1001", "1002"):    # stale token -> relogin once
+    # stale token -> relogin once. 9997 = 登录失效 (login expired), the one CarLinko actually returns.
+    if str(d.get("code")) in ("9997", "40001", "40003", "401", "1001", "1002"):
         try: d = _post(auth.login())
         except Exception as e: d = {"code": "-1", "msg": f"relogin failed: {e}"}
     return d
@@ -1338,6 +1339,18 @@ class H(BaseHTTPRequestHandler):
                     self._send(200, json.dumps({"ok": False, "error": "Wrong password."}).encode(), "application/json")
             except Exception as e:
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(), "application/json")
+            return
+        if path == "/api/forcerefresh":                # poke the car with the benign init (0x77) so it
+            if not self._authed():                     # reports now; the client then re-reads the DB.
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            try:
+                op = str(_creds().get("refresh_opcode") or "77")   # 0x77 = CarLinko's own "initializing car"
+                d = send_control(op, 15)
+                self._send(200, json.dumps({"ok": str(d.get("code")) == "0000",
+                                            "code": d.get("code"), "msg": d.get("msg")}).encode(),
+                           "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(), "application/json")
             return
         if path == "/api/control":                     # fire a remote-control opcode at the car
             if not self._authed():
