@@ -98,6 +98,100 @@ def web_login(email, password, region="sea", gmaps_key=None, dashboard_password=
     except Exception: pass
     return c.get("vehicle", {})
 
+# ---- remote control: replaces the CarLinko app (AC / windows / sunroof / liftgate / lock / find) ----
+# Reads the car's OWN vehicleControlConfig for the button set (generic per-car, not J5-hardcoded),
+# and forges the same POST /user/vehicle/remoteControl the app sends. Results arrive over the WS.
+_VEH_CACHE = {"t": 0.0, "v": None}
+
+def _read_token():
+    import auth
+    try:
+        t = open(auth.TOKEN_FILE).read().strip()
+        if t:
+            return t
+    except Exception:
+        pass
+    return auth.login()
+
+def _vehicle_raw(force=False):
+    """First vehicle object from /user/vehicle (carries vehicleControlConfig + remoteControls).
+    Cached ~1h -- the control-capability set is a per-model constant, not live telemetry."""
+    import auth, requests
+    if not force and _VEH_CACHE["v"] is not None and (time.time() - _VEH_CACHE["t"]) < 3600:
+        return _VEH_CACHE["v"]
+    def _fetch(t):
+        return requests.get(auth.api_base() + "/user/vehicle",
+                            headers=auth.headers_for({}, token=t), timeout=20).json()
+    d = _fetch(_read_token())
+    if str(d.get("code")) != "0000":
+        d = _fetch(auth.login())
+    data = d.get("data")
+    v = (data[0] if isinstance(data, list) and data else data) if data else {}
+    _VEH_CACHE["v"] = v or {}; _VEH_CACHE["t"] = time.time()
+    return _VEH_CACHE["v"]
+
+def control_caps():
+    """What THIS car can be told to do, straight from CarLinko's vehicleControlConfig -- so the
+    Control tab only renders buttons the car actually supports."""
+    v = _vehicle_raw()
+    cfg = v.get("vehicleControlConfig")
+    if isinstance(cfg, str):
+        try: cfg = json.loads(cfg)
+        except Exception: cfg = {}
+    cfg = cfg or {}
+    ac = cfg.get("A/C") or {}
+    return {
+        "lock":     bool(cfg.get("Lock")),
+        "windows":  {"open": bool(cfg.get("WindowsOpen")), "close": bool(cfg.get("WindowsClose")),
+                     "vent": bool(cfg.get("WindowsVent"))},
+        "sunroof":  {"open": bool(cfg.get("Sunroof")), "tilt": bool(cfg.get("SunroofTilting"))},
+        "liftgate": bool(cfg.get("PowerLiftgate")),
+        "trunk":    bool(cfg.get("Trunk")),
+        "find":     bool(cfg.get("Search")),
+        "charging": bool(cfg.get("ChargingManagement")),
+        "ac": {"switch": bool(ac.get("Switch")), "temp": bool(ac.get("SetTemperature")),
+               "min": ac.get("SetTemperatureMin"), "max": ac.get("SetTemperatureMax"),
+               "step": ac.get("TemperatureStepValue"), "rapidCool": bool(ac.get("RapidCool")),
+               "rapidHeat": bool(ac.get("RapidHeat")), "defog": bool(ac.get("Defogging"))},
+        "plate": v.get("licenseNumber") or "",
+    }
+
+# opcodes we've actually seen the app POST (real, safe to replay). Labels unknown until the owner
+# fires each on an awake car and notes the effect -- the Control tab's tester exists for exactly that.
+KNOWN_OPCODES = [
+    {"code": "2301", "note": "captured (returned 50043 while the car was asleep)"},
+    {"code": "24",   "note": "captured"},
+    {"code": "77",   "note": "captured"},
+]
+
+def send_control(opcode, timeout=20):
+    """Forge the exact POST /user/vehicle/remoteControl the app sends. timeOut is signed as a
+    NUMBER (not a string) to match the app's jsonEncode, else the server rejects the signature."""
+    import auth, requests
+    c = _creds()
+    vid = str(c.get("vehicle_id") or getattr(auth, "VEHICLE_ID", "") or "")
+    dsn = str(c.get("device_sn") or getattr(auth, "DEVICE_SN", "") or "")
+    if not vid or not dsn:
+        return {"code": "-1", "msg": "vehicle_id / device_sn missing from creds.json"}
+    try: timeout = int(timeout)
+    except Exception: timeout = 20
+    body = {"vehicleId": vid, "deviceSn": dsn, "data": str(opcode), "timeOut": timeout}
+    def _post(tok):
+        ts = auth.now_ms()
+        ordered = {k: v for k, v in sorted({**body, "timestamp": ts}.items())}
+        msg = json.dumps(ordered, separators=(",", ":"), ensure_ascii=False).encode()
+        sig = base64.b64encode(hmac.new(auth.SIGN_KEY, msg, hashlib.sha256).digest()).decode()
+        h = {"timestamp": ts, "signature": sig, "user-agent": "Dart/3.10 (dart:io)",
+             "content-type": "application/json", "language": "en", "token": tok}
+        return requests.post(auth.api_base() + "/user/vehicle/remoteControl",
+                             data=json.dumps(body, separators=(",", ":"), ensure_ascii=False),
+                             headers=h, timeout=timeout + 8).json()
+    d = _post(_read_token())
+    if str(d.get("code")) in ("40001", "40003", "401", "1001", "1002"):    # stale token -> relogin once
+        try: d = _post(auth.login())
+        except Exception as e: d = {"code": "-1", "msg": f"relogin failed: {e}"}
+    return d
+
 # ---- optional dashboard auth (off by default; set a dashboard_password to gate public hosting) ----
 SESSION_TTL = 30 * 86400
 
@@ -1116,6 +1210,15 @@ class H(BaseHTTPRequestHandler):
         if path == "/api/summary":
             self._send(200, json.dumps(summary()).encode(), "application/json")
             return
+        if path == "/api/controls":                    # what this car supports + opcodes to test
+            if not self._authed():
+                self._send(401, b'{"error":"auth"}', "application/json"); return
+            try:
+                self._send(200, json.dumps({"caps": control_caps(), "known": KNOWN_OPCODES}).encode(),
+                           "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"error": str(e)[:180]}).encode(), "application/json")
+            return
         if path == "/car-photo":     # cached proxy for CarLinko's own render of this exact car.
             try:                     # Behind the gate: the render gives away model + colour.
                 if not os.path.exists(_CAR_PHOTO):
@@ -1235,6 +1338,23 @@ class H(BaseHTTPRequestHandler):
                     self._send(200, json.dumps({"ok": False, "error": "Wrong password."}).encode(), "application/json")
             except Exception as e:
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(), "application/json")
+            return
+        if path == "/api/control":                     # fire a remote-control opcode at the car
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n).decode() or "{}")
+                op = str(body.get("data") or "").strip()
+                if not op or not all(ch in "0123456789abcdefABCDEF" for ch in op) or len(op) > 16:
+                    self._send(200, json.dumps({"ok": False, "error": "opcode must be short hex"}).encode(),
+                               "application/json"); return
+                d = send_control(op, body.get("timeOut") or 20)
+                self._send(200, json.dumps({"ok": str(d.get("code")) == "0000",
+                                            "code": d.get("code"), "msg": d.get("msg")}).encode(),
+                           "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(), "application/json")
             return
         self._send(404, b"not found", "text/plain")
 

@@ -276,6 +276,27 @@
   .speclist b{font-size:18px;font-weight:700;line-height:1}
   .speclist b u{font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;margin-left:2px}
   .specsub{margin:18px 0 11px}
+  .spec.nospec{display:none!important}   /* no brochure figures for this car -> stays hidden on every tab */
+
+  /* control tab */
+  .ctrlgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:6px 0 4px}
+  .ctrlbtn{display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding:14px;border-radius:14px;
+    border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;
+    font-weight:700;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
+  .ctrlbtn small{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
+  .ctrlbtn.unset{border-style:dashed;opacity:.72}
+  .ctrlbtn.busy{opacity:.45;pointer-events:none}
+  .ctrlbtn:active{transform:scale(.97)}
+  .ctrlnote{font-size:12px;color:var(--muted);margin:2px 0 12px;line-height:1.45}
+  .ctrlac{margin:16px 0 4px}
+  .acrow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .ctrlknown{margin:12px 0 4px;font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .chipbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;
+    padding:5px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .chipbtn:active{border-color:var(--accent);color:var(--accent)}
+  .ctrllog{margin-top:10px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;max-height:170px;overflow:auto}
+  .ctrllog div{padding:3px 0;border-top:1px solid var(--hair)}
+  :root[data-theme="dark"] .ctrlbtn{background:oklch(0.285 0.012 95)}
 
   /* car hero (official render, self-hosted) */
   .hero{position:relative;margin:-6px 0 14px;text-align:center;isolation:isolate}
@@ -549,7 +570,7 @@
 
   <!-- Filled from DATA.specs. Hidden entirely when we have no figures for this car — brochure
        numbers are per-model facts, and the wrong car's are worse than none. -->
-  <section class="spec" style="display:none">
+  <section class="spec nospec">
     <div class="head2"><div class="over">Specifications</div><span class="badge ok" id="specBadge">&mdash;</span></div>
     <div class="over specsub" style="margin-top:0" id="specPerfHd">Performance</div>
     <div class="speclist" id="specPerf"></div>
@@ -673,6 +694,26 @@
     <div class="sub" id="planref" style="margin-top:10px">SPKLU DC ≈ Rp 2.467/kWh + 3% tax (≈2.540 all-in) · admin Rp 0 · home AC cheaper</div>
   </section>
 
+  <section id="ctrlSec">
+    <div class="head2"><div class="over">Control</div><span class="badge" id="ctrlBadge">&mdash;</span></div>
+    <div class="ctrlnote" id="ctrlNote">Commands go to the car over the CarLinko cloud. If the car is asleep or on weak signal they can fail (<b>50043</b> — use the car / Bluetooth).</div>
+    <div id="ctrlGrid" class="ctrlgrid"></div>
+    <div class="ctrlac" id="ctrlAc" style="display:none">
+      <div class="acrow"><span class="over">A/C temperature</span><b class="num"><span id="ctrlAcTemp">22.0</span><u>&deg;C</u></b></div>
+      <input type="range" id="ctrlAcSlider" class="slider" min="160" max="300" step="5" value="220">
+    </div>
+    <div class="expander" id="ctrlDiscToggle" style="margin-top:14px"><span>Opcode tester &mdash; discover commands</span><span class="chev">&rsaquo;</span></div>
+    <div id="ctrlDisc" style="display:none">
+      <div class="plancost" style="gap:8px;flex-wrap:wrap">
+        <label>Opcode (hex) <input id="ctrlOp" type="text" placeholder="e.g. 2301" style="width:110px;text-align:left"></label>
+        <label>timeout <input id="ctrlTo" type="number" inputmode="numeric" value="20" style="width:56px"></label>
+        <button id="ctrlFire" class="tpbtn">Send</button>
+      </div>
+      <div class="ctrlknown" id="ctrlKnown"></div>
+      <div class="ctrllog" id="ctrlLog"></div>
+    </div>
+  </section>
+
   <div class="stats">
     <div class="stat"><span class="over">Odometer</span><b class="num"><span id="odo">&mdash;</span><u>km</u></b></div>
     <div class="stat"><span class="over">12V Battery</span><b class="num"><span id="volt">&mdash;</span><u>V</u></b><span class="ststat" id="voltSt"></span></div>
@@ -692,6 +733,7 @@
   <button class="tb on" data-t="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></button>
   <button class="tb" data-t="charging"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13z"/></svg><span>Charge</span></button>
   <button class="tb" data-t="trips"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v13a3 3 0 003 3h2a3 3 0 003-3V8a3 3 0 013-3"/><circle cx="8" cy="3" r="0.6"/><circle cx="16" cy="21" r="0.6"/></svg><span>Trips</span></button>
+  <button class="tb" data-t="control"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 013.87 5H20v3h-4.13A4 4 0 0112 15a4 4 0 01-3.87-4H4V8h4.13A4 4 0 0112 3z"/><path d="M12 15v6"/></svg><span>Control</span></button>
   <button class="tb" data-t="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>More</span></button>
 </nav>
 
@@ -1309,7 +1351,7 @@ function bSpec(){ const I=DATA.insights||{}, S=DATA.specs;
 function applySpecs(){
   const sec=document.querySelector('.spec'); if(!sec) return;
   const S=DATA.specs;
-  sec.style.display = S ? '' : 'none';
+  sec.classList.toggle('nospec', !S);   // toggle content availability only; showTab owns per-tab display
   if(!S) return;
   $('specBadge').textContent = S.label || (DATA.vehicle&&DATA.vehicle.model) || '—';
   const fill=(el,list)=>{ el.innerHTML=''; (list||[]).forEach((r,i,arr)=>{
@@ -1320,6 +1362,72 @@ function applySpecs(){
   fill($('specPerf'),S.performance); fill($('specDim'),S.dimensions);
   $('specPerfHd').style.display=(S.performance||[]).length?'':'none';
   $('specDimHd').style.display =(S.dimensions ||[]).length?'':'none';
+}
+// ---- Control tab: fire remote-control opcodes at the car (replaces the CarLinko app) ----
+// Opcodes aren't hardcoded: labels below map to a hex opcode you assign (tap to set / long-press
+// to edit), stored in this browser. Discover each opcode with the tester, then assign it here.
+const CTRL_ACTIONS=[
+  {k:'lock',    lbl:'Lock',             cap:c=>c.lock,                       confirm:false},
+  {k:'unlock',  lbl:'Unlock',           cap:c=>c.lock,                       confirm:true},
+  {k:'acOn',    lbl:'A/C on',           cap:c=>c.ac&&c.ac.switch,            confirm:false},
+  {k:'acOff',   lbl:'A/C off',          cap:c=>c.ac&&c.ac.switch,            confirm:false},
+  {k:'winOpen', lbl:'Windows open',     cap:c=>c.windows&&c.windows.open,    confirm:true},
+  {k:'winClose',lbl:'Windows close',    cap:c=>c.windows&&c.windows.close,   confirm:false},
+  {k:'winVent', lbl:'Windows vent',     cap:c=>c.windows&&c.windows.vent,    confirm:false},
+  {k:'roofOpen',lbl:'Sunroof open',     cap:c=>c.sunroof&&c.sunroof.open,    confirm:true},
+  {k:'roofClose',lbl:'Sunroof close',   cap:c=>c.sunroof&&c.sunroof.open,    confirm:false},
+  {k:'roofTilt',lbl:'Sunroof tilt',     cap:c=>c.sunroof&&c.sunroof.tilt,    confirm:false},
+  {k:'liftOpen',lbl:'Tailgate (bagasi)',cap:c=>c.liftgate,                   confirm:true},
+  {k:'find',    lbl:'Find car',         cap:c=>c.find,                       confirm:false},
+];
+let CTRL_CAPS=null, CTRL_KNOWN=[];
+function ctrlMap(){ try{return JSON.parse(localStorage.getItem('ctrlMap')||'{}');}catch(e){return {};} }
+function ctrlSetOp(k,op){ const m=ctrlMap(); if(op) m[k]=op.trim(); else delete m[k]; localStorage.setItem('ctrlMap',JSON.stringify(m)); }
+function ctrlLog(msg){ const el=$('ctrlLog'); if(!el)return; const t=new Date().toLocaleTimeString();
+  el.insertAdjacentHTML('afterbegin','<div>'+t+' &mdash; '+msg+'</div>'); }
+async function fireOpcode(op,to){
+  op=(op||'').trim(); if(!op){ ctrlLog('no opcode'); return; }
+  ctrlLog('&rarr; '+op+' &hellip;');
+  try{
+    const r=await fetch('api/control',{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({data:op,timeOut:parseInt(to)||20})});
+    const d=await r.json();
+    if(d.ok) ctrlLog('&#10003; '+op+' ok');
+    else if(String(d.code)==='50043') ctrlLog('&#10007; '+op+' &mdash; car unreachable (asleep / weak signal &mdash; use Bluetooth)');
+    else ctrlLog('&#10007; '+op+' &mdash; '+(d.msg||d.error||d.code||'failed'));
+    setTimeout(()=>load(),1500);   // pull fresh status after a command
+    return d;
+  }catch(e){ ctrlLog('&#10007; '+op+' &mdash; '+e); }
+}
+function renderControls(){
+  const caps=CTRL_CAPS; if(!caps||!$('ctrlGrid')) return;
+  $('ctrlBadge').textContent = caps.plate || (DATA.vehicle&&DATA.vehicle.model) || '—';
+  const map=ctrlMap(), grid=$('ctrlGrid'); grid.innerHTML='';
+  CTRL_ACTIONS.filter(a=>{ try{return a.cap(caps);}catch(e){return false;} }).forEach(a=>{
+    const op=map[a.k]||'';
+    const b=document.createElement('button'); b.className='ctrlbtn'+(op?'':' unset');
+    b.innerHTML='<span>'+a.lbl+'</span><small>'+(op?op:'tap to set opcode')+'</small>';
+    b.addEventListener('click',async()=>{
+      let code=ctrlMap()[a.k];
+      if(!code){ code=(prompt('Opcode (hex) for "'+a.lbl+'"\n(find it with the tester below)','')||'').trim();
+        if(!code) return; ctrlSetOp(a.k,code); renderControls(); return; }
+      if(a.confirm && !confirm(a.lbl+' — send now?')) return;
+      b.classList.add('busy'); try{ await fireOpcode(code,20); } finally{ b.classList.remove('busy'); }
+    });
+    let lp; b.addEventListener('pointerdown',()=>{ lp=setTimeout(()=>{ const nv=prompt('Opcode for "'+a.lbl+'"',ctrlMap()[a.k]||''); if(nv!==null){ ctrlSetOp(a.k,nv); renderControls(); } },600); });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(lp)));
+    grid.appendChild(b);
+  });
+  const kn=$('ctrlKnown'); if(kn){ kn.innerHTML='Captured opcodes (fire to identify): ';
+    (CTRL_KNOWN||[]).forEach(o=>{ const s=document.createElement('button'); s.className='chipbtn';
+      s.textContent=o.code; s.title=o.note||''; s.addEventListener('click',()=>fireOpcode(o.code,20)); kn.appendChild(s); }); }
+  const ac=caps.ac||{}; $('ctrlAc').style.display=(ac.temp)?'':'none';
+  if(ac.temp){ const sl=$('ctrlAcSlider'); sl.min=Math.round((ac.min||16)*10); sl.max=Math.round((ac.max||30)*10);
+    sl.step=Math.round((ac.step||0.5)*10); const upd=()=>$('ctrlAcTemp').textContent=(sl.value/10).toFixed(1); sl.oninput=upd; upd(); }
+}
+async function loadControls(){
+  try{ const r=await fetch('api/controls'); const d=await r.json();
+    if(d && d.caps){ CTRL_CAPS=d.caps; CTRL_KNOWN=d.known||[]; renderControls(); } }catch(e){}
 }
 const SHEETS={battery:bBattery,rpkm:bRpkm,forecast:bForecast,range:bRange,health:bHealth,eff:bEff,charge:bCharge,tyres:bTyres,odo:bOdo,volt:bVolt,speed:bSpeed,life:bLife,care:bCare,spec:bSpec};
 function bind(el,key){ if(!el)return; el.classList.add('tappable'); el.addEventListener('click',()=>sheet(SHEETS[key]())); }
@@ -1586,6 +1694,7 @@ if('IntersectionObserver' in window){
 const TABMAP=[['home',['soc','tstatus','kmToday','cons','insRpkm']],
   ['charging',['chgbadge','planmode','careBadge']],
   ['trips',['tripList','lifeChg','tripFrom']],
+  ['control',['ctrlBadge']],
   ['more',['svcBadge','specBadge','langSeg']]];
 function setupTabs(){
   TABMAP.forEach(([t,ids])=>ids.forEach(id=>{ const s=$(id)&&$(id).closest('section'); if(s) s.dataset.tab=t; }));
@@ -1601,6 +1710,10 @@ document.querySelectorAll('.tabbar .tb').forEach(b=>b.addEventListener('click',(
 applyTheme(); applyLang(); syncSeg();                  // theme + language on boot
 setupTabs();
 bindStatic();                                          // make cards/stats tappable
+// control tab wiring
+if($('ctrlFire')) $('ctrlFire').addEventListener('click',()=>fireOpcode($('ctrlOp').value,$('ctrlTo').value));
+if($('ctrlDiscToggle')) $('ctrlDiscToggle').addEventListener('click',()=>{ const d=$('ctrlDisc'); d.style.display=d.style.display==='none'?'':'none'; });
+loadControls();                                        // fetch what this car supports + opcodes to test
 showTab('home');                                       // start on Home
 load();                                                // read the stream-fresh DB on open
 setInterval(()=>{ if(!document.hidden) load(); }, 5000);  // the box streams the car over one socket;
