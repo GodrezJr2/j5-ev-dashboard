@@ -49,6 +49,26 @@ Control set (from `vehicle_control_response_handle.dart` result labels): Lock, U
 Window open/close/vent, Sunroof, FindCar, A/C on/off + cool/heat + temperature, AirPurifier,
 DefrostFront, SeatHeat, SteeringHeat, EngineStart, QuickCool/QuickHeat, Charge start/stop.
 
+## Best-effort label map (wired into the Control tab — VERIFY & report mismatches)
+Only `742701` is confirmed; the rest are educated from opcode structure + the car's capabilities.
+Long-press a Control-tab button to correct its opcode in-place.
+
+| Button | Opcode | Confidence |
+|---|---|---|
+| Stop charging | `742701` | **confirmed** (app log) |
+| Lock | `741000` | guess (0x10 off) |
+| Unlock | `741001` | guess (0x10 on) |
+| A/C on | `742401` | guess (0x24 on) |
+| A/C off | `742400` | guess (0x24 off) |
+| Windows open | `741501` | guess (0x15 state1) |
+| Windows close | `741500` | guess (0x15 state0) |
+| Windows vent | `741502` | guess (0x15 state2) |
+| Sunroof open | `741A01` | guess (0x1A on) |
+| Sunroof close | `741A00` | guess (0x1A off) |
+| Sunroof tilt | `741A02` | guess (0x1A state2) |
+| Tailgate (bagasi) | `741201` | guess (0x12 on) |
+| Find car | `740100` | guess (0x01) |
+
 ## To finish the map
 Fire each `74xx01` (on/open variant) at an **awake** car via the dashboard Control tab (it inits
 `77` first, then fires), watch which control moves, and label it. `742701` is already known.
