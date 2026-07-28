@@ -710,6 +710,7 @@
         <button id="ctrlFire" class="tpbtn">Send</button>
       </div>
       <div class="ctrlknown" id="ctrlKnown"></div>
+      <div class="ctrlknown" id="ctrlScan"></div>
       <div class="ctrllog" id="ctrlLog"></div>
     </div>
   </section>
@@ -1380,6 +1381,11 @@ const CTRL_ACTIONS=[
   {k:'liftOpen',lbl:'Tailgate (bagasi)',cap:c=>c.liftgate,                   confirm:true},
   {k:'find',    lbl:'Find car',         cap:c=>c.find,                       confirm:false},
 ];
+// REAL control opcodes decoded from send_vehicle_control_data_utils.dart (Blutter). Format
+// 74<CMD><STATE>: STATE 00=off/close 01=on/open 02/03=mode. 742701 confirmed = stop charging.
+// These are the "on/open" variants (visible action) — tap each at the car to identify, then report.
+// The car may need init (2301/24/77) first. UNKNOWN mapping — watch the car; any may actuate.
+const CTRL_CANDIDATES=["740100","740200","740300","740400","740500","740600","740700","740800","740A00","740E00","740F01","741001","741201","741501","741601","741701","741901","741A01","741B01","741C01","741E01","741F01","742001","742301","742401","742501","742701"];
 let CTRL_CAPS=null, CTRL_KNOWN=[];
 function ctrlMap(){ try{return JSON.parse(localStorage.getItem('ctrlMap')||'{}');}catch(e){return {};} }
 function ctrlSetOp(k,op){ const m=ctrlMap(); if(op) m[k]=op.trim(); else delete m[k]; localStorage.setItem('ctrlMap',JSON.stringify(m)); }
@@ -1418,9 +1424,12 @@ function renderControls(){
     ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(lp)));
     grid.appendChild(b);
   });
-  const kn=$('ctrlKnown'); if(kn){ kn.innerHTML='Captured opcodes (fire to identify): ';
+  const kn=$('ctrlKnown'); if(kn){ kn.innerHTML='Init opcodes (0x23/0x24/0x77 &mdash; handshake, no actuation): ';
     (CTRL_KNOWN||[]).forEach(o=>{ const s=document.createElement('button'); s.className='chipbtn';
       s.textContent=o.code; s.title=o.note||''; s.addEventListener('click',()=>fireOpcode(o.code,20)); kn.appendChild(s); }); }
+  const sc=$('ctrlScan'); if(sc){ sc.innerHTML='Decoded opcodes (74&lt;cmd&gt;&lt;state&gt;; 742701=stop charge). Tap = init 77 then fire &mdash; WATCH the car: ';
+    CTRL_CANDIDATES.forEach(code=>{ const s=document.createElement('button'); s.className='chipbtn';
+      s.textContent=code; s.addEventListener('click',async()=>{ ctrlLog('init 77 &rarr; '+code); await fireOpcode('77',20); await new Promise(r=>setTimeout(r,600)); await fireOpcode(code,20); }); sc.appendChild(s); }); }
   const ac=caps.ac||{}; $('ctrlAc').style.display=(ac.temp)?'':'none';
   if(ac.temp){ const sl=$('ctrlAcSlider'); sl.min=Math.round((ac.min||16)*10); sl.max=Math.round((ac.max||30)*10);
     sl.step=Math.round((ac.step||0.5)*10); const upd=()=>$('ctrlAcTemp').textContent=(sl.value/10).toFixed(1); sl.oninput=upd; upd(); }
