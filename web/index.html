@@ -474,11 +474,13 @@
         <div class="c"><span class="grp"><b id="soc" class="num">&mdash;</b><i>%</i></span></div>
       </div>
       <div class="side">
-        <div class="kv"><span class="over">Range</span><div class="val num"><span id="range">&mdash;</span><u>km</u></div></div>
+        <div class="kv"><span class="over" id="rangeLbl">Range</span><div class="val num"><span id="range">&mdash;</span><u>km</u></div></div>
         <div class="kv" id="fuelKv" style="display:none"><span class="over" id="fuelLbl">Fuel</span><div class="val num"><span id="fuelPct">&mdash;</span><u>%</u></div></div>
+        <div class="kv" id="fuelRangeKv" style="display:none"><span class="over" id="fuelRangeLbl">Fuel range</span><div class="val num"><span id="fuelRange">&mdash;</span><u>km</u></div></div>
         <div class="kv"><span class="over">State</span><div><span class="pill" id="pill">&mdash;</span></div></div>
       </div>
     </div>
+    <div class="cap" id="rangeTotal" style="display:none;text-align:left;margin-top:14px"></div>
     <div class="cap" id="drain" style="display:none;text-align:left;margin-top:16px"></div>
   </section>
 
@@ -811,7 +813,7 @@ const MAP_ID={
   "saves":"hemat","vs petrol":"vs bensin","drives":"pakai","left now":"tersisa","car rates":"mobil klaim","since":"sejak",
   "on":"pada","not logged yet":"belum tercatat","LFP likes a weekly 100%":"LFP suka diisi 100% tiap minggu",
   "next in":"berikutnya","due today":"jatuh tempo hari ini","overdue by":"telat","No 100% logged":"Belum ada isi 100%",
-  "Fuel":"Bensin",
+  "Fuel":"Bensin","Fuel range":"Jangkauan bensin","EV range":"Jangkauan EV",
   "NMC — no routine 100% needed":"NMC — tak perlu 100% rutin",
   "Updated":"Diperbarui","self-hosted · live":"mandiri · langsung","Waiting for the first telemetry frame.":"Menunggu data telemetri pertama.",
   "healthy":"sehat","getting low":"mulai lemah","check 12V":"cek aki 12V","min":"min",
@@ -1141,12 +1143,23 @@ function bBattery(){ const d=DATA, cap=d.battery_kwh, soc=d.battery, s=soc==null
   // A guess is the J5's pack applied to a car we don't know, which would make every kWh figure
   // below it wrong by whatever the real pack differs by — so it says so rather than looking solid.
   const guessed = d.battery_kwh_source==='guess', chem = d.chemistry_known!==false;
+  const F = d.powertrain==='phev' ? d.fuel : null;
   return {title:tn('Battery','Baterai'),
-    lead:tn(`${s}% charge · car estimates ${fmt(d.range_km)} km of range.`,`${s}% terisi · mobil estimasi ${fmt(d.range_km)} km jangkauan.`),
+    lead:(F&&F.range_km!=null)
+      ? tn(`${s}% charge · the car estimates ${fmt(d.range_km)} km on EV and ${fmt(F.range_km)} km on fuel.`,
+           `${s}% terisi · mobil estimasi ${fmt(d.range_km)} km pakai EV dan ${fmt(F.range_km)} km pakai bensin.`)
+      : tn(`${s}% charge · car estimates ${fmt(d.range_km)} km of range.`,`${s}% terisi · mobil estimasi ${fmt(d.range_km)} km jangkauan.`),
     rows:[[tn('State of charge','Status muatan'), s+'%'],
       [tn('Energy left','Energi tersisa'), (soc!=null&&cap)?(soc/100*cap).toFixed(1)+' kWh':'—'],
       [tn('Usable capacity','Kapasitas berguna'), cap?(cap+' kWh'+(guessed?tn(' (assumed)',' (asumsi)'):'')):'—'],
-      [tn('Range (car estimate)','Jangkauan (estimasi mobil)'), fmt(d.range_km)+' km'],
+      [tn('Range (car estimate)','Jangkauan (estimasi mobil)'), fmt(d.range_km)+' km'
+        + (F&&F.range_km!=null ? ' EV' : '')],
+      // PHEV: the car sends EV range and fuel range separately, never a total — so show both and
+      // mark the sum as ours.
+      (F&&F.range_km!=null)?[tn('Fuel range (car estimate)','Jangkauan bensin (estimasi mobil)'),
+        fmt(F.range_km)+' km'+(F.pct!=null?' · '+F.pct+'%'+tn(' tank',' tangki'):'')]:null,
+      (F&&F.total_range_km!=null)?[tn('Total range (computed)','Jangkauan total (dihitung)'),
+        fmt(F.total_range_km)+' km']:null,
       d.drain?[tn('Parked drain','Boros parkir'), d.drain.per_day+'%/'+tn('day','hari')+' ('+d.drain.pct+'% '+tn('over','selama')+' '+d.drain.hours+'h)']:null],
     note: guessed
       ? tn(`The % and range come straight from the car. <b>${cap} kWh usable is not your car's figure</b> — it's the default, because nothing in the telemetry reports pack size and this model isn't in our table. Every kWh, cost and efficiency number is scaled by it, so set <code>battery_kwh</code> in creds.json to your real usable capacity.`,
@@ -1484,16 +1497,25 @@ function applyPI(){ $('eye').innerHTML = hidePI? EYE_OFF : EYE_ON;
   applyFuel();
   applySpecs();
 }
-// PHEV only: the car reports a fuel tank alongside the battery. Hidden entirely on a BEV, where
-// both fuel bytes are always 0. Fuel *range* isn't decoded yet, so "Range" above stays EV-only —
-// don't imply it's a combined figure.
+// PHEV only: the car reports a fuel tank and a fuel range alongside the battery. Hidden entirely on
+// a BEV, where the fuel bytes are always 0. "Range" is relabelled EV range here so neither number
+// can be read as a combined figure — the total is ours, computed, and says so.
 function applyFuel(){
   const kv=$('fuelKv'); if(!kv) return;
   const f=DATA.fuel, on=DATA.powertrain==='phev' && f && f.pct!=null;
   kv.style.display = on ? '' : 'none';
+  $('rangeLbl').textContent = T(on ? 'EV range' : 'Range');
+  const rkv=$('fuelRangeKv'), tot=$('rangeTotal');
+  const hasFr = on && f.range_km!=null;
+  if(rkv) rkv.style.display = hasFr ? '' : 'none';
+  if(tot){ tot.style.display = (hasFr && f.total_range_km!=null) ? '' : 'none';
+    if(hasFr && f.total_range_km!=null)
+      tot.textContent = tn(`Total ${fmt(f.total_range_km)} km — EV + fuel, computed here (the car doesn't send a combined figure)`,
+                           `Total ${fmt(f.total_range_km)} km — EV + bensin, dihitung di sini (mobil tidak mengirim angka gabungan)`); }
   if(!on) return;
   $('fuelPct').textContent = f.pct;
   $('fuelLbl').textContent = f.l_100!=null ? T('Fuel')+' · '+f.l_100+' L/100' : T('Fuel');
+  if(hasFr){ $('fuelRange').textContent = fmt(f.range_km); $('fuelRangeLbl').textContent = T('Fuel range'); }
 }
 // Hero picture, best source first. car_image is either your own override or /car-photo — the
 // server-cached copy of CarLinko's own render of this exact car, right model and right colour.

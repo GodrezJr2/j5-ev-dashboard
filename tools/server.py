@@ -273,6 +273,13 @@ def decode(hexstr):
         # Kept raw here; summary() decides whether this car has a fuel tank at all.
         d["fuel_pct"]   = b[21]                            # fuel tank %
         d["fuel_l_100"] = round(b[53] * 0.1, 1)            # fuel consumption L/100km
+    if len(b) > 71:
+        # The car's own headline range: EV range on a BEV, *fuel* range on a PHEV. Proven on the
+        # Tiggo 8 PHEV over three frames (#2): it held 652 while EV range fell 90 -> 81 (so it is
+        # not EV range), then dropped to 649 as the tank went 58% -> 56% (so it does track fuel).
+        # On the J5 it mirrors range_km in every logged frame, so summary() only surfaces it as a
+        # fuel range once the car is known to have a tank.
+        d["headline_range_km"] = int.from_bytes(b[70:72], "big")
     d["tyre"] = b[44:52] if len(b) >= 52 else None         # 4 psi + 4 temp, FF=parked
     return d
 
@@ -748,9 +755,12 @@ def summary():
            any(d2.get("fuel_pct") or d2.get("fuel_l_100") for _t, _d, d2 in data))
     out["powertrain"] = "phev" if phev else "bev"
     if phev:
-        out["fuel"] = {"pct": dec.get("fuel_pct"), "l_100": dec.get("fuel_l_100")}
-        # NOTE: fuel *range* is not decoded yet -- the only candidate byte pair mirrors EV range on
-        # every BEV frame, so one PHEV sample can't tell the two apart. Tracked in issue #2.
+        fr, ev = dec.get("headline_range_km"), out.get("range_km")
+        out["fuel"] = {"pct": dec.get("fuel_pct"), "l_100": dec.get("fuel_l_100"), "range_km": fr,
+                       # The combined figure is not transmitted: the app's own total is exactly
+                       # EV + fuel on every capture (742 = 90 + 652, 687 = 38 + 649), so we compute
+                       # it and the UI labels it as computed rather than read from the car.
+                       "total_range_km": (ev + fr) if (ev is not None and fr is not None) else None}
     # reliable "moving now": latest odometer rose vs the prior fresh frame (speed byte is garbage)
     if len(data) >= 2:
         (tsa, _, da), (tsb, _, db) = data[-2], data[-1]

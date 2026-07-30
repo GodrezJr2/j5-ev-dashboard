@@ -122,7 +122,8 @@ the only honest output is status. An abnormal tyre would surface via CarLinko al
 | `range_km` (EV) | bytes 29–30 (BE u16) | 248 |
 | tyre block (4 pressure + 4 temp) | bytes 44–51 | `FF` on indirect TPMS (J5); real values on direct TPMS. temp = `raw × 0.65 − 40` |
 | `fuel_l_100` **(PHEV)** | byte 53 (×0.1) | 0.8 L/100 km — `0` on every BEV frame |
-| `consumption` | byte 55 (×0.1) | 12.4 kWh/100 km (matches J5 dash; **does not** match the PHEV's displayed figure) |
+| `consumption` | byte 55 (×0.1) | 12.4 kWh/100 km (matches the J5 dash exactly; on the PHEV it reads `dash − 2.4` — see below) |
+| headline range | bytes 70–71 (BE u16) | EV range on a BEV (mirrors `range_km`); **fuel range** on a PHEV (652 km) |
 
 ### The platform hands you the per-model constants
 
@@ -141,16 +142,39 @@ can configure itself:
 
 `setup.py` reads the tyre scale and powertrain from here automatically.
 
-PHEV offsets come from a Chery Tiggo 8 PHEV frame contributed in
-[#2](https://github.com/GodrezJr2/j5-ev-dashboard/issues/2), cross-checked against 13,018 logged
+PHEV offsets come from three Chery Tiggo 8 PHEV frames contributed by
+[@wbrocker](https://github.com/wbrocker) in
+[#2](https://github.com/GodrezJr2/j5-ev-dashboard/issues/2), cross-checked against 13,018+ logged
 J5 (BEV) frames where bytes 21, 53 and 54 are `0` in every single one.
 
+### Fuel range — RESOLVED ✅ (bytes 70–71)
+
+Three captures settle what one couldn't. The pair is **the car's headline range**: a BEV writes its
+EV range there, a PHEV writes its *fuel* range.
+
+| | 19 Jul | 20 Jul | 28 Jul | |
+|---|---|---|---|---|
+| battery | 100 % | 89 % | 44 % | |
+| EV range (b29–30) | 90 | 81 | 38 | |
+| b68–69 | 90 | 81 | 38 | mirrors EV range |
+| fuel % (b21) | 58 | 58 | 56 | tank dropped |
+| **b70–71** | **652** | **652** | **649** | held while EV range fell, then moved with the tank |
+| dash fuel range | 652 | — | 649 | ✅ exact match |
+
+The 20 Jul frame is an EV-only drive: EV range fell 9 km and b70–71 did not move, which rules out
+"EV range". The 28 Jul frame burnt fuel: the tank went 58 % → 56 % and b70–71 went 652 → 649, which
+rules out "a constant". Surfaced as `fuel.range_km`, PHEV only.
+
+**Combined range is not transmitted.** The app's own total is exactly EV + fuel on every capture
+(742 = 90 + 652, 687 = 38 + 649), so `fuel.total_range_km` is computed here and labelled as such.
+
 **Still unidentified:**
-- **fuel range.** The candidate pair (bytes 70–71 BE) reads 652 on the PHEV, matching its
-  fuel range — but on the BEV it mirrors `range_km` exactly in all 13,018 frames, so a single
-  PHEV sample can't separate "fuel range" from "the car's headline range". Needs a second PHEV
-  capture at a different fuel level.
-- **byte 54** — 20 on the PHEV, `0` on every BEV frame. Meaning unknown.
+- **byte 55 on a PHEV.** It reads `dash − 2.4` on both paired samples (98 → dash 12.20;
+  145 → dash 16.90 — slope exactly 10.0, offset exactly 2.4). Not fuel-derived: fuel consumption
+  went 0.80 → 0.20 L/100 km between them and the offset didn't budge. On the J5 the same byte
+  matches its dash with no offset, so the PHEV either averages over a different window or reports a
+  different metric. Left as-is rather than shipped as a two-point fit — needs a third paired sample.
+- **byte 54** — 20 on the PHEV in all three frames, `0` on every BEV frame. Meaning unknown.
 
 So the whole product can run off the WebSocket + token, no REST signing needed for reads.
 

@@ -287,18 +287,20 @@ These are **applied automatically** from your detected model — the table lives
 | Car | `battery_kwh` | `tpms_scale` | `tyre_unit` | Notes |
 | --- | --- | --- | --- | --- |
 | Jaecoo J5 EV (ID) | `58.9` | n/a | `psi` | Reference car. *Indirect* TPMS — reports tyre **status only**, never a pressure |
-| Chery Tiggo 8 PHEV 2025 (ZA) | `18.3` | `1.779` | `bar` | Direct TPMS (raw `136` = 2.42 bar). PHEV — fuel level + fuel consumption are decoded; fuel *range* isn't yet ([#2](https://github.com/GodrezJr2/j5-ev-dashboard/issues/2)) |
+| Chery Tiggo 8 PHEV 2025 (ZA) | `18.3` | `1.779` | `bar` | Direct TPMS (raw `136` = 2.42 bar). PHEV — fuel level, fuel consumption and fuel range all decoded ([#2](https://github.com/GodrezJr2/j5-ev-dashboard/issues/2)) |
 | Chery Tiggo 7 PHEV (MY) | `18.3` | `1.779` | `psi` | Same pack and tyre scale as the Tiggo 8 PHEV, independently confirmed ([#3](https://github.com/GodrezJr2/j5-ev-dashboard/issues/3)) |
 
 **If your car isn't listed**, nothing is invented on your behalf: `setup.py` asks for the pack size,
 the battery card labels it *assumed* until you set it, and the spec card stays hidden rather than
 showing another car's brochure figures.
 
-**PHEVs.** Fuel tank % (byte 21) and fuel consumption L/100 km (byte 53) are decoded and shown
-next to the battery. Both bytes read `0` on every BEV frame, so BEV owners see no fuel UI. The
-`range_km` figure stays **EV-only** — the car's fuel range hasn't been pinned down yet, so nothing
-here pretends to be a combined range. Because a PHEV also covers distance on petrol, kWh/100 km and
-savings-vs-petrol are approximate on one.
+**PHEVs.** Fuel tank % (byte 21), fuel consumption L/100 km (byte 53) and **fuel range**
+(bytes 70–71) are decoded and shown next to the battery. Those bytes read `0` on every BEV frame, so
+BEV owners see no fuel UI. `range_km` stays strictly **EV-only** and is labelled *EV range* on a
+PHEV; the combined figure the car's own dash shows is **not transmitted** — it is exactly EV + fuel
+(verified on three captures), so the app computes it and says so rather than passing it off as the
+car's number. Because a PHEV also covers distance on petrol, kWh/100 km and savings-vs-petrol are
+approximate on one.
 
 ## Where to run it
 
