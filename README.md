@@ -59,7 +59,12 @@ own vehicle and your own account**. It is provided for educational and personal 
   people's credentials (which can unlock/control their car) and almost certainly violates the
   vendor's terms. The intended deployment is **one instance per owner**, self-hosted, private
   (e.g. behind Tailscale). See [Going multi-user](#going-multi-user).
-- Read-only by design. Remote control of the vehicle is **not** implemented.
+- Mostly read-only. There **is** a Control tab (lock, A/C, windows, sunroof, tailgate, find-car,
+  stop-charge), but it is **beta**: only *Stop charging* is a confirmed opcode, the rest are
+  best-effort decodes from the APK, and every tap is a **real actuation on a real car** — watch
+  the car when you use it. It is also **cloud-only: no Bluetooth.** The CarLinko app's
+  Bluetooth-proximity control is **not** implemented, so the car must be awake and have cellular
+  signal or the command just fails (`50043`).
 
 If you don't accept the above, don't use this.
 
@@ -78,6 +83,10 @@ If you don't accept the above, don't use this.
   safety margin (ABRP-style), with real connector type / kW / live availability from Google.
 - **SPKLU map** — pan an interactive map, tap a charger for connectors, live availability and
   directions (PLN-Mobile-style), data from Google Places.
+- **Remote control (beta)** — a Control tab that fires the real `74<cmd><state>` opcodes at the
+  car: lock/unlock, A/C on/off + target temp, windows, sunroof, tailgate, find-car, stop charging.
+  Only *stop charging* is confirmed; the rest are best-effort labels you can re-map by long-pressing
+  a button. **Cloud only — no Bluetooth.** See [docs/control-opcodes.md](docs/control-opcodes.md).
 - **Battery care, service countdown, tyre view, privacy toggles, dark mode, EN/ID i18n.**
 - **Home Assistant** — read it all over a REST sensor and get battery-low / charge-done notifications. See [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md).
 
