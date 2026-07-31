@@ -7,7 +7,6 @@ COPY tools/ /app/tools/
 COPY web/  /app/web/
 
 ENV CARLINKO_DATA=/data
-VOLUME /data
 WORKDIR /app/tools
 EXPOSE 8088
 
