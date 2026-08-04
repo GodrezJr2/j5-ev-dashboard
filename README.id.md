@@ -33,7 +33,9 @@ project ini cuma baca akunmu sendiri dan nampilinnya dengan benar.
 
 ## Demo
 
-▶ **[Tonton demo 1½ menit](https://github.com/GodrezJr2/j5-ev-dashboard/releases/download/assets/j5-dashboard-demo.mp4)** — dashboard-nya jalan langsung di HP, datanya dari Jaecoo J5 EV asli. Plat & VIN disamarkan.
+https://github.com/user-attachments/assets/f17d167d-cbf9-4eb0-92b4-44361f6da6a5
+
+*1½ menit dashboard-nya jalan langsung di HP, datanya dari Jaecoo J5 EV asli — plat & VIN disamarkan. Bisa juga [diunduh](https://github.com/GodrezJr2/j5-ev-dashboard/releases/download/assets/j5-dashboard-demo.mp4).*
 
 ## Screenshot
 

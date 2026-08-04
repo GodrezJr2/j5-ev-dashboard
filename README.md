@@ -31,7 +31,9 @@ project just reads your own account and presents it properly.
 
 ## Demo
 
-▶ **[Watch the 1½-minute demo](https://github.com/GodrezJr2/j5-ev-dashboard/releases/download/assets/j5-dashboard-demo.mp4)** — the dashboard running live on a phone against a real Jaecoo J5 EV. Plate and VIN are masked.
+https://github.com/user-attachments/assets/f17d167d-cbf9-4eb0-92b4-44361f6da6a5
+
+*1½ minutes of the dashboard running live on a phone against a real Jaecoo J5 EV — plate and VIN masked. Also [downloadable](https://github.com/GodrezJr2/j5-ev-dashboard/releases/download/assets/j5-dashboard-demo.mp4).*
 
 ## Screenshots
 
