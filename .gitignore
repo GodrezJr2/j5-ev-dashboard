@@ -22,3 +22,6 @@ __pycache__/
 
 # Docker data dir (creds, token, db)
 data/
+
+# Demo video — hosted as a GitHub release asset, not committed (keeps the repo small)
+*.mp4

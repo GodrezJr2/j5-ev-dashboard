@@ -29,6 +29,12 @@ project just reads your own account and presents it properly.
 > and file a [compatibility report](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md) — a second car
 > was worth more to this project than any amount of staring at the first. 🙏
 
+## Demo
+
+https://github.com/GodrezJr2/j5-ev-dashboard/releases/download/assets/j5-dashboard-demo.mp4
+
+*1½-minute walkthrough of the live dashboard — running against a real Jaecoo J5 EV. Plate and VIN are masked.*
+
 ## Screenshots
 
 | Dashboard | Charging |

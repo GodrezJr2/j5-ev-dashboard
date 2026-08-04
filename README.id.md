@@ -31,6 +31,12 @@ project ini cuma baca akunmu sendiri dan nampilinnya dengan benar.
 > [laporan kompatibilitas](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md) ya — satu mobil kedua
 > jauh lebih berharga buat proyek ini daripada berapa lama pun menatap yang pertama. 🙏
 
+## Demo
+
+https://github.com/GodrezJr2/j5-ev-dashboard/releases/download/assets/j5-dashboard-demo.mp4
+
+*Walkthrough 1½ menit dashboard-nya jalan langsung di Jaecoo J5 EV asli. Plat & VIN disamarkan.*
+
 ## Screenshot
 
 | Dashboard | Pengisian |
