@@ -14,7 +14,10 @@ CARS = {
     # key = the words that identify the model; see match() for how they're matched
     "jaecoo j5 ev": {"battery_kwh": 58.9, "wltp_kwh_100": 14.8, "chemistry": "lfp"},   # reference car (ID)
     "tiggo 8 phev": {"battery_kwh": 18.3, "tpms_scale": 1.779, "powertrain": "phev"},  # issue #1 (ZA)
-    "tiggo 7 phev": {"battery_kwh": 18.3, "tpms_scale": 1.779, "powertrain": "phev"},  # issue #3 (MY)
+    "tiggo 7 phev": {"battery_kwh": 18.3, "tpms_scale": 1.779, "powertrain": "phev",
+                     "wltp_kwh_100": 19.68},                                           # issue #3 (MY)
+    "tiggo 7 csh": {"battery_kwh": 18.3, "tpms_scale": 1.779, "powertrain": "phev",
+                    "wltp_kwh_100": 19.68},  # Malaysia badges the same car "TIGGO 7 CSH" (#3)
 }
 
 

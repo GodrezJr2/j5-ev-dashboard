@@ -44,6 +44,8 @@ Notes:
 | POST | `/system/record/getResearch` | Survey check | body `{vehicleId,userId,clientType}` |
 | POST | `/pub/file/appLog` | **Uploads internal debug logs** (multipart) | Leaks Dart logs w/ VIN, email, decoded beans. Useful + a privacy smell. |
 | GET | `/user/notice/unReadCount?vehicleId=` | Notification counts | |
+| GET | **`/user/vehicle/state/{vehicleId}`** | **Telemetry over REST** | Returns the exact same 73-byte hex blob as WS `action:6` — one signed GET per poll is enough for reads, no persistent WS needed. Verified live 2026-08-13 (byte-for-byte match with the WS frame, incl. battery/range). Reported by [@jebentancour](https://github.com/jebentancour) in [#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5) |
+| GET | **`/user/vehicle/isOnline/{vehicleId}`** | Car reachable (bool) | `{"data":true}` / `false`; same signing. Also [#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5) |
 | POST | **`/user/vehicle/remoteControl`** | **CONTROL the car** | body `{vehicleId, deviceSn, data:"<hexcmd>", timeOut:20}`. See control. |
 
 ## Remote control
@@ -123,7 +125,14 @@ the only honest output is status. An abnormal tyre would surface via CarLinko al
 | tyre block (4 pressure + 4 temp) | bytes 44–51 | `FF` on indirect TPMS (J5); real values on direct TPMS. temp = `raw × 0.65 − 40` |
 | `fuel_l_100` **(PHEV)** | byte 53 (×0.1) | 0.8 L/100 km — `0` on every BEV frame |
 | `consumption` | byte 55 (×0.1) | 12.4 kWh/100 km (matches the J5 dash exactly; on the PHEV it reads `dash − 2.4` — see below) |
+| `charge_mode` | byte 56 | connector: `0`=none, `1`=AC, `16`=DC fast. [#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5) |
+| `charge_state` | byte 57 | `0`=idle, `1`=charging, `2`=complete, `3`=canceled, `4`=hot, `5`=stop-charging |
+| `charge_remain_min` | bytes 58–59 (BE u16) | minutes to done; `0x3FE`/`0x3FF` = invalid (CarLinko's own `chargingTimeInvalidValue` sentinel) |
+| `charge_power_kw` | bytes 62–63 (BE u16 ×0.1) | instant charge power; 62 is the overflow byte past 25.5 kW. `0` when idle |
+| `wltc_range_km` | bytes 68–69 (BE u16) | **rated (WLTC) range** — *not* a mirror of EV range. See below |
 | headline range | bytes 70–71 (BE u16) | EV range on a BEV (mirrors `range_km`); **fuel range** on a PHEV (652 km) |
+| `ac_on` | byte 23 | `0`=off, `!=0`=on (climate). Reads 1 in ~99% of J5 driving frames |
+| `hv_state` | byte 5 | HV/motor state per [#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5) (`>=2` = on) — **model-specific**: verified live on an Omoda E5; on the J5 the byte takes 0–3 without tracking ignition, so treat as unproven on other models |
 
 ### The platform hands you the per-model constants
 
@@ -147,6 +156,35 @@ PHEV offsets come from three Chery Tiggo 8 PHEV frames contributed by
 [#2](https://github.com/GodrezJr2/j5-ev-dashboard/issues/2), cross-checked against 13,018+ logged
 J5 (BEV) frames where bytes 21, 53 and 54 are `0` in every single one.
 
+### Charging block + rated range — VERIFIED ✅ (bytes 5, 23, 56–59, 62–63, 68–69)
+
+Contributed by [@jebentancour](https://github.com/jebentancour) (Omoda E5 BEV, Uruguay) in
+[#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5) and verified here against three other
+cars' data before shipping:
+
+- **J5 EV (ID)** — 72,507 logged frames, including 1,392 DC-charging frames.
+- **Tiggo 8 PHEV (ZA)** — three captured frames from #2, one of which turns out to be **AC
+  charging**: `b56=1`, `b57=1`, `b58–59=178` min, `b62–63=39` → 3.9 kW — a typical home charge,
+  and the AC enum confirmed on a second car without anyone noticing at the time.
+- **Tiggo 7 PHEV (MY)** — one idle frame from #3 (`b56=0`, `b57=0`, `b58–59=0x3FF` sentinel).
+
+What held up:
+
+| Byte | Claim | Verified how |
+|---|---|---|
+| 56 | `16` = DC fast | every J5 DC session reads 16; `0` on all idle frames; `1` (AC) on the Tiggo 8's home charge |
+| 57 | `0` idle / `1` charging / `2` complete / `5` stop | exactly the 1,392 charging frames read 1, `2` appears right after each session, `5` seen in a 14-frame burst after a session start (stop/replug); `3`/`4` never seen |
+| 58–59 | minutes to done | counts 37 → 10 → 1 min through a real session; idle reads `0x3FF` = CarLinko's own `chargingTimeInvalidValue` sentinel |
+| 62–63 | instant power ×0.1 kW | 29.5–63.7 kW on DC, 3.9 kW on the Tiggo 8's AC charge, taper to 6.0 kW at 99 %, `0` when idle; consistent with the SoC-derived rate (51.8 kW avg vs 63.7 kW instant) |
+| 68–69 | **WLTC rated range, not an EV-range mirror** | on the J5 it differs from EV range in **72,482 of 72,507 frames** — e.g. EV 334 vs WLTC 302 at 66 %, and 302/0.66 = 457.6 ≈ the car's 461 km NEDC rating. The Omoda owner cross-checked live against the app (304 vs 329, digit-for-digit). The Tiggo 8's 90/81/38 coincidences were exactly that — a PHEV's EV estimate *is* the rated one |
+| 5 | HV state `>=2` = on | only provable on the Omoda E5 (live-verified by its owner). On the J5 the byte takes 0–3 without tracking ignition — kept raw, treated as model-specific |
+| 23 | A/C `!=0` = on | `{0,1}` on the J5; 1 in 98.8 % of driving frames, toggles while parked. Consistent, not contradicted |
+
+The dashboard now surfaces `charging.mode` (`ac`/`dc`), `charging.state`, `charging.remaining_min`
+(the car's own time-to-done — the field the Tiggo 7 owner asked about in #3) and prefers the car's
+own `charge_power_kw` for `charging.rate_kw` over the SoC-derived estimate. `wltc_range_km` is
+exposed at the API level.
+
 ### Fuel range — RESOLVED ✅ (bytes 70–71)
 
 Three captures settle what one couldn't. The pair is **the car's headline range**: a BEV writes its
@@ -156,7 +194,7 @@ EV range there, a PHEV writes its *fuel* range.
 |---|---|---|---|---|
 | battery | 100 % | 89 % | 44 % | |
 | EV range (b29–30) | 90 | 81 | 38 | |
-| b68–69 | 90 | 81 | 38 | mirrors EV range |
+| b68–69 | 90 | 81 | 38 | equal on a PHEV (its EV estimate is the rated one); see above |
 | fuel % (b21) | 58 | 58 | 56 | tank dropped |
 | **b70–71** | **652** | **652** | **649** | held while EV range fell, then moved with the tank |
 | dash fuel range | 652 | — | 649 | ✅ exact match |

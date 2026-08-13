@@ -1,5 +1,10 @@
 # Home Assistant integration
 
+> **Native integration exists:** [ha-carlinko](https://github.com/jebentancour/ha-carlinko) by
+> [@jebentancour](https://github.com/jebentancour) is a read-only Home Assistant integration built
+> on the same telemetry (no dashboard needed in the middle). The REST-sensor path below is the
+> zero-install alternative that reads this dashboard's own API.
+
 The dashboard already exposes everything as JSON at `GET /api/summary`, so Home Assistant can
 read it with a built-in **REST sensor** — no extra add-on, no code. You get entities for battery,
 range, charging, etc., and can fire automations (e.g. *battery low → notify my phone*).

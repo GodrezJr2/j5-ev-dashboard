@@ -273,6 +273,25 @@ def decode(hexstr):
         # Kept raw here; summary() decides whether this car has a fuel tank at all.
         d["fuel_pct"]   = b[21]                            # fuel tank %
         d["fuel_l_100"] = round(b[53] * 0.1, 1)            # fuel consumption L/100km
+        # Charging block, decoded from issue #5 (Omoda E5, Uruguay) and verified against 72,507
+        # logged J5 frames + Tiggo 8 / Tiggo 7 PHEV frames from #2/#3 -- see docs/api-map.md.
+        d["charge_mode"] = b[56]                           # connector: 0=none, 1=AC, 16=DC fast
+        d["charge_state"] = b[57]                          # 0=idle 1=charging 2=complete 3=canceled 4=hot 5=stop
+        d["charge_remain"] = int.from_bytes(b[58:60], "big")  # minutes to done; CarLinko sentinels >= 0x3FE = invalid
+        if d["charge_remain"] >= 0x3FE: d["charge_remain"] = None
+        d["charge_power"] = round(int.from_bytes(b[62:64], "big") * 0.1, 1)  # instant charge power (x0.1 kW; 0 when idle)
+        # AC flag: 0 = off, !=0 = on. On the J5 it reads 1 in 98.8% of driving frames and toggles
+        # while parked -- consistent with A/C usage, no counter-example found.
+        d["ac_on"] = b[23] != 0
+        # Rated (WLTC) range, NOT a mirror of EV range (b29-30). On the J5 they differ in 72,482 of
+        # 72,507 frames (334 vs 302 at 66% -- 302/0.66 = 457.6, the car's 461 km NEDC rating).
+        # The Omoda E5 owner in #5 cross-checked it live against the app: 304 vs 329, digit-for-digit.
+        # On the Tiggo 8 PHEV they happen to coincide (its EV range IS the rated estimate).
+        d["wltc_range_km"] = int.from_bytes(b[68:70], "big")
+        # HV/motor state per #5 (>=2 = on). Verified only on the Omoda E5; on the J5 the same byte
+        # takes 0-3 without tracking ignition (2 dominates even parked), so it is kept raw here and
+        # treated as model-specific rather than asserted.
+        d["hv_state"] = b[5]
     if len(b) > 71:
         # The car's own headline range: EV range on a BEV, *fuel* range on a PHEV. Proven on the
         # Tiggo 8 PHEV over three frames (#2): it held 652 while EV range fell 90 -> 81 (so it is
@@ -332,6 +351,15 @@ MODEL_SPECS = {
         "notes": ["gross_vs_usable", "nedc_optimistic"],
     },
 }
+_TIGGO7 = {
+    "label": "Chery Tiggo 7 PHEV", "source": "owner-reported, issue #3",
+    "performance": [["Power", 279, "PS"], ["Torque", 365, "Nm"], ["Battery", 18.3, "kWh"]],
+    "dimensions": [["Length", 4553, "mm"]],
+    "notes": ["owner_reported"],
+}
+# Malaysia badges the same car "TIGGO 7 CSH", so both keys share the entry.
+MODEL_SPECS["tiggo 7 phev"] = _TIGGO7
+MODEL_SPECS["tiggo 7 csh"] = _TIGGO7
 
 def model_specs(model=None):
     """Specs for this car, or None. creds.json `specs` wins, so an owner can fill in a model we
@@ -843,6 +871,20 @@ def summary():
         out["energy"]["rating"] = ("optimal" if rc < WLTP_KWH_100 else "normal" if rc < 18 else "boros")
         out["energy"]["source"] = "car"
     out["charging"] = res["charging"]
+    # Prefer the car's own charging flags over the SoC-derived session detector: b56/b57/b62-63
+    # report connector, state and instant power directly (verified on J5 DC + Tiggo 8 AC frames,
+    # issue #5). The car flips to "active" the moment the charger starts, before any SoC tick.
+    cmode = dec.get("charge_mode"); cstate = dec.get("charge_state")
+    out["charging"]["mode"] = {16: "dc", 1: "ac"}.get(cmode)
+    out["charging"]["state"] = cstate
+    out["charging"]["remaining_min"] = dec.get("charge_remain")
+    if cstate == 1 and dec.get("charge_power") is not None:
+        out["charging"]["active"] = True
+        out["charging"]["rate_kw"] = dec["charge_power"]
+        out["charging"]["rate_source"] = "car"
+    elif out["charging"]["active"]:
+        out["charging"]["rate_source"] = "soc-estimate"
+    out["wltc_range_km"] = dec.get("wltc_range_km")
     out["trips"] = res.get("trips", [])
     out["avg_speed"] = res.get("avg_speed")
     out["health"] = res.get("health", {})

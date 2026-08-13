@@ -15,16 +15,17 @@ project just reads your own account and presents it properly.
 > receipts to **99.6–99.9 %** (see [Accuracy](#accuracy)) — that figure is from one car, since it
 > needs real receipts to check against. The telemetry decode itself is confirmed on two.
 
-> **Other CarLinko cars?** Confirmed on **two cars, two brands, two powertrains, two countries** —
-> a Jaecoo J5 EV (BEV, Indonesia) and a Chery Tiggo 8 PHEV (South Africa). Every telemetry byte
-> offset held identical across both, which suggests the blob layout comes from the CarLinko
+> **Other CarLinko cars?** Confirmed on **four cars, three brands, two powertrains, four countries** —
+> a Jaecoo J5 EV (BEV, Indonesia), a Chery Tiggo 8 PHEV (South Africa), a Chery Tiggo 7 PHEV
+> (Malaysia) and an Omoda E5 (BEV, Uruguay). Every telemetry byte
+> offset held identical across all of them, which suggests the blob layout comes from the CarLinko
 > platform itself rather than the model. The per-model constants that *do* differ (tyre scale,
 > powertrain, the car's own photo) are read from the API at setup, so a new car largely configures
 > itself.
 >
 > Caveat worth stating plainly: Jaecoo, Omoda, Exeed and Chery are all **Chery Group** brands, and
 > CarLinko is Chery Group's app — so "works on CarLinko" realistically means "works across Chery
-> Group", not literally any car. Two cars is a strong signal, not proof: bytes we haven't mapped
+> Group", not literally any car. Four cars is a strong signal, not proof: bytes we haven't mapped
 > may well differ, and no pure-ICE car has been tried. If you have a different car, please try it
 > and file a [compatibility report](https://github.com/GodrezJr2/j5-ev-dashboard/issues/new?template=compatibility.md) — a second car
 > was worth more to this project than any amount of staring at the first. 🙏
@@ -94,7 +95,7 @@ If you don't accept the above, don't use this.
   Only *stop charging* is confirmed; the rest are best-effort labels you can re-map by long-pressing
   a button. **Cloud only — no Bluetooth.** See [docs/control-opcodes.md](docs/control-opcodes.md).
 - **Battery care, service countdown, tyre view, privacy toggles, dark mode, EN/ID i18n.**
-- **Home Assistant** — read it all over a REST sensor and get battery-low / charge-done notifications. See [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md).
+- **Home Assistant** — read it all over a REST sensor and get battery-low / charge-done notifications. See [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md). Prefer a native integration? [ha-carlinko](https://github.com/jebentancour/ha-carlinko) by [@jebentancour](https://github.com/jebentancour) (read-only, built on the same telemetry).
 
 See [PRODUCT.md](PRODUCT.md) for the product rationale and [DESIGN.md](DESIGN.md) for the
 visual system.
@@ -294,7 +295,8 @@ These are **applied automatically** from your detected model — the table lives
 | --- | --- | --- | --- | --- |
 | Jaecoo J5 EV (ID) | `58.9` | n/a | `psi` | Reference car. *Indirect* TPMS — reports tyre **status only**, never a pressure |
 | Chery Tiggo 8 PHEV 2025 (ZA) | `18.3` | `1.779` | `bar` | Direct TPMS (raw `136` = 2.42 bar). PHEV — fuel level, fuel consumption and fuel range all decoded ([#2](https://github.com/GodrezJr2/j5-ev-dashboard/issues/2)) |
-| Chery Tiggo 7 PHEV (MY) | `18.3` | `1.779` | `psi` | Same pack and tyre scale as the Tiggo 8 PHEV, independently confirmed ([#3](https://github.com/GodrezJr2/j5-ev-dashboard/issues/3)) |
+| Chery Tiggo 7 PHEV (MY) | `18.3` | `1.779` | `psi` | Same pack and tyre scale as the Tiggo 8 PHEV, independently confirmed ([#3](https://github.com/GodrezJr2/j5-ev-dashboard/issues/3)). Malaysia badges it **`TIGGO 7 CSH`** — matched automatically |
+| Omoda E5 2025 (UY) | — | — | — | Everything works incl. login, auto-detect and charging ([#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5)). Pack size not yet reported, so `setup.py` asks |
 
 **If your car isn't listed**, nothing is invented on your behalf: `setup.py` asks for the pack size,
 the battery card labels it *assumed* until you set it, and the spec card stays hidden rather than

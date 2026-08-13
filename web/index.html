@@ -641,6 +641,7 @@
         <div class="effmeta">
           <div><span class="over">This session</span><div><b class="num" id="chgkwh">&mdash;</b><u>kWh</u></div></div>
           <div><span class="over">Battery</span><div><b class="num" id="chgsoc">&mdash;</b><u>%</u></div></div>
+          <div><span class="over">Time left</span><div><b class="num" id="chgleft">&mdash;</b><u>min</u></div></div>
         </div>
       </div>
     </div>
@@ -787,7 +788,7 @@ const MAP_ID={
   "Specifications":"Spesifikasi","Performance":"Performa","Dimensions":"Dimensi",
   "Power":"Tenaga","Torque":"Torsi","Drivetrain":"Penggerak","Battery":"Baterai","Range NEDC":"Jangkauan NEDC",
   "Length":"Panjang","Width":"Lebar","Height":"Tinggi","Wheelbase":"Jarak sumbu roda","Ground clearance":"Jarak ke tanah",
-  "Recent trips":"Perjalanan terakhir","Charging":"Pengisian","This session":"Sesi ini",
+  "Recent trips":"Perjalanan terakhir","Charging":"Pengisian","This session":"Sesi ini","Time left":"Sisa waktu",
   "Lifetime":"Sepanjang waktu","kWh charged":"kWh diisi","Rp spent":"Rp terpakai","km driven":"km ditempuh","Rp saved":"Rp hemat",
   "Charge planner":"Perencana isi","Charge to":"Isi sampai",
   "Into battery":"Masuk baterai","Buy at meter":"Beli di meteran","Range +km":"Tambah jangkauan",
@@ -1358,6 +1359,9 @@ function bSpec(){ const I=DATA.insights||{}, S=DATA.specs;
   if(notes.includes('gross_vs_usable')||notes.includes('nedc_optimistic'))
     note=tn(`Two honesty notes: the quoted battery is <b>gross</b> — usable is ~${DATA.battery_kwh||'—'} kWh (what charges are billed against). A quoted <b>NEDC range is an optimistic lab cycle</b> — your measured real-world range is ~${I.real_range||'—'} km. Specs are reference only; everything else in the app is live from your car.`,
             `Dua catatan jujur: kapasitas baterai yang tertulis itu <b>kotor</b> — yang berguna ~${DATA.battery_kwh||'—'} kWh (dasar tagihan pengisian). <b>Jangkauan NEDC itu siklus lab yang optimis</b> — jangkauan nyata terukur kamu ~${I.real_range||'—'} km. Spesifikasi cuma rujukan; sisanya di app langsung dari mobil.`);
+  else if(notes.includes('owner_reported'))
+    note=tn(`Figures reported by an owner of this model, not a manufacturer brochure — treat them as close-enough, not gospel. Everything else in the app is live from your car.`,
+            `Angka dari pemilik model ini, bukan brosur pabrikan — anggap mendekati, bukan pasti. Sisanya di app langsung dari mobil.`);
   return {title:(S.label||tn('Specifications','Spesifikasi'))+tn(' · specs',' · spesifikasi'),
     lead:tn('Manufacturer figures.','Angka pabrikan.'), rows:rows, note:note};
 }
@@ -1665,7 +1669,7 @@ async function load(live){
   const c=d.charging||{};
   $('chgActive').style.display = c.active?'block':'none';
   const cb=$('chgbadge'); cb.textContent=T(c.active?'Active':'Idle'); cb.className='badge '+(c.active?'ok':'idle');
-  if(c.active){ roll('chgrate', c.rate_kw!=null?c.rate_kw:'—'); roll('chgkwh', c.session_kwh); $('chgsoc').textContent=c.soc!=null?c.soc:'—'; }
+  if(c.active){ roll('chgrate', c.rate_kw!=null?c.rate_kw:'—'); roll('chgkwh', c.session_kwh); $('chgsoc').textContent=c.soc!=null?c.soc:'—'; $('chgleft').textContent=c.remaining_min!=null?c.remaining_min:'—'; }
   $('chgWeek').textContent=c.week!=null?c.week:'—';
   $('chgMonthKwh').textContent=c.month_kwh!=null?c.month_kwh:'—';
   $('chgMonthCost').textContent = c.month_cost? (Math.round(c.month_cost/1000)+'k') : '0';
