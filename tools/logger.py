@@ -54,7 +54,7 @@ def decode(hexstr):
         d["battery"]  = b[28]
         d["range_km"] = int.from_bytes(b[29:31], "big")
         d["odo_guess"] = int.from_bytes(b[18:21], "big")  # validated =882 (0x0372)
-        d["ignition"] = b[3]                               # 0=parked
+        d["unlocked"] = b[3] != 0                         # 0=locked (see docs/api-map.md -- verified #5)
         d["speed"]    = int.from_bytes(b[14:16], "big") / 16.0
     if len(b) >= 52:
         d["tyre_raw"] = b[44:52].hex()
@@ -131,7 +131,7 @@ def poll_once(conn, _retried=False):
             (ts, dt, d.get("battery"), d.get("range_km"), d.get("odo_guess"),
              d.get("tyre_raw"), 1, blob))
         print(f"{dt}  battery={d.get('battery')}%  range={d.get('range_km')}km  "
-              f"odo?={d.get('odo_guess')}  spd={d.get('speed')}  ign={d.get('ignition')}")
+              f"odo?={d.get('odo_guess')}  spd={d.get('speed')}  unl={d.get('unlocked')}")
         return d
     conn.execute("INSERT OR REPLACE INTO telemetry VALUES (?,?,?,?,?,?,?,?)",
                  (ts, dt, None, None, None, None, 0, None))
@@ -139,9 +139,10 @@ def poll_once(conn, _retried=False):
     return None
 
 # adaptive cadence (seconds). Near-real-time while the car is doing anything -- on the road,
-# charging, or ignition on -- and ease off only when it's parked+idle or genuinely dark. All three
+# charging, or the car unlocked/in use -- and ease off only when it's parked+idle or genuinely
+# dark. All three
 # tiers are overridable from creds.json so you can tune without editing code.
-ACTIVE = int(_C.get("poll_active")  or 5)   # driving / charging / ignition on -> near real-time.
+ACTIVE = int(_C.get("poll_active")  or 5)   # driving / charging / unlocked -> near real-time.
                                             # The cloud has its own push lag, so below ~5 s just
                                             # re-fetches the same frame and hammers CarLinko.
 PARK   = int(_C.get("poll_parked")  or 30)  # parked, engine off, not charging: cloud just replays
@@ -172,9 +173,10 @@ def adaptive_loop(conn):
         if st:
             miss = 0
             soc = st.get("battery"); odo = st.get("odo_guess")
-            # on the road = ignition on (reliable while the car is driving) or the odometer just
-            # advanced. Charging is handled separately below (ignition is 0 on some cars while charging).
-            driving = bool(st.get("ignition")) or (last_odo is not None and odo is not None and odo > last_odo)
+            # on the road = odometer advancing, or the car unlocked (b3 -- the "in use" hint; the
+            # lock/unlock byte verified in #5, previously mistaken for ignition). Charging is
+            # handled separately below (b3 is 0 on some cars while charging).
+            driving = bool(st.get("unlocked")) or (last_odo is not None and odo is not None and odo > last_odo)
             if soc is not None:
                 soc_hist.append((now, soc))
             if driving:

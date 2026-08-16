@@ -264,10 +264,10 @@ def decode(hexstr):
         d["range_km"] = int.from_bytes(b[29:31], "big")    # validated =248
         d["odometer"] = int.from_bytes(b[18:21], "big")    # validated =882 (0x0372)
         d["volt12"]   = round(int.from_bytes(b[12:14], "big") * 0.01, 2)  # 12V aux ~13.84 (validate on drive)
-        d["ignition"] = b[3]                               # 0=off/parked, !=0=on (flipped 00->01 at start on the J5)
-        # The E5 owner in #5 has b3 as LOCK state (0=locked, !=0=unlocked, live lock/unlock test),
-        # not ignition. Both correlate with "car is in use", so it is used here as an *awake*
-        # indicator and the true meaning needs a dedicated lock/unlock test on the J5.
+        d["unlocked"] = b[3] != 0                          # 0=locked, !=0=unlocked. VERIFIED: live lock/unlock
+        # test on the Omoda E5 (#5) + J5 data (217 park 0->1 flips; b3=1 lingers a median 105 s
+        # after driving stops -- the walk-away-and-lock delay). NOT ignition, despite the old name;
+        # it doubles as a "car is in use / awake" hint, which is all the logger needs it for.
         d["speed"] = round(int.from_bytes(b[14:16], "big") / 16.0, 1)  # km/h: bytes14-15 BE /16 (calibrated live: raw 320 = 20 km/h)
     if len(b) > 55:
         d["consumption"] = round(b[55] * 0.1, 1)           # car's own avg kWh/100km (byte55 x0.1; matches dash 12.2)
@@ -708,7 +708,7 @@ def demo_summary():
         "demo": True,
         "vehicle": {"plate": "B 1234 DEMO", "model": "Jaecoo J5 EV", "vin": "DEMOVIN00000J5EV"},
         "online": True, "battery": 72, "range_km": 318, "odometer": 8421, "volt12": 13.6,
-        "ignition": 0, "speed": None, "moving": False, "avg_speed": 41,
+        "unlocked": False, "speed": None, "moving": False, "avg_speed": 41,
         "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
         "battery_kwh": cap, "battery_kwh_source": "known", "wltp_kwh_100": 14.8,
         "chemistry_known": True, "powertrain": "bev", "fuel": None,
@@ -751,7 +751,7 @@ def summary():
     if DEMO:
         return demo_summary()
     out = {"vehicle": VEHICLE, "online": False, "battery": None, "range_km": None,
-           "odometer": None, "volt12": None, "ignition": None, "speed": None,
+           "odometer": None, "volt12": None, "unlocked": None, "speed": None,
            "moving": False, "avg_speed": None, "insights": {}, "health": {}, "drain": None,
            "volt12_min7d": None, "volt12_status": None,
            "updated": None, "age_min": None,
@@ -789,7 +789,7 @@ def summary():
     ts, dt, dec = data[-1]
     out.update(battery=dec.get("battery"), range_km=dec.get("range_km"),
                odometer=dec.get("odometer"), volt12=dec.get("volt12"),
-               ignition=dec.get("ignition"), speed=None, updated=dt)
+               unlocked=dec.get("unlocked"), speed=None, updated=dt)
     out["age_min"] = round((time.time() - ts) / 60, 1)
     out["online"] = out["age_min"] is not None and out["age_min"] < 40
     # Fuel side of a PHEV. Decided over the whole window, not the latest frame, so a car sitting at
@@ -922,9 +922,6 @@ def summary():
         lf["liters_saved"] = round(lf["km"] / PETROL_KM_L, 1)        # petrol you didn't burn
         lf["co2_saved"] = round(lf["km"] / PETROL_KM_L * 2.31)       # ~2.31 kg CO2 per litre petrol
     out["charges"] = {"week": res["charging"]["week"], "month": res["charging"]["month"]}
-    # if actively charging, reflect it in the headline state
-    if res["charging"]["active"]:
-        out["ignition"] = out.get("ignition")
     return out
 
 # ---- long-trip planner: geocode (Nominatim) + route (OSRM) + SPKLU (Overpass/OSM), all keyless ----

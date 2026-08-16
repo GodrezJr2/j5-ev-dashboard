@@ -116,7 +116,7 @@ the only honest output is status. An abnormal tyre would surface via CarLinko al
 | Field | Blob offset | Value |
 |---|---|---|
 | `doors` | byte 2 | bitmask: front L/R, rear L/R doors (E5-verified, #5) |
-| `ignition` | byte 3 | 0 = off/parked. ⚠️ The E5 owner has this as **lock** (0=locked, !=0=unlocked) from a live lock/unlock test — both correlate with "car in use", so it's used as an awake indicator and needs a dedicated test to disambiguate |
+| `unlocked` | byte 3 | **LOCK state: `0`=locked, `!=0`=unlocked.** VERIFIED ✅ — live lock/unlock test on the Omoda E5 (#5) *and* J5 data: 217 parked 0→1 flips, and the byte lingers at 1 for a median 105 s after driving stops (the walk-away-and-lock delay). Previously mistaken for ignition |
 | `trunk_open` | byte 4 | 0 = closed (E5-verified, #5) |
 | `windows` | byte 8 | 2 bits per window (E5-verified, #5) |
 | `sunroof_open` | byte 9 | 0 = closed (E5-verified, #5) |
