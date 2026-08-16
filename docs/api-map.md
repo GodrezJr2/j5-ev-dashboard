@@ -115,24 +115,32 @@ the only honest output is status. An abnormal tyre would surface via CarLinko al
 
 | Field | Blob offset | Value |
 |---|---|---|
-| `ignition` | byte 3 | 0 = off/parked |
+| `doors` | byte 2 | bitmask: front L/R, rear L/R doors (E5-verified, #5) |
+| `ignition` | byte 3 | 0 = off/parked. ⚠️ The E5 owner has this as **lock** (0=locked, !=0=unlocked) from a live lock/unlock test — both correlate with "car in use", so it's used as an awake indicator and needs a dedicated test to disambiguate |
+| `trunk_open` | byte 4 | 0 = closed (E5-verified, #5) |
+| `windows` | byte 8 | 2 bits per window (E5-verified, #5) |
+| `sunroof_open` | byte 9 | 0 = closed (E5-verified, #5) |
 | `volt12` | bytes 12–13 (BE u16 ×0.01) | 13.84 V |
 | `speed_kmh` | bytes 14–15 (BE u16 ÷16) | raw 320 = 20 km/h |
 | `odometer` | bytes 18–20 (BE u24) | 882 |
 | `fuel_pct` **(PHEV)** | byte 21 | 58 % — `0` on every BEV frame |
+| `ac_on` | byte 23 | `0`=off, `!=0`=on (climate). **Live-verified on the E5**: a manual A/C toggle moved exactly this byte; fan/temp/seat/defrost changes leave it alone |
+| `ac_temp_c` | byte 24 | A/C target temp (E5-verified, #5; scale TBD) |
 | `battery_pct` | byte 28 | 49 |
 | `range_km` (EV) | bytes 29–30 (BE u16) | 248 |
+| `seat_heat` | bytes 32–33 | L, R (0 = off) |
+| `seat_vent` | bytes 37–38 | L, R (0 = off) |
+| `defrost_front` | byte 42 | 0 = off |
 | tyre block (4 pressure + 4 temp) | bytes 44–51 | `FF` on indirect TPMS (J5); real values on direct TPMS. temp = `raw × 0.65 − 40` |
 | `fuel_l_100` **(PHEV)** | byte 53 (×0.1) | 0.8 L/100 km — `0` on every BEV frame |
 | `consumption` | byte 55 (×0.1) | 12.4 kWh/100 km (matches the J5 dash exactly; on the PHEV it reads `dash − 2.4` — see below) |
 | `charge_mode` | byte 56 | connector: `0`=none, `1`=AC, `16`=DC fast. [#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5) |
 | `charge_state` | byte 57 | `0`=idle, `1`=charging, `2`=complete, `3`=canceled, `4`=hot, `5`=stop-charging |
 | `charge_remain_min` | bytes 58–59 (BE u16) | minutes to done; `0x3FE`/`0x3FF` = invalid (CarLinko's own `chargingTimeInvalidValue` sentinel) |
-| `charge_power_kw` | bytes 62–63 (BE u16 ×0.1) | instant charge power; 62 is the overflow byte past 25.5 kW. `0` when idle |
+| `charge_power_kw` | bytes 62–63 (BE u16 ×0.1) | instant power; 62 is the overflow byte past 25.5 kW. `0` when idle. ⚠️ **Bidirectional**: the same pair carries **regen power while braking** — gate on b57 (`!= idle`) before calling it charge power (E5-verified, #5) |
 | `wltc_range_km` | bytes 68–69 (BE u16) | **rated (WLTC) range** — *not* a mirror of EV range. See below |
 | headline range | bytes 70–71 (BE u16) | EV range on a BEV (mirrors `range_km`); **fuel range** on a PHEV (652 km) |
-| `ac_on` | byte 23 | `0`=off, `!=0`=on (climate). Reads 1 in ~99% of J5 driving frames |
-| `hv_state` | byte 5 | HV/motor state per [#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5) (`>=2` = on) — **model-specific**: verified live on an Omoda E5; on the J5 the byte takes 0–3 without tracking ignition, so treat as unproven on other models |
+| `hv_state` | byte 5 | HV/motor state per [#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5) (`>=2` = on). E5 live data: **0=off, 1=low-voltage (15–90 s power on/off transition), 2=high-voltage/ready** — `2` in 100 % of driving samples. On the J5 the byte takes 0–3 with `2` dominant even parked, so treat as model-specific |
 
 ### The platform hands you the per-model constants
 

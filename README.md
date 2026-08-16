@@ -296,7 +296,7 @@ These are **applied automatically** from your detected model — the table lives
 | Jaecoo J5 EV (ID) | `58.9` | n/a | `psi` | Reference car. *Indirect* TPMS — reports tyre **status only**, never a pressure |
 | Chery Tiggo 8 PHEV 2025 (ZA) | `18.3` | `1.779` | `bar` | Direct TPMS (raw `136` = 2.42 bar). PHEV — fuel level, fuel consumption and fuel range all decoded ([#2](https://github.com/GodrezJr2/j5-ev-dashboard/issues/2)) |
 | Chery Tiggo 7 PHEV (MY) | `18.3` | `1.779` | `psi` | Same pack and tyre scale as the Tiggo 8 PHEV, independently confirmed ([#3](https://github.com/GodrezJr2/j5-ev-dashboard/issues/3)). Malaysia badges it **`TIGGO 7 CSH`** — matched automatically |
-| Omoda E5 2025 (UY) | — | — | — | Everything works incl. login, auto-detect and charging ([#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5)). Pack size not yet reported, so `setup.py` asks |
+| Omoda E5 2025 (UY) | `61` | — | — | LFP, WLTP 15.5 kWh/100 km — owner-confirmed ([#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5)). Everything works incl. login, auto-detect and charging |
 
 **If your car isn't listed**, nothing is invented on your behalf: `setup.py` asks for the pack size,
 the battery card labels it *assumed* until you set it, and the spec card stays hidden rather than

@@ -18,6 +18,7 @@ CARS = {
                      "wltp_kwh_100": 19.68},                                           # issue #3 (MY)
     "tiggo 7 csh": {"battery_kwh": 18.3, "tpms_scale": 1.779, "powertrain": "phev",
                     "wltp_kwh_100": 19.68},  # Malaysia badges the same car "TIGGO 7 CSH" (#3)
+    "omoda e5": {"battery_kwh": 61, "wltp_kwh_100": 15.5, "chemistry": "lfp"},   # issue #5 (UY)
 }
 
 

@@ -264,7 +264,10 @@ def decode(hexstr):
         d["range_km"] = int.from_bytes(b[29:31], "big")    # validated =248
         d["odometer"] = int.from_bytes(b[18:21], "big")    # validated =882 (0x0372)
         d["volt12"]   = round(int.from_bytes(b[12:14], "big") * 0.01, 2)  # 12V aux ~13.84 (validate on drive)
-        d["ignition"] = b[3]                               # 0=off/parked, !=0=on (flipped 00->01 at start)
+        d["ignition"] = b[3]                               # 0=off/parked, !=0=on (flipped 00->01 at start on the J5)
+        # The E5 owner in #5 has b3 as LOCK state (0=locked, !=0=unlocked, live lock/unlock test),
+        # not ignition. Both correlate with "car is in use", so it is used here as an *awake*
+        # indicator and the true meaning needs a dedicated lock/unlock test on the J5.
         d["speed"] = round(int.from_bytes(b[14:16], "big") / 16.0, 1)  # km/h: bytes14-15 BE /16 (calibrated live: raw 320 = 20 km/h)
     if len(b) > 55:
         d["consumption"] = round(b[55] * 0.1, 1)           # car's own avg kWh/100km (byte55 x0.1; matches dash 12.2)
@@ -279,18 +282,31 @@ def decode(hexstr):
         d["charge_state"] = b[57]                          # 0=idle 1=charging 2=complete 3=canceled 4=hot 5=stop
         d["charge_remain"] = int.from_bytes(b[58:60], "big")  # minutes to done; CarLinko sentinels >= 0x3FE = invalid
         if d["charge_remain"] >= 0x3FE: d["charge_remain"] = None
-        d["charge_power"] = round(int.from_bytes(b[62:64], "big") * 0.1, 1)  # instant charge power (x0.1 kW; 0 when idle)
-        # AC flag: 0 = off, !=0 = on. On the J5 it reads 1 in 98.8% of driving frames and toggles
-        # while parked -- consistent with A/C usage, no counter-example found.
+        d["charge_power"] = round(int.from_bytes(b[62:64], "big") * 0.1, 1)  # instant power (x0.1 kW; 0 when idle)
+        # NOTE: b62-63 is bidirectional -- the same pair carries regen power while braking
+        # (issue #5, E5 owner). summary() only surfaces it as charge power when b57 == 1.
+        # AC flag: 0 = off, !=0 = on. Live-verified by the E5 owner (#5): a manual A/C toggle moved
+        # exactly this byte and nothing else (fan/temp/seat/defrost changes left it alone).
         d["ac_on"] = b[23] != 0
+        # Body-state bytes decoded by the Omoda E5 owner in #5 (live-verified on his car; not yet
+        # cross-checked on the J5, so they are surfaced raw and labelled as such where shown).
+        d["doors"] = b[2]                                   # bitmask: front L/R, rear L/R doors
+        d["trunk_open"] = bool(b[4])                        # 0 = closed
+        d["windows"] = b[8]                                 # 2 bits per window
+        d["sunroof_open"] = bool(b[9])                      # 0 = closed
+        d["ac_temp_c"] = b[24] if b[24] else None           # A/C target temp (scale TBD)
+        d["seat_heat"] = [b[32], b[33]]                     # L, R (0 = off)
+        d["seat_vent"] = [b[37], b[38]]                     # L, R (0 = off)
+        d["defrost_front"] = bool(b[42])
         # Rated (WLTC) range, NOT a mirror of EV range (b29-30). On the J5 they differ in 72,482 of
         # 72,507 frames (334 vs 302 at 66% -- 302/0.66 = 457.6, the car's 461 km NEDC rating).
         # The Omoda E5 owner in #5 cross-checked it live against the app: 304 vs 329, digit-for-digit.
         # On the Tiggo 8 PHEV they happen to coincide (its EV range IS the rated estimate).
         d["wltc_range_km"] = int.from_bytes(b[68:70], "big")
-        # HV/motor state per #5 (>=2 = on). Verified only on the Omoda E5; on the J5 the same byte
-        # takes 0-3 without tracking ignition (2 dominates even parked), so it is kept raw here and
-        # treated as model-specific rather than asserted.
+        # HV/motor state per #5 (>=2 = on). The E5 owner's live data: 0=off while parked, 2=ready
+        # in 100% of driving samples, 1 as a 15-90s transition at power on/off -- i.e.
+        # 0=off, 1=low-voltage active, 2=high-voltage/ready. On the J5 the byte also takes 0-3
+        # without tracking ignition (2 dominates even parked), so it stays raw + model-specific.
         d["hv_state"] = b[5]
     if len(b) > 71:
         # The car's own headline range: EV range on a BEV, *fuel* range on a PHEV. Proven on the
