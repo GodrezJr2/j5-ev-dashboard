@@ -2,7 +2,7 @@
 Serves the mobile PWA in ./web and a JSON API computed from carlinko.db.
 Run: python server.py [port]   (default 8088, binds 0.0.0.0 so Tailscale can reach it)
 """
-import os, sys, json, time, sqlite3, threading, math, urllib.request, urllib.parse
+import os, sys, json, time, sqlite3, threading, math, calendar, urllib.request, urllib.parse
 import hmac, hashlib, base64, secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import known_cars          # per-model constants the telemetry never carries (pack size, tyre scale)
@@ -970,6 +970,71 @@ def summary():
     out["charges"] = {"week": res["charging"]["week"], "month": res["charging"]["month"]}
     return out
 
+def month_history(month):
+    """Per-day km / kWh / charging for one calendar month -- the dashboard's calendar view.
+    month = 'YYYY-MM' (defaults to the current month). Same buckets as summary(): km by trip
+    start, energy from day_energy(), charging from build_sessions()."""
+    try:
+        y, m = (int(x) for x in (month or "").split("-")[:2])
+        if not (1 <= m <= 12):
+            raise ValueError
+    except Exception:
+        now = time.localtime(); y, m = now.tm_year, now.tm_mon
+    t0 = int(time.mktime(time.struct_time((y, m, 1, 0, 0, 0, 0, 0, -1))))
+    ny, nm = (y, m + 1) if m < 12 else (y + 1, 1)
+    t1 = int(time.mktime(time.struct_time((ny, nm, 1, 0, 0, 0, 0, 0, -1))))
+    ndays = calendar.monthrange(y, m)[1]
+    empty = {"month": f"{y:04d}-{m:02d}", "days": [],
+             "totals": {"km": 0, "kwh": 0.0, "chg_kwh": 0.0, "chg_cost": 0},
+             "resync_km": "skip"}
+    if not os.path.exists(DB):
+        return empty
+    conn = sqlite3.connect(DB)
+    rows = conn.execute(
+        "SELECT ts,dt,online,raw FROM telemetry WHERE ts >= ? AND ts < ? ORDER BY ts",
+        (t0, t1)).fetchall()
+    data = []
+    for ts, dt, online, raw in rows:
+        if online != 1 or not raw:
+            continue
+        data.append((ts, dt, decode(raw)))
+    if not data:
+        return empty
+    resync_skip = _resync_skip()
+    trips = build_trips(data, resync_skip)
+    kwh_day = day_energy(data, resync_skip)
+    km_day = {}
+    for t in trips:
+        k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
+        km_day[k] = km_day.get(k, 0) + t["km"]
+    fr = [(ts, d2.get("battery"), d2.get("odometer")) for ts, dt2, d2 in data
+          if d2.get("battery") is not None and d2.get("odometer") is not None]
+    sess = build_sessions(fr, t1)
+    chg = {}                                            # day -> aggregated charging (in + metered cost)
+    for s in sess:
+        k = time.strftime("%Y-%m-%d", time.localtime(s["start"]))
+        d = chg.setdefault(k, {"kwh": 0.0, "cost": 0, "n": 0})
+        d["kwh"] += s["kwh"]
+        d["cost"] += s["kwh"] / chg_eff(s["soc1"]) * TARIFF_IDR
+        d["n"] += 1
+    days = []
+    for day in range(1, ndays + 1):
+        k = f"{y:04d}-{m:02d}-{day:02d}"
+        km = km_day.get(k, 0); u = kwh_day.get(k, 0.0)
+        eff = round(u / km * 100, 1) if (km >= 1 and u > 0) else None
+        if eff is not None and not (9 <= eff <= 30):    # same gate as the 7-day history
+            eff = None
+        c = chg.get(k)
+        days.append({"d": day, "km": km, "kwh": round(u, 1), "eff": eff,
+                     "chg_kwh": round(c["kwh"], 1) if c else 0,
+                     "chg_cost": round(c["cost"]) if c else 0})
+    return {"month": f"{y:04d}-{m:02d}", "days": days,
+            "totals": {"km": sum(x["km"] for x in days),
+                       "kwh": round(sum(x["kwh"] for x in days), 1),
+                       "chg_kwh": round(sum(x["chg_kwh"] for x in days), 1),
+                       "chg_cost": round(sum(x["chg_cost"] for x in days))},
+            "resync_km": "skip" if resync_skip else "count"}
+
 # ---- long-trip planner: geocode (Nominatim) + route (OSRM) + SPKLU (Overpass/OSM), all keyless ----
 _UA_TRIP = "carlinko-trip/1.0 (personal EV dashboard)"
 CHG_KW_AVG = 55           # fallback DC power when a station's kW is unknown (incl taper)
@@ -1406,6 +1471,16 @@ class H(BaseHTTPRequestHandler):
             if "error" not in plan:
                 _trip_cache["trip:" + qs] = (time.time(), plan)
             self._send(200, json.dumps(plan).encode(), "application/json")
+            return
+        if path == "/api/history":                     # monthly calendar view: per-day km/kWh/charging
+            qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+            q = urllib.parse.parse_qs(qs)
+            try:
+                self._send(200, json.dumps(month_history((q.get("month") or [""])[0])).encode(),
+                           "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(),
+                           "application/json")
             return
         if path == "/":
             path = "/index.html" if is_configured() else "/login.html"   # first run -> login page

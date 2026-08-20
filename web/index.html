@@ -108,6 +108,26 @@
   .bar i{width:72%;border-radius:3px;background:var(--accent);min-height:2px;transition:height .4s ease-out}
   .bar.z i{background:var(--line)}
   .bar span{font-size:10px;color:var(--faint)}
+  [hidden]{display:none!important}
+  /* dist view toggle + monthly calendar */
+  .viewtoggle{display:flex;gap:5px;align-items:center}
+  .viewtoggle button{background:none;border:1px solid var(--line);border-radius:8px;width:27px;height:27px;
+    display:flex;align-items:center;justify-content:center;color:var(--faint);cursor:pointer;padding:0}
+  .viewtoggle button.on{color:var(--accent);border-color:var(--accent);background:color-mix(in oklch,var(--accent) 10%,transparent)}
+  .viewtoggle svg{width:15px;height:15px}
+  .calhead{display:flex;align-items:center;justify-content:space-between;margin-top:22px}
+  .calnav{background:none;border:1px solid var(--line);border-radius:8px;width:29px;height:29px;color:var(--muted);cursor:pointer;font-size:16px;line-height:1}
+  .caltitle{font-size:14px;font-weight:700}
+  .caltot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:7px}
+  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:13px}
+  .caldow{text-align:center;font-size:9.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.3px}
+  .calday{border:1px solid var(--line);border-radius:10px;padding:5px 2px 6px;text-align:center;cursor:pointer;position:relative;min-height:46px}
+  .calday.z{cursor:default;color:var(--faint)}
+  .calday .cd{font-size:10.5px;font-weight:650;color:var(--muted)}
+  .calday .ck{display:block;font-size:11.5px;font-weight:750;margin-top:2px}
+  .calday .cdot{position:absolute;top:4px;right:5px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+  .calday.empty{visibility:hidden}
+  .calcap{text-align:center;font-size:11.5px;color:var(--faint);margin-top:11px}
 
   /* footer stats */
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 12px;padding-top:24px}
@@ -513,8 +533,22 @@
         <div><span class="over">Week</span><b class="num" id="kmWeek">&mdash;</b></div>
         <div><span class="over">Month</span><b class="num" id="kmMonth">&mdash;</b></div>
       </div>
+      <div class="viewtoggle" id="viewToggle">
+        <button data-v="bars" class="on" aria-label="Bar chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 20v-9M12 20V4M18 20v-7"/></svg></button>
+        <button data-v="cal" aria-label="Calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></button>
+      </div>
     </div>
     <div class="bars" id="bars"></div>
+    <div id="calWrap" hidden>
+      <div class="calhead">
+        <button class="calnav" id="calPrev">&#8249;</button>
+        <div class="caltitle" id="calTitle">&mdash;</div>
+        <button class="calnav" id="calNext">&#8250;</button>
+      </div>
+      <div class="caltot" id="calTot"></div>
+      <div class="calgrid" id="calGrid"></div>
+      <div class="calcap" id="calCap"></div>
+    </div>
   </section>
 
   <section>
@@ -804,6 +838,8 @@ const MAP_ID={
   "SPKLU DC ≈ Rp 2.467/kWh + 3% tax (≈2.540 all-in) · admin Rp 0 · home AC cheaper":"SPKLU DC ≈ Rp 2.467/kWh + pajak 3% (≈2.540 total) · admin Rp 0 · AC rumah lebih murah",
   "Settings":"Pengaturan","Theme":"Tema","Light":"Terang","Dark":"Gelap","Language":"Bahasa",
   "Km sync":"Sinkron km","Count all":"Hitung semua",
+  "Charged":"Diisi",
+  "Tap a day for its km, energy and charging.":"Ketuk hari untuk km, energi, dan pengisiannya.",
   "When the car is dark (no signal), missed km sync in one burst. Accurate (recommended) skips bursts that can't be dated to a day; Count all adds them to the day the car reconnects.":
   "Saat mobil tanpa sinyal (basement), km yang terlewat tersinkron sekaligus. Akurat (disarankan) melewati burst yang tak bisa diberi tanggal; Hitung semua menambahkannya ke hari mobil kembali online.",
   "Petrol compare":"Banding bensin","Price · economy":"Harga · konsumsi",
@@ -868,6 +904,59 @@ $('resyncSeg').addEventListener('click',async e=>{ const b=e.target.closest('but
     const d=await r.json(); if(!d.ok) throw new Error(d.error||'failed');
     buzz(8); load(false);
   }catch(ex){ syncResyncSeg(); } });
+
+// ---- dist view: 7-day bars <-> monthly calendar (lazy /api/history, cached per month) ----
+let distView='bars'; try{ distView=localStorage.getItem('distView')||'bars'; }catch(e){}
+const calCache={};
+let calMonth=(()=>{ const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0'); })();
+function setDistView(v){ distView=v; try{localStorage.setItem('distView',v)}catch(e){}
+  document.querySelectorAll('#viewToggle button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('bars').hidden=v!=='bars'; $('calWrap').hidden=v!=='cal';
+  if(v==='cal') loadCal(); }
+$('viewToggle').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; setDistView(b.dataset.v); buzz(8); });
+$('calPrev').addEventListener('click',()=>{ shiftCal(-1); buzz(8); });
+$('calNext').addEventListener('click',()=>{ shiftCal(1); buzz(8); });
+function shiftCal(d){ const [y,m]=calMonth.split('-').map(Number); const n=new Date(y,m-1+d,1);
+  calMonth=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0'); loadCal(); }
+async function loadCal(){ const key=calMonth;
+  let d=calCache[key];
+  if(!d){ try{ d=await (await fetch('api/history?month='+key,{cache:'no-store'})).json(); }catch(e){ d=null; }
+    if(d) calCache[key]=d; }
+  if(!d){ $('calTitle').textContent=key; $('calGrid').replaceChildren(); return; }
+  renderCal(d); }
+function renderCal(d){ const [y,m]=d.month.split('-').map(Number);
+  $('calTitle').textContent=new Date(y,m-1,1).toLocaleDateString(lang==='id'?'id-ID':'en-US',{month:'long',year:'numeric'});
+  const t=d.totals;
+  $('calTot').textContent=fmt(t.km)+' km · '+t.kwh+' kWh'+(t.chg_kwh?' · ⚡ '+t.chg_kwh+' kWh · '+money(t.chg_cost):'');
+  $('calCap').textContent=T('Tap a day for its km, energy and charging.');
+  const g=$('calGrid'); g.replaceChildren();
+  const lead=(new Date(y,m-1,1).getDay()+6)%7;              // Monday-first
+  [...Array(7)].forEach((_,i)=>{ const e=document.createElement('div'); e.className='caldow';
+    e.textContent=new Date(2026,0,5+i).toLocaleDateString(lang==='id'?'id-ID':'en-US',{weekday:'short'}); g.append(e); });
+  for(let i=0;i<lead;i++){ const e=document.createElement('div'); e.className='calday empty'; g.append(e); }
+  const max=Math.max(1,...d.days.map(x=>x.km));
+  d.days.forEach(x=>{ const e=document.createElement('div'); e.className='calday'+(x.km?' tappable':' z');
+    const cd=document.createElement('span'); cd.className='cd'; cd.textContent=x.d;
+    const ck=document.createElement('span'); ck.className='ck'; ck.textContent=x.km?fmt(x.km):'·';
+    e.append(cd,ck);
+    if(x.km){ const p=0.08+0.62*(x.km/max); e.style.background='color-mix(in oklch, var(--accent) '+Math.round(p*100)+'%, transparent)'; }
+    if(x.chg_kwh>0){ const dot=document.createElement('i'); dot.className='cdot'; e.append(dot); }
+    if(x.km||x.chg_kwh) e.addEventListener('click',()=>sheet(bCalDay(x,d.month)));
+    g.append(e); });
+}
+function bCalDay(x,month){ const [y,m]=month.split('-').map(Number);
+  const I=(DATA.insights||{}), cons=I.consumption||DATA.wltp_kwh_100||14.8;
+  const measured=x.eff!=null, kwh=measured? x.kwh : (x.km? x.km*cons/100 : 0);
+  const dt=new Date(y,m-1,x.d).toLocaleDateString(lang==='id'?'id-ID':'en-US',{weekday:'short',day:'numeric',month:'short'});
+  const cost=(x.km&&I.rp_per_km)? x.km*I.rp_per_km : null;
+  return {title:dt, lead: x.km? tn('A breakdown of that day.','Rincian hari itu.'):tn('No distance logged that day.','Tak ada jarak tercatat hari itu.'),
+    rows:[[tn('Distance','Jarak'), fmt(x.km)+' km'],
+      x.km?[measured?tn('Energy used','Energi dipakai'):tn('Energy (est.)','Energi (estimasi)'), (measured?kwh:kwh.toFixed(1))+' kWh']:null,
+      measured?[tn('Efficiency','Efisiensi'), x.eff+' kWh/100km']:null,
+      cost!=null?[tn('Cost (est.)','Biaya (estimasi)'), rp(cost)]:null,
+      x.chg_kwh?[tn('Charged','Diisi'), x.chg_kwh+' kWh · '+money(x.chg_cost)]:null],
+    note: x.km&&!measured? tn('SoC too coarse to measure this short a day.','SoC terlalu kasar untuk hari sependek ini.'):null };
+}
 $('themeSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; theme=b.dataset.v; try{localStorage.setItem('theme',theme)}catch(e){} applyTheme(); syncSeg(); buzz(8); });
 $('langSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; lang=b.dataset.v; try{localStorage.setItem('lang',lang)}catch(e){} applyLang(); syncSeg(); buzz(8); load(false); });
 const ARC=2*Math.PI*46, POS=['fl','fr','rl','rr'];
@@ -1768,7 +1857,7 @@ function showTab(t){
   window.scrollTo(0,0); $('appbar').classList.remove('show');
 }
 document.querySelectorAll('.tabbar .tb').forEach(b=>b.addEventListener('click',()=>{ showTab(b.dataset.t); buzz(8); }));
-applyTheme(); applyLang(); syncSeg();                  // theme + language on boot
+applyTheme(); applyLang(); syncSeg(); setDistView(distView);   // theme + language + dist view on boot
 setupTabs();
 bindStatic();                                          // make cards/stats tappable
 // control tab wiring
