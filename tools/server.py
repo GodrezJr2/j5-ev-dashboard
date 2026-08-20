@@ -299,11 +299,14 @@ def decode(hexstr):
         d["ac_on"] = b[23] != 0
         # Body-state bytes decoded by the Omoda E5 owner in #5 (live-verified on his car; not yet
         # cross-checked on the J5, so they are surfaced raw and labelled as such where shown).
-        d["doors"] = b[2]                                   # bitmask: front L/R, rear L/R doors
+        d["doors"] = b[2]                                   # door bitmask (E5, #5): 1=driver,
+                                                            # 2=passenger, 4=rear-driver, 8=rear-passenger
         d["trunk_open"] = bool(b[4])                        # 0 = closed
-        d["windows"] = b[8]                                 # 2 bits per window
-        d["sunroof_open"] = bool(b[9])                      # 0 = closed
-        d["ac_temp_c"] = b[24] if b[24] else None           # A/C target temp (scale TBD)
+        d["windows"] = b[8]                                 # 2 bits per window: closed/open bits,
+                                                            # both clear = partial (E5, #5)
+        d["sunroof_open"] = bool(b[9])                      # 0 = fully closed (E5, #5)
+        d["ac_temp_c"] = b[24] if b[24] else None           # A/C target temp, raw degC (E5, #5);
+                                                            # the J5 reads 159-169 here -> model-specific
         d["seat_heat"] = [b[32], b[33]]                     # L, R (0 = off)
         d["seat_vent"] = [b[37], b[38]]                     # L, R (0 = off)
         d["defrost_front"] = bool(b[42])
