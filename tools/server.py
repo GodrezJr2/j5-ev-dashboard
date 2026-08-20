@@ -410,6 +410,13 @@ MAX_PAIR_GAP = 1800     # >30 min between two logged frames = a hole in the log 
                         # offline, TBox asleep). The odo/SoC delta across a hole covers driving we
                         # never saw, so it can't be attributed to a day/week/trip -- skip the pair.
                         # Slow poll is 300 s, so this only ever trips on a genuine outage.
+ODO_MAX_KMH = 160       # top speed a Jaecoo J5 can plausibly do (~150 km/h); anything faster is batching
+ODO_RESYNC_KM = 12      # a frame pair advancing more than this is a late cloud re-sync, not live
+                        # driving: the car went dark (basement, no signal) and the odometer syncs all
+                        # the accumulated km in one burst when it reconnects. Those km were driven at
+                        # some unknown earlier time, so they can't be dated to a day/trip -- skip the
+                        # pair (the lifetime odo span still includes them). Real driving is ticked in
+                        # ~1 km steps, so the largest genuine batch seen is ~11 km.
 PETROL_KM_L = float(_CC.get("petrol_kml") or 12.0)        # comparable ICE fuel economy (km per litre)
 PETROL_RP_L = float(_CC.get("petrol_price") or 16250)     # petrol price /litre in CUR_CODE
                                                           # (IDR default: Pertamax, Jawa/Bali, 1 Jul 2026)
@@ -430,7 +437,16 @@ def build_trips(data):
             if cur:                                    # days of unseen driving, not one long trip
                 trips.append(cur); cur = None
             continue
+        if o1 < o0:                                    # odometer went backwards = byte glitch ->
+            if cur:                                    # trust break, close the trip
+                trips.append(cur); cur = None
+            continue
         if o1 > o0:                                    # moving (odometer rising = reliable)
+            if (o1 - o0) > max(ODO_RESYNC_KM,          # a delta no real drive can cover between two
+                    (ts1 - ts0) / 3600.0 * ODO_MAX_KMH):   # frames is a cloud catch-up burst (car was
+                if cur:                                # dark; km belong to an earlier unknown day)
+                    trips.append(cur); cur = None
+                continue
             if cur is None:
                 cur = {"start": ts0, "odo0": o0, "soc0": b0}
             cur.update(end=ts1, odo1=o1, soc1=b1); last_move = ts1
@@ -444,16 +460,13 @@ def build_trips(data):
         dur_min = max((t["end"] - t["start"]) / 60.0, 0.1)
         avg = round(dist / (dur_min / 60.0)) if dur_min else None   # odo/time, reliable
         kwh = max(0.0, (t["soc0"] - t["soc1"]) / 100.0 * CAP_KWH)
-        kwh_raw = kwh                                   # raw SoC-derived energy, before the plausibility
-                                                        # gate below nulls it -- used for day buckets
         eff = round(kwh / dist * 100, 1) if kwh and dist >= 1 else None
-        if eff is not None and not (5 <= eff <= 40):    # implausible (sparse-data merge) -> hide energy
-            eff = kwh = None
+        if eff is not None and not (5 <= eff <= 40):    # implausible (sparse-data merge, or a SoC drop
+            eff = kwh = None                            # that resyncs with the odo) -> hide energy
         out.append({"start_ts": t["start"], "end_ts": t["end"],
                     "start_dt": time.strftime("%a %H:%M", time.localtime(t["start"])),
                     "km": dist, "min": round(dur_min), "avg_kmh": avg,
-                    "kwh": round(kwh, 1) if kwh else None, "kwh100": eff,
-                    "kwh_raw": round(kwh_raw, 2)})
+                    "kwh": round(kwh, 1) if kwh else None, "kwh100": eff})
     return out[::-1]                                    # newest first
 
 def build_sessions(fr, now):
@@ -550,11 +563,11 @@ def analyze(data, trips):
     fr = [(ts, d.get("battery"), d.get("odometer")) for ts, dt, d in data
           if d.get("battery") is not None and d.get("odometer") is not None]
     used_today = km_today = used_week = km_week = 0.0
-    for t in trips:                                    # trip-start bucketing (see build_trips)
+    for t in trips:                                    # trip-start bucketing (see build_trips); energy
         if time.strftime("%Y-%m-%d", time.localtime(t["start_ts"])) == today:
-            km_today += t["km"]; used_today += t["kwh_raw"]
+            km_today += t["km"]; used_today += t["kwh"] or 0      # is the plausibility-gated value, so
         if time.strftime("%Y-W%W", time.localtime(t["start_ts"])) == week:
-            km_week += t["km"]; used_week += t["kwh_raw"]
+            km_week += t["km"]; used_week += t["kwh"] or 0        # resync SoC drops don't leak in
     now = time.time()
     sess = build_sessions(fr, now)
     for s in sess:
@@ -837,7 +850,8 @@ def summary():
     for t in trips_all:
         k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
         km_day[k] = km_day.get(k, 0) + t["km"]
-        kwh_day[k] = kwh_day.get(k, 0.0) + t["kwh_raw"]
+        kwh_day[k] = kwh_day.get(k, 0.0) + (t["kwh"] or 0)   # gated energy only: a SoC drop that
+                                                             # resyncs with the odo can't be dated
     today = time.strftime("%Y-%m-%d")
     week  = time.strftime("%Y-W%W")
     month = time.strftime("%Y-%m")
