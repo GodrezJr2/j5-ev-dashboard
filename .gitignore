@@ -19,6 +19,7 @@ tools/car-photo.img.part
 # Python
 __pycache__/
 *.pyc
+venv/
 
 # Docker data dir (creds, token, db)
 data/
