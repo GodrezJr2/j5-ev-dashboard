@@ -672,8 +672,14 @@ def analyze(data, trips, kwh_day):
         out["charging"]["session"] = session_detail(detail)
     trips_all = trips
     out["trips"] = trips_all[:8]
-    avgs = [t["avg_kmh"] for t in trips_all if t.get("avg_kmh")]
-    out["avg_speed"] = round(sum(avgs) / len(avgs)) if avgs else None   # odo-based, reliable
+    # Overall average speed = total distance / total time, not the mean of per-trip averages
+    # (one short burst trip would dominate -- a cloud catch-up of a few km in ~10 s reads as
+    # 700+ km/h). Only trips that actually lasted a minute count; sub-minute "trips" are
+    # batch catch-ups, not drives.
+    long = [(t["km"], t["end_ts"] - t["start_ts"]) for t in trips_all
+            if t["end_ts"] - t["start_ts"] >= 60]
+    tot_km = sum(x[0] for x in long); tot_s = sum(x[1] for x in long)
+    out["avg_speed"] = round(tot_km / (tot_s / 3600.0)) if (long and tot_s > 0) else None
     out["energy"]["today_kwh"] = round(used_today, 2)
     def rate(cons):
         if cons is None: return None
