@@ -128,6 +128,9 @@
   .calday .cdot{position:absolute;top:4px;right:5px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
   .calday.empty{visibility:hidden}
   .calcap{text-align:center;font-size:11.5px;color:var(--faint);margin-top:11px}
+  .setbtn{border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit;font-size:12.5px;
+    background:none;color:var(--accent);cursor:pointer;font-weight:600}
+  .setbtn:disabled{opacity:.5;cursor:default}
 
   /* footer stats */
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 12px;padding-top:24px}
@@ -635,6 +638,8 @@
     <div class="setrow"><span class="sl">Km sync</span>
       <span class="seg" id="resyncSeg"><button data-v="skip">Accurate</button><button data-v="count">Count all</button></span></div>
     <div class="hint" id="resyncHint">When the car is dark (no signal), missed km sync in one burst. Accurate (recommended) skips bursts that can't be dated to a day; Count all adds them to the day the car reconnects.</div>
+    <div class="setrow"><span class="sl">Car photo</span>
+      <button class="setbtn" id="photoBtn">Update</button></div>
   </section>
 
   <section class="tripplan">
@@ -838,6 +843,7 @@ const MAP_ID={
   "SPKLU DC ≈ Rp 2.467/kWh + 3% tax (≈2.540 all-in) · admin Rp 0 · home AC cheaper":"SPKLU DC ≈ Rp 2.467/kWh + pajak 3% (≈2.540 total) · admin Rp 0 · AC rumah lebih murah",
   "Settings":"Pengaturan","Theme":"Tema","Light":"Terang","Dark":"Gelap","Language":"Bahasa",
   "Km sync":"Sinkron km","Count all":"Hitung semua",
+  "Car photo":"Foto mobil","Update":"Perbarui",
   "Charged":"Diisi",
   "Tap a day for its km, energy and charging.":"Ketuk hari untuk km, energi, dan pengisiannya.",
   "When the car is dark (no signal), missed km sync in one burst. Accurate (recommended) skips bursts that can't be dated to a day; Count all adds them to the day the car reconnects.":
@@ -904,6 +910,16 @@ $('resyncSeg').addEventListener('click',async e=>{ const b=e.target.closest('but
     const d=await r.json(); if(!d.ok) throw new Error(d.error||'failed');
     buzz(8); load(false);
   }catch(ex){ syncResyncSeg(); } });
+
+// ---- car photo: re-grab CarLinko's render of THIS car (right model + colour) ----
+$('photoBtn').addEventListener('click',async e=>{ const b=$('photoBtn'); b.disabled=true; const old=b.textContent; b.textContent='…';
+  try{ const r=await fetch('api/photorefresh',{method:'POST'}); const d=await r.json();
+    if(d.ok){ const img=$('carImg');
+      if(img){ img.onerror=null; img.setAttribute('src','/car-photo?v='+Date.now()); }
+      buzz(8);
+    }
+  }catch(ex){}
+  b.disabled=false; b.textContent=old; });
 
 // ---- dist view: 7-day bars <-> monthly calendar (lazy /api/history, cached per month) ----
 let distView='bars'; try{ distView=localStorage.getItem('distView')||'bars'; }catch(e){}

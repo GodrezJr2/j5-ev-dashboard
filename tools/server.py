@@ -68,6 +68,27 @@ VEHICLE_IMG = (_V.get("img") or "").strip() or None
 _CAR_PHOTO = os.path.join(_DATA, "car-photo.img")
 TPMS_POS = ["FL", "FR", "RL", "RR"]
 
+def _vehicle_img():
+    """The car's own CarLinko render URL, read fresh so a web login or photo refresh takes
+    effect without a restart."""
+    return ((_creds().get("vehicle") or {}).get("img") or "").strip() or None
+
+def _car_image():
+    """Hero image for /api/summary: the owner's override wins, then the server-cached proxy of
+    CarLinko's own render, else None (client falls back to the bundled J5 render / silhouette)."""
+    c = _creds()
+    override = (c.get("car_image") or "").strip()
+    return override or ("/car-photo" if (c.get("vehicle") or {}).get("img") else None)
+
+def _vehicle_img_url(v):
+    """CarLinko hosts a render of the exact car (model + colour): the /user/vehicle object
+    carries vehicleImgConfig {Front, Side, Top, ...}. Prefer the front view."""
+    try:
+        img = json.loads(v.get("vehicleImgConfig") or "{}")
+        return img.get("Front") or img.get("Side") or img.get("Top")
+    except Exception:
+        return None
+
 def is_configured():
     """True once an account is set up — used to decide whether to show the login page."""
     if DEMO:
@@ -95,6 +116,11 @@ def web_login(email, password, region="sea", gmaps_key=None, dashboard_password=
         c["vehicle_id"] = str(v["vehicleId"]); c["device_sn"] = str(v.get("deviceId") or "")
         c["vehicle"] = {"plate": v.get("licenseNumber") or "—", "model": v.get("model") or "EV",
                         "vin": v.get("vin") or "—"}
+        img = _vehicle_img_url(v)
+        if img and img != _vehicle_img():
+            c["vehicle"]["img"] = img                     # web login now captures the render too
+            try: os.remove(_CAR_PHOTO)                    # (previously only CLI setup.py did)
+            except Exception: pass                        # bust the old car's cached photo
         json.dump(c, open(cpath, "w"), indent=2)
         try: os.chmod(cpath, 0o600)
         except Exception: pass
@@ -773,8 +799,8 @@ def demo_summary():
         "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
         "battery_kwh": cap, "battery_kwh_source": "known", "wltp_kwh_100": 14.8,
         "chemistry_known": True, "powertrain": "bev", "fuel": None,
-        "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
-        "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
+            "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
+            "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": _car_image(),
         "specs": model_specs("Jaecoo J5 EV"),   # demo car, not whatever creds.json says
         "energy": {"today_kwh": 6.7, "consumption": 12.9, "rating": "normal",
                    "week_consumption": 13.0, "source": "car"},
@@ -1404,10 +1430,11 @@ class H(BaseHTTPRequestHandler):
             return
         if path == "/car-photo":     # cached proxy for CarLinko's own render of this exact car.
             try:                     # Behind the gate: the render gives away model + colour.
+                img = _vehicle_img()
                 if not os.path.exists(_CAR_PHOTO):
-                    if not VEHICLE_IMG:
+                    if not img:
                         self._send(404, b"no vehicle image", "text/plain"); return
-                    req = urllib.request.Request(VEHICLE_IMG, headers={"User-Agent": "carlinko-dash"})
+                    req = urllib.request.Request(img, headers={"User-Agent": "carlinko-dash"})
                     with urllib.request.urlopen(req, timeout=20) as r:
                         blob = r.read(8 * 1024 * 1024)    # cap: it's a car render, not a payload
                     tmp = _CAR_PHOTO + ".part"            # write-then-rename, so an interrupted
@@ -1560,6 +1587,32 @@ class H(BaseHTTPRequestHandler):
                            "application/json")
             except Exception as e:
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(), "application/json")
+            return
+        if path == "/api/photorefresh":                # re-grab this car's render from CarLinko
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            try:
+                import auth, requests
+                token = _read_token()
+                data = requests.get(auth.api_base() + "/user/vehicle",
+                                    headers=auth.headers_for({}, token=token), timeout=20).json().get("data")
+                v = data[0] if isinstance(data, list) and data else (data if isinstance(data, dict) else {})
+                img = _vehicle_img_url(v)
+                if not img:
+                    self._send(200, json.dumps({"ok": False,
+                                                "error": "no vehicleImgConfig from CarLinko"}).encode(),
+                               "application/json"); return
+                c = _creds(); c.setdefault("vehicle", {})["img"] = img
+                cpath = os.path.join(_DATA, "creds.json")
+                json.dump(c, open(cpath, "w"), indent=2)
+                try: os.chmod(cpath, 0o600)
+                except Exception: pass
+                try: os.remove(_CAR_PHOTO)              # force a fresh cache pull
+                except Exception: pass
+                self._send(200, json.dumps({"ok": True}).encode(), "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(),
+                           "application/json")
             return
         if path == "/api/config":                      # dashboard settings persisted in creds.json
             if not self._authed():
