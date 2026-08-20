@@ -41,6 +41,15 @@ def _creds():
     except Exception:
         return {}
 
+def _resync_skip():
+    """Late cloud re-sync bursts (the odometer catches up after the car was dark) can't be dated to
+    a day. Default "skip": keep them out of daily totals (accurate per-day numbers). "count" = old
+    behaviour: add them to the day the car reconnected. Toggled from the dashboard Settings tab."""
+    try:
+        return str(json.load(open(os.path.join(_DATA, "creds.json"))).get("resync_km", "skip")).lower() != "count"
+    except Exception:
+        return True
+
 def _ensure_db():
     """Create the telemetry table if missing so summary() never hits a fresh/empty DB."""
     try:
@@ -425,9 +434,11 @@ def _m(x):
     # round money: whole units at IDR scale (>=100), keep 2 dp for sub-unit currencies (e.g. ZAR /km)
     return round(x) if abs(x) >= 100 else round(x, 2)
 
-def build_trips(data):
+def build_trips(data, resync_skip=True):
     """A trip = a run of moving frames (odometer rising). Bridges brief stops; ends
-    after TRIP_GAP parked. Returns newest-first with km / time / speed / kWh / efficiency."""
+    after TRIP_GAP parked. Returns newest-first with km / time / speed / kWh / efficiency.
+    resync_skip=True skips implausible odo bursts as late cloud re-syncs (see ODO_RESYNC_KM);
+    resync_skip=False counts them (old behaviour)."""
     fr = [(ts, d.get("battery"), d.get("odometer")) for ts, dt, d in data
           if d.get("battery") is not None and d.get("odometer") is not None]
     trips, cur, last_move = [], None, 0
@@ -442,10 +453,10 @@ def build_trips(data):
                 trips.append(cur); cur = None
             continue
         if o1 > o0:                                    # moving (odometer rising = reliable)
-            if (o1 - o0) > max(ODO_RESYNC_KM,          # a delta no real drive can cover between two
-                    (ts1 - ts0) / 3600.0 * ODO_MAX_KMH):   # frames is a cloud catch-up burst (car was
-                if cur:                                # dark; km belong to an earlier unknown day)
-                    trips.append(cur); cur = None
+            if resync_skip and (o1 - o0) > max(ODO_RESYNC_KM,  # a delta no real drive can cover
+                    (ts1 - ts0) / 3600.0 * ODO_MAX_KMH):   # between two frames is a cloud catch-up
+                if cur:                                # burst (car was dark; km belong to an earlier
+                    trips.append(cur); cur = None      # unknown day) -> skip unless counting
                 continue
             if cur is None:
                 cur = {"start": ts0, "odo0": o0, "soc0": b0}
@@ -740,7 +751,7 @@ def demo_summary():
         "tyre_status": "Normal", "tyre_indirect": True,
         "km": {"today": 52, "week": 201, "month": 1043},
         "charges": {"week": 2, "month": 9},
-        "history": history,
+        "history": history, "resync_km": "skip",
         "health": {"usable_kwh": cap, "cycles": 31.4, "charged_kwh": 1612.0, "avg_eff": 89, "sessions": 38},
         "lifetime": {"kwh_in": 1448.0, "kwh_billed": 1612.0, "cost": 4090000, "km": 8127,
                      "since": time.strftime("%d %b", time.localtime(now - 96 * 86400)),
@@ -781,9 +792,9 @@ def summary():
            "tpms": [{"pos": p, "psi": None, "temp": None, "valid": False} for p in TPMS_POS],
            "tpms_updated": None, "tpms_age_min": None, "tpms_live": False, "tpms_raw": None,
            "tyre_status": "Normal", "tyre_indirect": True,
-           "km": {"today": None, "week": None, "month": None},
-           "charges": {"week": None, "month": None},
-           "history": []}
+            "km": {"today": None, "week": None, "month": None},
+            "charges": {"week": None, "month": None},
+            "history": [], "resync_km": "skip"}
     if not os.path.exists(DB):
         return out
     conn = sqlite3.connect(DB)
@@ -845,7 +856,9 @@ def summary():
     # Daily distance/energy come from trips, each bucketed by the day it STARTED: a drive that
     # crosses midnight (23:45 -> 00:30) stays one trip on the day it began, so "today" only ever
     # shows trips that began today -- last night's drive reads under yesterday, not split across two.
-    trips_all = build_trips(data)
+    resync_skip = _resync_skip()
+    out["resync_km"] = "skip" if resync_skip else "count"
+    trips_all = build_trips(data, resync_skip)
     km_day, kwh_day = {}, {}
     for t in trips_all:
         k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
@@ -1433,6 +1446,31 @@ class H(BaseHTTPRequestHandler):
                            "application/json")
             except Exception as e:
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(), "application/json")
+            return
+        if path == "/api/config":                      # dashboard settings persisted in creds.json
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n).decode() or "{}")
+                if body.get("resync_km") not in ("skip", "count"):
+                    self._send(200, json.dumps({"ok": False,
+                                                "error": "resync_km must be skip or count"}).encode(),
+                               "application/json"); return
+                cpath = os.path.join(_DATA, "creds.json")
+                try:
+                    c = json.load(open(cpath))
+                except Exception:
+                    c = {}
+                c["resync_km"] = body["resync_km"]
+                json.dump(c, open(cpath, "w"), indent=2)
+                try: os.chmod(cpath, 0o600)
+                except Exception: pass
+                self._send(200, json.dumps({"ok": True, "resync_km": c["resync_km"]}).encode(),
+                           "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(),
+                           "application/json")
             return
         self._send(404, b"not found", "text/plain")
 

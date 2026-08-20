@@ -598,6 +598,9 @@
       </select></div>
     <div class="setrow"><span class="sl">Price · economy</span>
       <span class="fuelin"><span class="cur" data-cur>Rp</span> <input id="fuelPrice" type="number" inputmode="numeric"> /L · <input id="fuelKml" type="number" inputmode="decimal" step="0.1"> km/L</span></div>
+    <div class="setrow"><span class="sl">Km sync</span>
+      <span class="seg" id="resyncSeg"><button data-v="skip">Accurate</button><button data-v="count">Count all</button></span></div>
+    <div class="hint" id="resyncHint">When the car is dark (no signal), missed km sync in one burst. Accurate (recommended) skips bursts that can't be dated to a day; Count all adds them to the day the car reconnects.</div>
   </section>
 
   <section class="tripplan">
@@ -800,6 +803,9 @@ const MAP_ID={
   "Tap any card, bar or stat for the detail behind it.":"Ketuk kartu, bar, atau statistik mana pun untuk detailnya.",
   "SPKLU DC ≈ Rp 2.467/kWh + 3% tax (≈2.540 all-in) · admin Rp 0 · home AC cheaper":"SPKLU DC ≈ Rp 2.467/kWh + pajak 3% (≈2.540 total) · admin Rp 0 · AC rumah lebih murah",
   "Settings":"Pengaturan","Theme":"Tema","Light":"Terang","Dark":"Gelap","Language":"Bahasa",
+  "Km sync":"Sinkron km","Count all":"Hitung semua",
+  "When the car is dark (no signal), missed km sync in one burst. Accurate (recommended) skips bursts that can't be dated to a day; Count all adds them to the day the car reconnects.":
+  "Saat mobil tanpa sinyal (basement), km yang terlewat tersinkron sekaligus. Akurat (disarankan) melewati burst yang tak bisa diberi tanggal; Hitung semua menambahkannya ke hari mobil kembali online.",
   "Petrol compare":"Banding bensin","Price · economy":"Harga · konsumsi",
   "Driving":"Berjalan","Parked":"Parkir","No signal":"Tak ada sinyal",
   "live":"langsung","no signal":"tak ada sinyal","no data yet":"belum ada data","ago":"lalu",
@@ -840,7 +846,7 @@ function T(s){ return (lang==='id'&&s!=null)?(MAP_ID[s]||s):s; }
 function tn(en, id, vars){ let s = lang==='id' ? id : en;
   if(vars) for(const k in vars) s = s.split('{'+k+'}').join(vars[k]);
   return s; }
-const I18N_SEL='.over:not([id]),.ins .t,.sub:not([id]),.tile span,.speclist span,.lbl,.hint,.tabbar .tb span,.chgstats span,.sl,#themeSeg button,#planref,.svc .expander span:first-child';
+const I18N_SEL='.over:not([id]),.ins .t,.sub:not([id]),.tile span,.speclist span,.lbl,.hint,.tabbar .tb span,.chgstats span,.sl,#themeSeg button,#resyncSeg button,#planref,.svc .expander span:first-child';
 function applyLang(){ document.documentElement.lang=lang;
   document.querySelectorAll(I18N_SEL).forEach(el=>{ if(el.dataset.en===undefined) el.dataset.en=el.textContent.trim(); el.textContent=T(el.dataset.en); });
   const tf=$('tripFrom'),tt=$('tripTo'),tg=$('tripGo'),th=$('tpHwyLbl'),tr=$('tpResLbl'),ts=$('tpStartLbl');
@@ -855,6 +861,13 @@ function applyLang(){ document.documentElement.lang=lang;
   applyCurrency(); }
 function syncSeg(){ document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===theme));
   document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===lang)); }
+function syncResyncSeg(){ const v=(DATA&&DATA.resync_km)||'skip';
+  document.querySelectorAll('#resyncSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); }
+$('resyncSeg').addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b)return;
+  try{ const r=await fetch('api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({resync_km:b.dataset.v})});
+    const d=await r.json(); if(!d.ok) throw new Error(d.error||'failed');
+    buzz(8); load(false);
+  }catch(ex){ syncResyncSeg(); } });
 $('themeSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; theme=b.dataset.v; try{localStorage.setItem('theme',theme)}catch(e){} applyTheme(); syncSeg(); buzz(8); });
 $('langSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; lang=b.dataset.v; try{localStorage.setItem('lang',lang)}catch(e){} applyLang(); syncSeg(); buzz(8); load(false); });
 const ARC=2*Math.PI*46, POS=['fl','fr','rl','rr'];
@@ -1576,6 +1589,7 @@ async function load(live){
   // that opens a 2nd CarLinko socket per call, which fights the streamer's persistent one.
   let d; try{ d=await (await fetch('api/summary',{cache:'no-store'})).json(); }catch(e){ return; }
   DATA=d;
+  syncResyncSeg();
   applyCurrency();                                       // symbol/labels from server currency config
   { const db=$('demoBanner'); if(db) db.style.display = d.demo? 'block':'none'; }
   applyPI();                                            // render plate/VIN (masked if hidden)
