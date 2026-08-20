@@ -480,6 +480,32 @@ def build_trips(data, resync_skip=True):
                     "kwh": round(kwh, 1) if kwh else None, "kwh100": eff})
     return out[::-1]                                    # newest first
 
+def day_energy(data, resync_skip):
+    """kWh used per day from EVERY SoC drop observed between consecutive frames, not just drops
+    inside trips -- a drop often lands while parked (e.g. the BMS settles a minute after you
+    arrive, like 43%->42% right after parking at the destination), and summing trip energy alone
+    loses it. A drop counts when the car was moving on the pair or stopped within 15 min; drops
+    that sync with a late re-sync burst, sit across a log hole, or happen long after the car last
+    moved (parked drain) are excluded -- that energy isn't attributable to driving on that day.
+    Returns {YYYY-MM-DD: kwh}."""
+    frS = [(ts, d2.get("battery"), d2.get("odometer")) for ts, dt2, d2 in data
+           if d2.get("battery") is not None]
+    out = {}
+    last_move = 0
+    for i in range(1, len(frS)):
+        t0, b0, o0 = frS[i-1]; t1, b1, o1 = frS[i]
+        if t1 - t0 > MAX_PAIR_GAP:                     # hole in the log: what happened inside it
+            last_move = 0                              # is unknown -> don't bridge drops across it
+            continue
+        if o0 is not None and o1 is not None and o1 > o0:
+            if resync_skip and (o1 - o0) > max(ODO_RESYNC_KM, (t1 - t0) / 3600.0 * ODO_MAX_KMH):
+                continue                               # re-sync burst: the SoC drop that synced with
+            last_move = t1                             # it is earlier driving, not this day's
+        if b0 is not None and b1 is not None and b0 > b1 and last_move and t1 - last_move <= 900:
+            k = time.strftime("%Y-%m-%d", time.localtime(t1))
+            out[k] = out.get(k, 0.0) + (b0 - b1) / 100.0 * CAP_KWH
+    return out
+
 def build_sessions(fr, now):
     """fr = [(ts, soc, odo)] sorted asc. A charge session = parked (odo flat) frames
     where SoC trends up. Robust to dense frames where most steps show 0% change."""
@@ -559,11 +585,12 @@ def session_detail(s):
             "kwh_billed": round(s["kwh"] / chg_eff(s["soc1"]), 1),  # metered (what you pay for)
             "cost": round(s["kwh"] / chg_eff(s["soc1"]) * TARIFF_IDR), "series": series}
 
-def analyze(data, trips):
+def analyze(data, trips, kwh_day):
     """Energy/efficiency from SoC%+odometer; charging sessions from parked SoC-rise.
-    Today/this-week km and kWh come from build_trips(), each trip bucketed by the day it
-    STARTED -- a drive that crosses midnight stays one trip on the day it began, so "today"
-    only ever contains trips that began today (not the tail of last night's drive)."""
+    Today/this-week km come from build_trips(), each trip bucketed by the day it STARTED -- a
+    drive that crosses midnight stays one trip on the day it began. Energy comes from
+    day_energy() (every observed SoC drop, parked drops included), so "used today" matches the
+    battery you actually consumed rather than only the drops that landed inside trip frames."""
     out = {
         "battery_kwh": CAP_KWH, "top_speed_today": 0,
         "energy": {"today_kwh": 0.0, "consumption": None, "rating": None, "week_consumption": None},
@@ -573,12 +600,15 @@ def analyze(data, trips):
     today = time.strftime("%Y-%m-%d"); week = time.strftime("%Y-W%W"); month = time.strftime("%Y-%m")
     fr = [(ts, d.get("battery"), d.get("odometer")) for ts, dt, d in data
           if d.get("battery") is not None and d.get("odometer") is not None]
-    used_today = km_today = used_week = km_week = 0.0
-    for t in trips:                                    # trip-start bucketing (see build_trips); energy
+    km_today = km_week = 0.0
+    for t in trips:                                    # trip-start bucketing (see build_trips)
         if time.strftime("%Y-%m-%d", time.localtime(t["start_ts"])) == today:
-            km_today += t["km"]; used_today += t["kwh"] or 0      # is the plausibility-gated value, so
+            km_today += t["km"]
         if time.strftime("%Y-W%W", time.localtime(t["start_ts"])) == week:
-            km_week += t["km"]; used_week += t["kwh"] or 0        # resync SoC drops don't leak in
+            km_week += t["km"]
+    used_today = kwh_day.get(today, 0.0)
+    used_week = sum(v for k, v in kwh_day.items()
+                    if time.strftime("%Y-W%W", time.strptime(k, "%Y-%m-%d")) == week)
     now = time.time()
     sess = build_sessions(fr, now)
     for s in sess:
@@ -853,18 +883,18 @@ def summary():
                 out["tyre_status"] = "Check tyres" if any(p < 28 or p > 40 for p in raw_psi) else "Normal"
             break
 
-    # Daily distance/energy come from trips, each bucketed by the day it STARTED: a drive that
-    # crosses midnight (23:45 -> 00:30) stays one trip on the day it began, so "today" only ever
-    # shows trips that began today -- last night's drive reads under yesterday, not split across two.
+    # Daily distance comes from trips, each bucketed by the day it STARTED: a drive that crosses
+    # midnight (23:45 -> 00:30) stays one trip on the day it began, so "today" only ever shows
+    # trips that began today -- last night's drive reads under yesterday, not split across two.
+    # Daily energy comes from day_energy(): every observed SoC drop, not just in-trip drops.
     resync_skip = _resync_skip()
     out["resync_km"] = "skip" if resync_skip else "count"
     trips_all = build_trips(data, resync_skip)
-    km_day, kwh_day = {}, {}
+    kwh_day = day_energy(data, resync_skip)
+    km_day = {}
     for t in trips_all:
         k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
         km_day[k] = km_day.get(k, 0) + t["km"]
-        kwh_day[k] = kwh_day.get(k, 0.0) + (t["kwh"] or 0)   # gated energy only: a SoC drop that
-                                                             # resyncs with the odo can't be dated
     today = time.strftime("%Y-%m-%d")
     week  = time.strftime("%Y-W%W")
     month = time.strftime("%Y-%m")
@@ -884,7 +914,7 @@ def summary():
             eff = None
         series.append({"day": day[5:], "km": km, "kwh": round(u, 1), "eff": eff})
     out["history"] = series
-    res = analyze(data, trips_all)
+    res = analyze(data, trips_all, kwh_day)
     out["battery_kwh"] = res["battery_kwh"]
     out["energy"] = res["energy"]
     # prefer the car's own BMS consumption (byte55) over the coarse SoC-derived estimate.
