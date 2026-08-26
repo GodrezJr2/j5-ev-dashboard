@@ -2,11 +2,16 @@
 
 Runs inside the dashboard server process. Soft-depends on paho-mqtt — if enabled in creds
 but the package is missing, logs a clear error and stays idle.
+
+Topics are namespaced per car out of the box:
+  {base_topic}/{VIN|plate|vehicle_id}/sensor/battery
+so two Docker instances on one broker do not collide when base_topic is shared.
 """
 from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 import threading
 import time
@@ -115,10 +120,20 @@ def _mqtt_cfg(raw=None):
         "username": (c.get("username") or "").strip(),
         "password": c.get("password") if c.get("password") is not None else "",
         "tls": bool(c.get("tls")),
+        # Prefix only — vehicle slug (VIN → plate → vehicle_id) is always appended.
         "base_topic": (c.get("base_topic") or "j5").strip().strip("/") or "j5",
         "discovery_prefix": (c.get("discovery_prefix") or "homeassistant").strip().strip("/")
                             or "homeassistant",
     }
+
+
+def _topic_slug(value):
+    """MQTT-safe segment from VIN / plate / id. Empty if missing or placeholder."""
+    s = str(value or "").strip()
+    if not s or s.lower() == "auto":
+        return ""
+    s = re.sub(r"[^A-Za-z0-9_-]+", "_", s).strip("_")
+    return s[:64]
 
 
 class MqttBridge:
@@ -153,7 +168,23 @@ class MqttBridge:
                 "last_error": self._last_error,
                 "last_publish_ts": self._last_publish_ts,
                 "has_paho": HAS_PAHO,
+                "topic_root": self._topic_root(),
+                "vehicle_slug": self._vehicle_slug(),
             }
+
+    def _vehicle_slug(self):
+        """Prefer VIN (stable, globally unique), then plate, then CarLinko vehicle_id."""
+        v = self.get_vehicle() or {}
+        for cand in (v.get("vin"), v.get("plate"), self.get_vehicle_id()):
+            s = _topic_slug(cand)
+            if s:
+                return s
+        return "car"
+
+    def _topic_root(self):
+        """Effective MQTT namespace: {base_topic}/{vehicle_slug}."""
+        base = (self._cfg.get("base_topic") or "j5").strip().strip("/") or "j5"
+        return f"{base}/{self._vehicle_slug()}"
 
     def start(self, mqtt_creds=None):
         self.reload(mqtt_creds)
@@ -204,8 +235,8 @@ class MqttBridge:
         if not c:
             return
         try:
-            base = self._cfg.get("base_topic") or "j5"
-            c.publish(f"{base}/availability", "offline", qos=0, retain=True)
+            root = self._topic_root()
+            c.publish(f"{root}/availability", "offline", qos=0, retain=True)
         except Exception:
             pass
         try:
@@ -246,21 +277,23 @@ class MqttBridge:
         self._teardown_client()
 
     def _make_client(self, cfg):
+        root = self._topic_root()
+        # Include vehicle slug so two cars on one broker don't share a client_id.
+        cid = f"carlinko-{root}".replace("/", "-")
         # paho v1 vs v2 callback API
         try:
             client = mqtt.Client(
                 mqtt.CallbackAPIVersion.VERSION1,
-                client_id=f"carlinko-{cfg['base_topic']}",
+                client_id=cid,
                 clean_session=True,
             )
         except Exception:
-            client = mqtt.Client(client_id=f"carlinko-{cfg['base_topic']}", clean_session=True)
+            client = mqtt.Client(client_id=cid, clean_session=True)
         if cfg["username"]:
             client.username_pw_set(cfg["username"], cfg["password"] or None)
         if cfg["tls"]:
             client.tls_set()
-        base = cfg["base_topic"]
-        client.will_set(f"{base}/availability", "offline", qos=0, retain=True)
+        client.will_set(f"{root}/availability", "offline", qos=0, retain=True)
         client.on_connect = self._on_connect
         client.on_disconnect = self._on_disconnect
         client.on_message = self._on_message
@@ -274,12 +307,13 @@ class MqttBridge:
             print("mqtt_bridge:", self._last_error, flush=True)
             return
         self._last_error = None
-        base = self._cfg["base_topic"]
-        # Subscribe all command topics under base/control/+/set and nested climate/covers.
-        client.subscribe(f"{base}/control/#")
-        client.publish(f"{base}/availability", "online", qos=0, retain=True)
+        root = self._topic_root()
+        # Subscribe all command topics under root/control/# (lock, climate, covers, …).
+        client.subscribe(f"{root}/control/#")
+        client.publish(f"{root}/availability", "online", qos=0, retain=True)
         self._discovery_sent = False
-        print("mqtt_bridge: connected to", self._cfg["host"], flush=True)
+        print("mqtt_bridge: connected to", self._cfg["host"],
+              "topics under", root, flush=True)
 
     def _on_disconnect(self, client, userdata, rc, *args):
         self._connected = False
@@ -328,7 +362,7 @@ class MqttBridge:
     def _publish_discovery(self, caps):
         cfg = self._cfg
         pref = cfg["discovery_prefix"]
-        base = cfg["base_topic"]
+        base = self._topic_root()
         avail = {"topic": f"{base}/availability"}
         device = self._device_info()
         uniq = device["identifiers"][0]
@@ -468,7 +502,7 @@ class MqttBridge:
         if not self._discovery_sent:
             self._publish_discovery(caps)
 
-        base = self._cfg["base_topic"]
+        base = self._topic_root()
         latest = self._read_latest()
         if not latest:
             # Avoid spamming HA every poll when the DB has no frame yet.
@@ -557,11 +591,11 @@ class MqttBridge:
                 "ts": int(time.time())}
 
     def _ack(self, result):
-        base = self._cfg["base_topic"]
+        base = self._topic_root()
         self._pub(f"{base}/control/result", result, retain=False)
 
     def _handle_command(self, topic, payload):
-        base = self._cfg["base_topic"]
+        base = self._topic_root()
         prefix = f"{base}/control/"
         if not topic.startswith(prefix) or not topic.endswith("/set"):
             return

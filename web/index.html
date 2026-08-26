@@ -649,7 +649,7 @@
     <div class="setrow"><span class="sl">Car photo</span>
       <button class="setbtn" id="photoBtn">Update</button></div>
     <div class="head2" style="margin-top:22px"><div class="over">MQTT</div></div>
-    <div class="hint" id="mqttHint">Publish telemetry to Home Assistant via MQTT discovery, and accept lock / climate / cover / button commands. Needs <code>paho-mqtt</code> on the server.</div>
+    <div class="hint" id="mqttHint">Publish telemetry to Home Assistant via MQTT discovery, and accept lock / climate / cover / button commands. Topics are <code>{prefix}/{VIN}/…</code> so two cars can share one broker. Needs <code>paho-mqtt</code> on the server.</div>
     <div class="mqttgrid">
       <div class="setrow"><span class="sl">Enabled</span>
         <span class="seg" id="mqttEnSeg"><button data-v="0">Off</button><button data-v="1">On</button></span></div>
@@ -663,7 +663,7 @@
         <input class="mqttin wide" id="mqttUser" type="text" autocomplete="off"></div>
       <div class="setrow"><span class="sl">Password</span>
         <input class="mqttin wide" id="mqttPass" type="password" placeholder="unchanged if blank" autocomplete="new-password"></div>
-      <div class="setrow"><span class="sl">Base topic</span>
+      <div class="setrow"><span class="sl">Topic prefix</span>
         <input class="mqttin" id="mqttBase" type="text" placeholder="j5"></div>
       <div class="setrow"><span class="sl"></span>
         <button class="setbtn" id="mqttSave">Save</button></div>
@@ -874,12 +874,12 @@ const MAP_ID={
   "Km sync":"Sinkron km","Count all":"Hitung semua",
   "Car photo":"Foto mobil","Update":"Perbarui",
   "MQTT":"MQTT","Enabled":"Aktif","Host":"Host","Port":"Port","TLS":"TLS",
-  "Username":"Pengguna","Password":"Kata sandi","Base topic":"Topik dasar","Save":"Simpan",
+  "Username":"Pengguna","Password":"Kata sandi","Topic prefix":"Prefix topik","Save":"Simpan",
   "MQTT off":"MQTT mati","Connected":"Terhubung","Connecting…":"Menghubungkan…",
   "unchanged if blank":"kosongkan = tidak diubah","password":"kata sandi",
   "Off":"Mati","On":"Nyala",
-  "Publish telemetry to Home Assistant via MQTT discovery, and accept lock / climate / cover / button commands. Needs paho-mqtt on the server.":
-  "Kirim telemetri ke Home Assistant lewat MQTT discovery, dan terima perintah kunci / iklim / cover / tombol. Butuh paho-mqtt di server.",
+  "Publish telemetry to Home Assistant via MQTT discovery, and accept lock / climate / cover / button commands. Topics are {prefix}/{VIN}/… so two cars can share one broker. Needs paho-mqtt on the server.":
+  "Kirim telemetri ke Home Assistant lewat MQTT discovery, dan terima perintah kunci / iklim / cover / tombol. Topik berbentuk {prefix}/{VIN}/… supaya dua mobil bisa pakai broker yang sama. Butuh paho-mqtt di server.",
   "Charged":"Diisi",
   "Tap a day for its km, energy and charging.":"Ketuk hari untuk km, energi, dan pengisiannya.",
   "When the car is dark (no signal), missed km sync in one burst. Accurate (recommended) skips bursts that can't be dated to a day; Count all adds them to the day the car reconnects.":
@@ -968,8 +968,9 @@ function mqttStatusLine(st, cfg){
   if(!cfg || !cfg.enabled){ el.textContent=T('MQTT off'); return; }
   if(st && st.last_error){ el.className='err'; el.textContent=st.last_error; return; }
   if(st && st.connected){ el.className='ok';
+    const root=st.topic_root?(' · '+st.topic_root):'';
     const t=st.last_publish_ts?(' · pub '+new Date(st.last_publish_ts*1000).toLocaleTimeString()):'';
-    el.textContent=T('Connected')+t; return; }
+    el.textContent=T('Connected')+root+t; return; }
   el.textContent=T('Connecting…');
 }
 async function loadMqtt(){

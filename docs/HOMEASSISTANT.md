@@ -35,6 +35,10 @@ commands (lock, climate, covers, find, stop charging). Configure it in **Setting
 
 Requires `paho-mqtt` (listed in `requirements.txt` — installed by `install.sh` / Docker).
 
+Topics are **per-vehicle** automatically: `{base_topic}/{VIN}/…` (falls back to plate, then
+CarLinko `vehicle_id`). Two dashboard instances can share the same `base_topic` and broker
+without colliding. `base_topic` is only a shared prefix (default `j5`).
+
 Once connected, Home Assistant should auto-create a device with sensors (battery, range, odometer,
 12V, charge power, consumption), binary sensors (charging, online), and — when your car supports
 them — lock, climate (on/off), window/sunroof/liftgate covers, and Find / Stop-charging buttons.
@@ -54,18 +58,20 @@ Commands use **named actions**, not raw hex. Opcodes live in `tools/control_opco
 (shipped with the repo; only **stop charging** `742701` is confirmed). Long-press a Control-tab
 button to remap — that updates the shared file so MQTT and the UI stay in sync.
 
-Events (non-retained): `{base_topic}/event/charge_complete`, `{base_topic}/event/battery_low`.
+Events (non-retained): `{base_topic}/{vin}/event/charge_complete`,
+`{base_topic}/{vin}/event/battery_low`.
 
 ### Topic sketch
 ```
-{base}/sensor/battery
-{base}/lock/state          ← LOCKED / UNLOCKED
-{base}/control/lock/set    ← LOCK / UNLOCK
-{base}/control/climate/set ← off / cool
-{base}/control/windows/set ← OPEN / CLOSE / VENT
-{base}/control/result      ← last command ack JSON
-{base}/availability
+{base}/{vin}/sensor/battery
+{base}/{vin}/lock/state          ← LOCKED / UNLOCKED
+{base}/{vin}/control/lock/set    ← LOCK / UNLOCK
+{base}/{vin}/control/climate/set ← off / cool
+{base}/{vin}/control/windows/set ← OPEN / CLOSE / VENT
+{base}/{vin}/control/result      ← last command ack JSON
+{base}/{vin}/availability
 ```
+(`{vin}` = VIN when known, else plate, else CarLinko vehicle_id.)
 
 ## REST sensors
 Add to `configuration.yaml` (change the host/port to your instance):
@@ -151,8 +157,8 @@ automation:
 Replace `YOURPHONE` with your Home Assistant companion-app device (the `notify.mobile_app_*`
 service it registers).
 
-With MQTT you can also trigger on `{base_topic}/event/charge_complete` /
-`{base_topic}/event/battery_low` for push instead of poll edge-detection.
+With MQTT you can also trigger on `{base_topic}/{vin}/event/charge_complete` /
+`{base_topic}/{vin}/event/battery_low` for push instead of poll edge-detection.
 
 ## Fields you can map
 `/api/summary` also carries (handy for more sensors / templates):

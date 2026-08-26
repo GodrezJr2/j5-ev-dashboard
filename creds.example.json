@@ -35,7 +35,7 @@
   "gmaps_key": "OPTIONAL__google_maps_api_key_for_trip_planner_and_spklu_map",
 
   "mqtt": {
-    "_comment": "OPTIONAL Home Assistant MQTT bridge (also configurable in Settings). Needs paho-mqtt from requirements.txt. Opcode map: tools/control_opcodes.json",
+    "_comment": "OPTIONAL Home Assistant MQTT bridge (also configurable in Settings). Needs paho-mqtt from requirements.txt. Opcode map: tools/control_opcodes.json. Topics are {base_topic}/{VIN}/… so two cars can share the same base_topic.",
     "enabled": false,
     "host": "homeassistant.local",
     "port": 1883,
