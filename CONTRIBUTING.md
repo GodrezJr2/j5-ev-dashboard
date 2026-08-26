@@ -30,7 +30,8 @@ their own vehicle.
 
 1. Keep changes focused — one feature/fix per PR.
 2. The server is **stdlib-only** (`http.server`, `sqlite3`); please don't add web-framework
-   dependencies. The only runtime pip deps are `requests` + `websocket-client` (for the logger).
+   dependencies. Runtime pip deps live in [`requirements.txt`](requirements.txt)
+   (`requests`, `websocket-client`, `paho-mqtt` for the HA MQTT bridge).
 3. **Never** include `creds.json`, `token.txt`, tokens, API keys, your VIN or plate in a commit,
    screenshot, or log paste. Redact before posting.
 4. If you touch telemetry decoding, say which car/region you validated against.

@@ -98,7 +98,7 @@ Kalau ga setuju sama poin di atas, jangan dipakai.
   long-press tombolnya. **Cloud-only — belum bisa Bluetooth.** Lihat
   [docs/control-opcodes.md](docs/control-opcodes.md).
 - **Perawatan baterai, hitung mundur servis, tampilan ban, toggle privasi, dark mode, i18n EN/ID.**
-- **Home Assistant** — baca semua lewat REST sensor + notif batre-low / charge-selesai. Lihat [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md).
+- **Home Assistant** — MQTT discovery atau REST sensor; event batre-low / charge-selesai. Lihat [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md).
 
 Lihat [PRODUCT.md](PRODUCT.md) untuk alasan produk dan [DESIGN.md](DESIGN.md) untuk sistem visual.
 
@@ -170,7 +170,7 @@ pernah dikirim ke server manapun yang aku kontrol. Detail lengkap di **[SECURITY
 ## Setup
 
 ### Prasyarat
-- Python 3.10+, `pip install requests websocket-client`
+- Python 3.10+, `pip install -r requirements.txt`
 - Akun CarLinko yang ada mobilmu
 - (opsional) Google Maps API key untuk perencana trip / peta SPKLU
 
@@ -227,7 +227,7 @@ diakses dari mana saja tapi tetap tak terlihat oleh siapa pun. Gratis untuk pema
 
 ### Cara cepat — Python (manual)
 ```bash
-pip install requests websocket-client
+pip install -r requirements.txt
 cd tools
 python setup.py                # konfigurasi interaktif + login + auto-deteksi mobil
 python logger.py --adaptive    # rekam telemetri (cepat saat aktif, lambat saat parkir)
@@ -285,7 +285,7 @@ Set up the open-source project https://github.com/GodrezJr2/j5-ev-dashboard on t
 Clone it, then bring it up with Docker (docker compose up -d). It serves a login page on
 http://localhost:8088 — tell me the URL when it's running. I'll enter my CarLinko email and
 password there myself; do not ask me for them. If Docker isn't available, fall back to the
-Python quick-start in the README (pip install requests websocket-client, then run
+Python quick-start in the README (pip install -r requirements.txt, then run
 tools/server.py and tools/logger.py). If the host is reachable from the internet, remind me to
 set a dashboard password on the login page's Advanced section.
 ```
