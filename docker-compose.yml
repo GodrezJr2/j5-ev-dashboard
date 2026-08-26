@@ -3,6 +3,10 @@
 # then:
 #   docker compose up -d                             # dashboard on http://localhost:8088
 #
+# Single-container (logger + web via entrypoint.py): omit the two services and run
+#   docker run --rm -p 8088:8088 -v ./data:/data j5-ev-dashboard
+# or override:  docker compose run --service-ports web python entrypoint.py 8088
+#
 # ./data holds creds.json, token.txt and carlinko.db (the only things that persist).
 
 services:
@@ -23,3 +27,4 @@ services:
     volumes:
       - ./data:/data
     restart: unless-stopped
+

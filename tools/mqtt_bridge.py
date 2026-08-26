@@ -2,7 +2,6 @@
 
 Runs inside the dashboard server process. Soft-depends on paho-mqtt — if enabled in creds
 but the package is missing, logs a clear error and stays idle.
-
 Topics are namespaced per car out of the box:
   {base_topic}/{VIN|plate|vehicle_id}/sensor/battery
 so two Docker instances on one broker do not collide when base_topic is shared.
