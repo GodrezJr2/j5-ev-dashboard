@@ -398,6 +398,14 @@
     text-align:right;background:var(--surface);color:var(--ink);-moz-appearance:textfield}
   .fuelin input::-webkit-outer-spin-button,.fuelin input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .fuelin #fuelKml{width:44px}
+  .mqttgrid{display:flex;flex-direction:column;gap:0;width:100%;padding-top:6px}
+  .mqttgrid .setrow{padding:10px 0}
+  .mqttin{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);
+    border:1px solid var(--line);border-radius:10px;padding:8px 12px;max-width:220px;text-align:right}
+  .mqttin.wide{max-width:100%;text-align:left;width:100%}
+  #mqttStatus{font-size:12px;color:var(--muted);margin-top:4px}
+  #mqttStatus.ok{color:var(--accent)}
+  #mqttStatus.err{color:var(--bad)}
 
   /* trip planner */
   .tpform{display:flex;flex-direction:column;gap:10px}
@@ -640,6 +648,27 @@
     <div class="hint" id="resyncHint">When the car is dark (no signal), missed km sync in one burst. Accurate (recommended) skips bursts that can't be dated to a day; Count all adds them to the day the car reconnects.</div>
     <div class="setrow"><span class="sl">Car photo</span>
       <button class="setbtn" id="photoBtn">Update</button></div>
+    <div class="head2" style="margin-top:22px"><div class="over">MQTT</div></div>
+    <div class="hint" id="mqttHint">Publish telemetry to Home Assistant via MQTT discovery, and accept lock / climate / cover / button commands. Needs <code>paho-mqtt</code> on the server.</div>
+    <div class="mqttgrid">
+      <div class="setrow"><span class="sl">Enabled</span>
+        <span class="seg" id="mqttEnSeg"><button data-v="0">Off</button><button data-v="1">On</button></span></div>
+      <div class="setrow"><span class="sl">Host</span>
+        <input class="mqttin wide" id="mqttHost" type="text" placeholder="homeassistant.local" autocomplete="off"></div>
+      <div class="setrow"><span class="sl">Port</span>
+        <input class="mqttin" id="mqttPort" type="number" inputmode="numeric" placeholder="1883"></div>
+      <div class="setrow"><span class="sl">TLS</span>
+        <span class="seg" id="mqttTlsSeg"><button data-v="0">Off</button><button data-v="1">On</button></span></div>
+      <div class="setrow"><span class="sl">Username</span>
+        <input class="mqttin wide" id="mqttUser" type="text" autocomplete="off"></div>
+      <div class="setrow"><span class="sl">Password</span>
+        <input class="mqttin wide" id="mqttPass" type="password" placeholder="unchanged if blank" autocomplete="new-password"></div>
+      <div class="setrow"><span class="sl">Base topic</span>
+        <input class="mqttin" id="mqttBase" type="text" placeholder="j5"></div>
+      <div class="setrow"><span class="sl"></span>
+        <button class="setbtn" id="mqttSave">Save</button></div>
+      <div id="mqttStatus">—</div>
+    </div>
   </section>
 
   <section class="tripplan">
@@ -844,6 +873,13 @@ const MAP_ID={
   "Settings":"Pengaturan","Theme":"Tema","Light":"Terang","Dark":"Gelap","Language":"Bahasa",
   "Km sync":"Sinkron km","Count all":"Hitung semua",
   "Car photo":"Foto mobil","Update":"Perbarui",
+  "MQTT":"MQTT","Enabled":"Aktif","Host":"Host","Port":"Port","TLS":"TLS",
+  "Username":"Pengguna","Password":"Kata sandi","Base topic":"Topik dasar","Save":"Simpan",
+  "MQTT off":"MQTT mati","Connected":"Terhubung","Connecting…":"Menghubungkan…",
+  "unchanged if blank":"kosongkan = tidak diubah","password":"kata sandi",
+  "Off":"Mati","On":"Nyala",
+  "Publish telemetry to Home Assistant via MQTT discovery, and accept lock / climate / cover / button commands. Needs paho-mqtt on the server.":
+  "Kirim telemetri ke Home Assistant lewat MQTT discovery, dan terima perintah kunci / iklim / cover / tombol. Butuh paho-mqtt di server.",
   "Charged":"Diisi",
   "Tap a day for its km, energy and charging.":"Ketuk hari untuk km, energi, dan pengisiannya.",
   "When the car is dark (no signal), missed km sync in one burst. Accurate (recommended) skips bursts that can't be dated to a day; Count all adds them to the day the car reconnects.":
@@ -920,6 +956,62 @@ $('photoBtn').addEventListener('click',async e=>{ const b=$('photoBtn'); b.disab
     }
   }catch(ex){}
   b.disabled=false; b.textContent=old; });
+
+// ---- MQTT settings (Home Assistant bridge) ----
+function syncMqttSeg(en, tls){
+  document.querySelectorAll('#mqttEnSeg button').forEach(b=>b.classList.toggle('on', b.dataset.v===(en?'1':'0')));
+  document.querySelectorAll('#mqttTlsSeg button').forEach(b=>b.classList.toggle('on', b.dataset.v===(tls?'1':'0')));
+}
+function mqttStatusLine(st, cfg){
+  const el=$('mqttStatus'); if(!el) return;
+  el.className='';
+  if(!cfg || !cfg.enabled){ el.textContent=T('MQTT off'); return; }
+  if(st && st.last_error){ el.className='err'; el.textContent=st.last_error; return; }
+  if(st && st.connected){ el.className='ok';
+    const t=st.last_publish_ts?(' · pub '+new Date(st.last_publish_ts*1000).toLocaleTimeString()):'';
+    el.textContent=T('Connected')+t; return; }
+  el.textContent=T('Connecting…');
+}
+async function loadMqtt(){
+  try{
+    const d=await (await fetch('api/mqtt',{cache:'no-store'})).json();
+    if(!d || !d.ok) return;
+    const c=d.config||{};
+    syncMqttSeg(!!c.enabled, !!c.tls);
+    if($('mqttHost')) $('mqttHost').value=c.host||'';
+    if($('mqttPort')) $('mqttPort').value=c.port||1883;
+    if($('mqttUser')) $('mqttUser').value=c.username||'';
+    if($('mqttPass')){ $('mqttPass').value=''; $('mqttPass').placeholder=c.password_set?T('unchanged if blank'):T('password'); }
+    if($('mqttBase')) $('mqttBase').value=c.base_topic||'j5';
+    mqttStatusLine(d.status, c);
+  }catch(e){}
+}
+$('mqttEnSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#mqttEnSeg button').forEach(x=>x.classList.toggle('on',x===b)); });
+$('mqttTlsSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#mqttTlsSeg button').forEach(x=>x.classList.toggle('on',x===b)); });
+$('mqttSave').addEventListener('click',async()=>{
+  const b=$('mqttSave'); b.disabled=true; const old=b.textContent; b.textContent='…';
+  const body={
+    enabled: !!document.querySelector('#mqttEnSeg button.on[data-v="1"]'),
+    host: ($('mqttHost').value||'').trim(),
+    port: parseInt($('mqttPort').value,10)||1883,
+    tls: !!document.querySelector('#mqttTlsSeg button.on[data-v="1"]'),
+    username: ($('mqttUser').value||'').trim(),
+    base_topic: ($('mqttBase').value||'j5').trim()||'j5',
+  };
+  const pw=$('mqttPass').value; if(pw) body.password=pw;
+  try{
+    const d=await (await fetch('api/mqtt',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)})).json();
+    if(!d.ok) throw new Error(d.error||'failed');
+    buzz(8); $('mqttPass').value='';
+    if(d.config&&d.config.password_set) $('mqttPass').placeholder=T('unchanged if blank');
+    mqttStatusLine(d.status, d.config);
+    setTimeout(loadMqtt, 1500);
+  }catch(ex){ const el=$('mqttStatus'); if(el){ el.className='err'; el.textContent=String(ex.message||ex); } }
+  b.disabled=false; b.textContent=old;
+});
 
 // ---- dist view: 7-day bars <-> monthly calendar (lazy /api/history, cached per month) ----
 let distView='bars'; try{ distView=localStorage.getItem('distView')||'bars'; }catch(e){}
@@ -1524,9 +1616,22 @@ const CTRL_ACTIONS=[
 // These are the "on/open" variants (visible action) — tap each at the car to identify, then report.
 // The car may need init (2301/24/77) first. UNKNOWN mapping — watch the car; any may actuate.
 const CTRL_CANDIDATES=["740100","740200","740300","740400","740500","740600","740700","740800","740A00","740E00","740F01","741001","741201","741501","741601","741701","741901","741A01","741B01","741C01","741E01","741F01","742001","742301","742401","742501","742701"];
-let CTRL_CAPS=null, CTRL_KNOWN=[];
-function ctrlMap(){ try{return JSON.parse(localStorage.getItem('ctrlMap')||'{}');}catch(e){return {};} }
-function ctrlSetOp(k,op){ const m=ctrlMap(); if(op) m[k]=op.trim(); else delete m[k]; localStorage.setItem('ctrlMap',JSON.stringify(m)); }
+let CTRL_CAPS=null, CTRL_KNOWN=[], CTRL_OPCODES={};
+function ctrlMap(){ // server map wins; localStorage is a cache for offline / older servers
+  if(CTRL_OPCODES && Object.keys(CTRL_OPCODES).length) return CTRL_OPCODES;
+  try{return JSON.parse(localStorage.getItem('ctrlMap')||'{}');}catch(e){return {};} }
+async function ctrlSetOp(k,op){
+  const m=Object.assign({}, ctrlMap());
+  if(op) m[k]=op.trim(); else delete m[k];
+  CTRL_OPCODES=m;
+  try{ localStorage.setItem('ctrlMap',JSON.stringify(m)); }catch(e){}
+  try{
+    const r=await fetch('api/opcodes',{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({opcodes:{[k]:op?op.trim():''}})});
+    const d=await r.json();
+    if(d && d.ok && d.opcodes) CTRL_OPCODES=d.opcodes;
+  }catch(e){}
+}
 function ctrlLog(msg){ const el=$('ctrlLog'); if(!el)return; const t=new Date().toLocaleTimeString();
   el.insertAdjacentHTML('afterbegin','<div>'+t+' &mdash; '+msg+'</div>'); }
 async function fireOpcode(op,to){
@@ -1553,13 +1658,13 @@ function renderControls(){
     b.innerHTML='<span>'+a.lbl+'</span><small>'+(op?op:'tap to set')+'</small>';
     b.addEventListener('click',async()=>{
       const code=ctrlMap()[a.k]||a.op;
-      if(!code){ const nv=(prompt('Opcode (hex) for "'+a.lbl+'"','')||'').trim(); if(!nv) return; ctrlSetOp(a.k,nv); renderControls(); return; }
+      if(!code){ const nv=(prompt('Opcode (hex) for "'+a.lbl+'"','')||'').trim(); if(!nv) return; await ctrlSetOp(a.k,nv); renderControls(); return; }
       if(a.confirm && !confirm(a.lbl+' — send now?')) return;
       b.classList.add('busy');
       try{ await fireOpcode('77',20); await new Promise(r=>setTimeout(r,600)); await fireOpcode(code,20); }
       finally{ b.classList.remove('busy'); }
     });
-    let lp; b.addEventListener('pointerdown',()=>{ lp=setTimeout(()=>{ const nv=prompt('Opcode for "'+a.lbl+'" (mismatch? fix it here)',ctrlMap()[a.k]||a.op||''); if(nv!==null){ ctrlSetOp(a.k,nv.trim()); renderControls(); } },600); });
+    let lp; b.addEventListener('pointerdown',()=>{ lp=setTimeout(async()=>{ const nv=prompt('Opcode for "'+a.lbl+'" (mismatch? fix it here)',ctrlMap()[a.k]||a.op||''); if(nv!==null){ await ctrlSetOp(a.k,nv.trim()); renderControls(); } },600); });
     ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(lp)));
     grid.appendChild(b);
   });
@@ -1575,7 +1680,9 @@ function renderControls(){
 }
 async function loadControls(){
   try{ const r=await fetch('api/controls'); const d=await r.json();
-    if(d && d.caps){ CTRL_CAPS=d.caps; CTRL_KNOWN=d.known||[]; renderControls(); } }catch(e){}
+    if(d && d.caps){ CTRL_CAPS=d.caps; CTRL_KNOWN=d.known||[];
+      if(d.opcodes){ CTRL_OPCODES=d.opcodes; try{ localStorage.setItem('ctrlMap',JSON.stringify(d.opcodes)); }catch(e){} }
+      renderControls(); } }catch(e){}
 }
 const SHEETS={battery:bBattery,rpkm:bRpkm,forecast:bForecast,range:bRange,health:bHealth,eff:bEff,charge:bCharge,tyres:bTyres,odo:bOdo,volt:bVolt,speed:bSpeed,life:bLife,care:bCare,spec:bSpec};
 function bind(el,key){ if(!el)return; el.classList.add('tappable'); el.addEventListener('click',()=>sheet(SHEETS[key]())); }
@@ -1880,12 +1987,14 @@ bindStatic();                                          // make cards/stats tappa
 if($('ctrlFire')) $('ctrlFire').addEventListener('click',()=>fireOpcode($('ctrlOp').value,$('ctrlTo').value));
 if($('ctrlDiscToggle')) $('ctrlDiscToggle').addEventListener('click',()=>{ const d=$('ctrlDisc'); d.style.display=d.style.display==='none'?'':'none'; });
 loadControls();                                        // fetch what this car supports + opcodes to test
+loadMqtt();                                            // MQTT bridge settings + status
 showTab('home');                                       // start on Home
 load();                                                // read the stream-fresh DB on open
 setInterval(()=>{ if(!document.hidden) load(); }, 5000);  // the box streams the car over one socket;
                                                        // just re-read its always-fresh DB every 5s ->
                                                        // live screen, zero extra load on CarLinko
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) load(); });
+setInterval(()=>{ if(!document.hidden) loadMqtt(); }, 15000);  // refresh MQTT connection status
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ load(); loadMqtt(); } });
 </script>
 </body>
 </html>

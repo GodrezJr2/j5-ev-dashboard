@@ -1,4 +1,4 @@
-"""CarLinko dashboard server (stdlib only).
+"""CarLinko dashboard server (stdlib + optional paho-mqtt for Home Assistant).
 Serves the mobile PWA in ./web and a JSON API computed from carlinko.db.
 Run: python server.py [port]   (default 8088, binds 0.0.0.0 so Tailscale can reach it)
 """
@@ -796,6 +796,8 @@ def demo_summary():
         "vehicle": {"plate": "B 1234 DEMO", "model": "Jaecoo J5 EV", "vin": "DEMOVIN00000J5EV"},
         "online": True, "battery": 72, "range_km": 318, "odometer": 8421, "volt12": 13.6,
         "unlocked": False, "speed": None, "moving": False, "avg_speed": 41,
+        "ac_on": False, "ac_temp_c": 22, "doors": 0, "trunk_open": False,
+        "windows": 0, "sunroof_open": False,
         "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
         "battery_kwh": cap, "battery_kwh_source": "known", "wltp_kwh_100": 14.8,
         "chemistry_known": True, "powertrain": "bev", "fuel": None,
@@ -839,6 +841,8 @@ def summary():
         return demo_summary()
     out = {"vehicle": VEHICLE, "online": False, "battery": None, "range_km": None,
            "odometer": None, "volt12": None, "unlocked": None, "speed": None,
+           "ac_on": None, "ac_temp_c": None, "doors": None, "trunk_open": None,
+           "windows": None, "sunroof_open": None,
            "moving": False, "avg_speed": None, "insights": {}, "health": {}, "drain": None,
            "volt12_min7d": None, "volt12_status": None,
            "updated": None, "age_min": None,
@@ -877,6 +881,15 @@ def summary():
     out.update(battery=dec.get("battery"), range_km=dec.get("range_km"),
                odometer=dec.get("odometer"), volt12=dec.get("volt12"),
                unlocked=dec.get("unlocked"), speed=None, updated=dt)
+    # Body / climate bytes (decoded in decode(); lock verified on J5+E5, A/C+doors+windows
+    # live-verified on E5 #5 — surfaced for REST + MQTT so HA can use real state).
+    out["ac_on"] = bool(dec.get("ac_on"))
+    out["doors"] = dec.get("doors")
+    out["trunk_open"] = bool(dec.get("trunk_open")) if dec.get("trunk_open") is not None else None
+    out["windows"] = dec.get("windows")
+    out["sunroof_open"] = bool(dec.get("sunroof_open")) if dec.get("sunroof_open") is not None else None
+    ac_temp = dec.get("ac_temp_c")
+    out["ac_temp_c"] = ac_temp if (isinstance(ac_temp, int) and 16 <= ac_temp <= 30) else None
     out["age_min"] = round((time.time() - ts) / 60, 1)
     out["online"] = out["age_min"] is not None and out["age_min"] < 40
     # Fuel side of a PHEV. Decided over the whole window, not the latest frame, so a car sitting at
@@ -1423,10 +1436,47 @@ class H(BaseHTTPRequestHandler):
             if not self._authed():
                 self._send(401, b'{"error":"auth"}', "application/json"); return
             try:
-                self._send(200, json.dumps({"caps": control_caps(), "known": KNOWN_OPCODES}).encode(),
+                import mqtt_bridge as MB
+                self._send(200, json.dumps({"caps": control_caps(), "known": KNOWN_OPCODES,
+                                            "opcodes": MB.load_opcodes()}).encode(),
                            "application/json")
             except Exception as e:
                 self._send(200, json.dumps({"error": str(e)[:180]}).encode(), "application/json")
+            return
+        if path == "/api/mqtt":                        # MQTT bridge config + status (password redacted)
+            if not self._authed():
+                self._send(401, b'{"error":"auth"}', "application/json"); return
+            try:
+                import mqtt_bridge as MB
+                m = (_creds().get("mqtt") or {}) if isinstance(_creds().get("mqtt"), dict) else {}
+                cfg = {
+                    "enabled": bool(m.get("enabled")),
+                    "host": m.get("host") or "",
+                    "port": int(m.get("port") or 1883),
+                    "username": m.get("username") or "",
+                    "password_set": bool(m.get("password")),
+                    "tls": bool(m.get("tls")),
+                    "base_topic": m.get("base_topic") or "j5",
+                    "discovery_prefix": m.get("discovery_prefix") or "homeassistant",
+                }
+                self._send(200, json.dumps({"ok": True, "config": cfg,
+                                            "status": MB.bridge.status()}).encode(),
+                           "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(),
+                           "application/json")
+            return
+        if path == "/api/opcodes":
+            if not self._authed():
+                self._send(401, b'{"error":"auth"}', "application/json"); return
+            try:
+                import mqtt_bridge as MB
+                self._send(200, json.dumps({"ok": True, "opcodes": MB.load_opcodes(),
+                                            "defaults": MB.DEFAULT_OPCODES}).encode(),
+                           "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(),
+                           "application/json")
             return
         if path == "/car-photo":     # cached proxy for CarLinko's own render of this exact car.
             try:                     # Behind the gate: the render gives away model + colour.
@@ -1639,7 +1689,97 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(),
                            "application/json")
             return
+        if path == "/api/mqtt":
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n).decode() or "{}")
+                cpath = os.path.join(_DATA, "creds.json")
+                try:
+                    c = json.load(open(cpath, encoding="utf-8"))
+                except Exception:
+                    c = {}
+                cur = c.get("mqtt") if isinstance(c.get("mqtt"), dict) else {}
+                m = dict(cur)
+                if "enabled" in body:
+                    m["enabled"] = bool(body.get("enabled"))
+                if "host" in body:
+                    m["host"] = str(body.get("host") or "").strip()
+                if "port" in body:
+                    try:
+                        m["port"] = int(body.get("port") or 1883)
+                    except Exception:
+                        m["port"] = 1883
+                if "username" in body:
+                    m["username"] = str(body.get("username") or "").strip()
+                if "password" in body and body.get("password") is not None and body.get("password") != "":
+                    m["password"] = str(body.get("password"))
+                # omit / null / "" password → keep existing
+                if "tls" in body:
+                    m["tls"] = bool(body.get("tls"))
+                if "base_topic" in body:
+                    m["base_topic"] = str(body.get("base_topic") or "j5").strip() or "j5"
+                if "discovery_prefix" in body:
+                    m["discovery_prefix"] = (str(body.get("discovery_prefix") or "homeassistant").strip()
+                                             or "homeassistant")
+                c["mqtt"] = m
+                json.dump(c, open(cpath, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+                try: os.chmod(cpath, 0o600)
+                except Exception: pass
+                import mqtt_bridge as MB
+                MB.bridge.reload(m)
+                cfg = {
+                    "enabled": bool(m.get("enabled")),
+                    "host": m.get("host") or "",
+                    "port": int(m.get("port") or 1883),
+                    "username": m.get("username") or "",
+                    "password_set": bool(m.get("password")),
+                    "tls": bool(m.get("tls")),
+                    "base_topic": m.get("base_topic") or "j5",
+                    "discovery_prefix": m.get("discovery_prefix") or "homeassistant",
+                }
+                self._send(200, json.dumps({"ok": True, "config": cfg,
+                                            "status": MB.bridge.status()}).encode(),
+                           "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(),
+                           "application/json")
+            return
+        if path == "/api/opcodes":
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n).decode() or "{}")
+                import mqtt_bridge as MB
+                mapping = body.get("opcodes") if isinstance(body.get("opcodes"), dict) else body
+                ops = MB.save_opcodes(mapping)
+                self._send(200, json.dumps({"ok": True, "opcodes": ops}).encode(),
+                           "application/json")
+            except Exception as e:
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(),
+                           "application/json")
+            return
         self._send(404, b"not found", "text/plain")
+
+def _start_mqtt_bridge():
+    """Wire callbacks and start the HA MQTT bridge when enabled in creds.json."""
+    if DEMO:
+        return
+    try:
+        import mqtt_bridge as MB
+        MB._DATA = _DATA
+        MB.bridge.get_db_path = lambda: DB
+        MB.bridge.decode = decode
+        MB.bridge.control_caps = control_caps
+        MB.bridge.send_control = send_control
+        MB.bridge.get_vehicle = lambda: dict(VEHICLE)
+        MB.bridge.get_vehicle_id = lambda: str((_creds().get("vehicle_id") or ""))
+        m = _creds().get("mqtt") if isinstance(_creds().get("mqtt"), dict) else {}
+        MB.bridge.start(m)
+    except Exception as e:
+        print("mqtt_bridge: failed to start:", repr(e), flush=True)
 
 def main():
     ports = [a for a in sys.argv[1:] if a.isdigit()]       # ignore flags like --demo
@@ -1649,6 +1789,7 @@ def main():
     else:
         _ensure_db()                                       # so a brand-new install serves without crashing
         print(f"CarLinko dashboard on http://0.0.0.0:{port}  (db={os.path.abspath(DB)})")
+        _start_mqtt_bridge()
     ThreadingHTTPServer(("0.0.0.0", port), H).serve_forever()
 
 if __name__ == "__main__":

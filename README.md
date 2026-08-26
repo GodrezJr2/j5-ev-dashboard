@@ -95,7 +95,7 @@ If you don't accept the above, don't use this.
   Only *stop charging* is confirmed; the rest are best-effort labels you can re-map by long-pressing
   a button. **Cloud only — no Bluetooth.** See [docs/control-opcodes.md](docs/control-opcodes.md).
 - **Battery care, service countdown, tyre view, privacy toggles, dark mode, EN/ID i18n.**
-- **Home Assistant** — read it all over a REST sensor and get battery-low / charge-done notifications. See [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md). Prefer a native integration? [ha-carlinko](https://github.com/jebentancour/ha-carlinko) by [@jebentancour](https://github.com/jebentancour) (read-only, built on the same telemetry).
+- **Home Assistant** — MQTT discovery (sensors + lock/climate/covers/buttons) or a REST sensor; battery-low / charge-done events. See [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md). Prefer a native integration? [ha-carlinko](https://github.com/jebentancour/ha-carlinko) by [@jebentancour](https://github.com/jebentancour) (read-only, built on the same telemetry).
 
 See [PRODUCT.md](PRODUCT.md) for the product rationale and [DESIGN.md](DESIGN.md) for the
 visual system.
@@ -168,7 +168,7 @@ never sent to any server I control. See **[SECURITY.md](SECURITY.md)** for the f
 ## Setup
 
 ### Prerequisites
-- Python 3.10+, `pip install requests websocket-client`
+- Python 3.10+, `pip install -r requirements.txt`
 - A CarLinko account with your car on it
 - (optional) a Google Maps API key for the trip planner / SPKLU map
 
@@ -228,7 +228,7 @@ personal use.
 
 ### Quick start — Python (manual)
 ```bash
-pip install requests websocket-client
+pip install -r requirements.txt
 cd tools
 python setup.py                # interactive config + login + auto-detect car
 python logger.py --adaptive    # record telemetry (fast when awake, slow when parked)
@@ -357,7 +357,7 @@ Set up the open-source project https://github.com/GodrezJr2/j5-ev-dashboard on t
 Clone it, then bring it up with Docker (docker compose up -d). It serves a login page on
 http://localhost:8088 — tell me the URL when it's running. I'll enter my CarLinko email and
 password there myself; do not ask me for them. If Docker isn't available, fall back to the
-Python quick-start in the README (pip install requests websocket-client, then run
+Python quick-start in the README (pip install -r requirements.txt, then run
 tools/server.py and tools/logger.py). If the host is reachable from the internet, remind me to
 set a dashboard password on the login page's Advanced section.
 ```
