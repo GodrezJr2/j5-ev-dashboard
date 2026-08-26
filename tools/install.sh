@@ -51,7 +51,7 @@ fi
 say "Creating the virtualenv"
 [ -d "$VENV" ] || python3 -m venv "$VENV"
 "$VENV/bin/pip" install --quiet --upgrade pip
-"$VENV/bin/pip" install --quiet requests websocket-client
+"$VENV/bin/pip" install --quiet -r "$REPO/requirements.txt"
 echo "    $VENV"
 
 # ---------------------------------------------------------------- account setup

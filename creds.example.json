@@ -32,5 +32,17 @@
   "resync_km_comment": "late cloud re-sync bursts (odo catches up after the car was dark): skip = accurate per-day totals (default, recommended) | count = add them to the day the car reconnected",
   "car_image": "OPTIONAL__setup.py_already_grabs_your_car's_own_render__set_only_to_override",
 
-  "gmaps_key": "OPTIONAL__google_maps_api_key_for_trip_planner_and_spklu_map"
+  "gmaps_key": "OPTIONAL__google_maps_api_key_for_trip_planner_and_spklu_map",
+
+  "mqtt": {
+    "_comment": "OPTIONAL Home Assistant MQTT bridge (also configurable in Settings). Needs paho-mqtt from requirements.txt. Opcode map: tools/control_opcodes.json",
+    "enabled": false,
+    "host": "homeassistant.local",
+    "port": 1883,
+    "username": "",
+    "password": "",
+    "tls": false,
+    "base_topic": "j5",
+    "discovery_prefix": "homeassistant"
+  }
 }

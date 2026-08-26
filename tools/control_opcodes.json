@@ -1,0 +1,15 @@
+{
+  "lock": "741000",
+  "unlock": "741001",
+  "acOn": "742401",
+  "acOff": "742400",
+  "winOpen": "741501",
+  "winClose": "741500",
+  "winVent": "741502",
+  "roofOpen": "741A01",
+  "roofClose": "741A00",
+  "roofTilt": "741A02",
+  "liftOpen": "741201",
+  "find": "740100",
+  "chgStop": "742701"
+}
