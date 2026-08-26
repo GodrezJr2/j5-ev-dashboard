@@ -33,7 +33,7 @@ DEFAULT_OPCODES = {
 }
 
 POLL_S = 2.5
-HEARTBEAT_S = 60.0
+HEARTBEAT_S = 30.0  # republish retained state at least this often; otherwise only on change
 ONLINE_AGE_MIN = 40.0
 BATTERY_LOW_PCT = 20
 
@@ -132,7 +132,7 @@ class MqttBridge:
         self._last_error = None
         self._last_publish_ts = None
         self._discovery_sent = False
-        self._last_payload = None
+        self._last_pubs = {}  # topic -> last payload string (skip unchanged publishes)
         self._last_pub_mono = 0.0
         self._prev_charge_state = None
         self._prev_battery = None
@@ -175,7 +175,8 @@ class MqttBridge:
             self._teardown_client()
             self._cfg = cfg
             self._discovery_sent = False
-            self._last_payload = None
+            self._last_pubs = {}
+            self._last_pub_mono = 0.0
         t = self._thread
         if t and t.is_alive() and t is not threading.current_thread():
             t.join(timeout=5)
@@ -301,6 +302,16 @@ class MqttBridge:
         if not isinstance(payload, str):
             payload = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
         c.publish(topic, payload, qos=0, retain=retain)
+
+    def _pub_if_changed(self, topic, payload, retain=True, force=False):
+        """Publish retained state only when the payload changed (or force=heartbeat)."""
+        if not isinstance(payload, str):
+            payload = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+        if not force and self._last_pubs.get(topic) == payload:
+            return False
+        self._pub(topic, payload, retain=retain)
+        self._last_pubs[topic] = payload
+        return True
 
     def _device_info(self):
         v = self.get_vehicle() or {}
@@ -457,10 +468,12 @@ class MqttBridge:
         if not self._discovery_sent:
             self._publish_discovery(caps)
 
+        base = self._cfg["base_topic"]
         latest = self._read_latest()
         if not latest:
-            base = self._cfg["base_topic"]
-            self._pub(f"{base}/binary_sensor/online", "OFF")
+            # Avoid spamming HA every poll when the DB has no frame yet.
+            self._pub_if_changed(f"{base}/binary_sensor/online", "OFF")
+            self._pub_if_changed(f"{base}/availability", "offline", retain=True)
             return
         ts, dec = latest
         age_min = (time.time() - ts) / 60.0
@@ -480,41 +493,39 @@ class MqttBridge:
         trunk_open = bool(dec.get("trunk_open"))
         consumption = dec.get("consumption") or ""
 
-        snap = {
-            "battery": battery, "range": dec.get("range_km"), "odo": dec.get("odometer"),
-            "volt12": dec.get("volt12"), "rate": rate, "consumption": consumption,
-            "charging": charging, "online": online, "unlocked": unlocked, "ac_on": ac_on,
-            "ac_temp": ac_temp if temp_ok else None, "windows": windows_open,
-            "sunroof": sunroof_open, "trunk": trunk_open, "cstate": cstate,
-        }
-        now = time.monotonic()
-        changed = snap != self._last_payload
-        due = (now - self._last_pub_mono) >= HEARTBEAT_S
-        if not changed and not due:
-            return
-
-        base = self._cfg["base_topic"]
         def n(v):
             return "" if v is None else str(v)
 
-        self._pub(f"{base}/sensor/battery", n(battery))
-        self._pub(f"{base}/sensor/range", n(dec.get("range_km")))
-        self._pub(f"{base}/sensor/odometer", n(dec.get("odometer")))
-        self._pub(f"{base}/sensor/volt12", n(dec.get("volt12")))
-        self._pub(f"{base}/sensor/charge_power", n(rate))
-        self._pub(f"{base}/sensor/consumption", n(consumption) if consumption else "")
-        self._pub(f"{base}/binary_sensor/charging", "ON" if charging else "OFF")
-        self._pub(f"{base}/binary_sensor/online", "ON" if online else "OFF")
-        self._pub(f"{base}/lock/state", "UNLOCKED" if unlocked else "LOCKED")
-        self._pub(f"{base}/climate/mode", "cool" if ac_on else "off")
-        self._pub(f"{base}/climate/action", "cooling" if ac_on else "off")
-        self._pub(f"{base}/climate/temperature", n(ac_temp) if temp_ok else "")
-        self._pub(f"{base}/cover/windows/state", "open" if windows_open else "closed")
-        self._pub(f"{base}/cover/sunroof/state", "open" if sunroof_open else "closed")
-        self._pub(f"{base}/cover/liftgate/state", "open" if trunk_open else "closed")
-        self._pub(f"{base}/availability", "online" if online else "offline", retain=True)
+        pubs = {
+            f"{base}/sensor/battery": n(battery),
+            f"{base}/sensor/range": n(dec.get("range_km")),
+            f"{base}/sensor/odometer": n(dec.get("odometer")),
+            f"{base}/sensor/volt12": n(dec.get("volt12")),
+            f"{base}/sensor/charge_power": n(rate),
+            f"{base}/sensor/consumption": n(consumption) if consumption else "",
+            f"{base}/binary_sensor/charging": "ON" if charging else "OFF",
+            f"{base}/binary_sensor/online": "ON" if online else "OFF",
+            f"{base}/lock/state": "UNLOCKED" if unlocked else "LOCKED",
+            f"{base}/climate/mode": "cool" if ac_on else "off",
+            f"{base}/climate/action": "cooling" if ac_on else "off",
+            f"{base}/climate/temperature": n(ac_temp) if temp_ok else "",
+            f"{base}/cover/windows/state": "open" if windows_open else "closed",
+            f"{base}/cover/sunroof/state": "open" if sunroof_open else "closed",
+            f"{base}/cover/liftgate/state": "open" if trunk_open else "closed",
+            f"{base}/availability": "online" if online else "offline",
+        }
 
-        # Edge events (not retained)
+        now = time.monotonic()
+        due = (now - self._last_pub_mono) >= HEARTBEAT_S
+        any_changed = any(self._last_pubs.get(t) != p for t, p in pubs.items())
+        if any_changed or due:
+            # On change: only the topics that differ. On heartbeat: refresh all retained state.
+            for topic, payload in pubs.items():
+                self._pub_if_changed(topic, payload, retain=True, force=due)
+            self._last_pub_mono = now
+            self._last_publish_ts = int(time.time())
+
+        # Edge events (non-retained) — real transitions only, never on heartbeat alone.
         if self._prev_charge_state == 1 and cstate == 2:
             self._pub(f"{base}/event/charge_complete",
                       {"battery": battery, "ts": int(time.time())}, retain=False)
@@ -528,9 +539,6 @@ class MqttBridge:
 
         self._prev_charge_state = cstate
         self._prev_battery = battery
-        self._last_payload = snap
-        self._last_pub_mono = now
-        self._last_publish_ts = int(time.time())
 
     def _fire_action(self, action_key):
         """Init 77 then fire mapped opcode. Returns result dict."""
