@@ -11,5 +11,6 @@ VOLUME /data
 WORKDIR /app/tools
 EXPOSE 8088
 
-# Default = the dashboard. The logger runs as a second service (see docker-compose.yml).
-CMD ["python", "server.py", "8088"]
+# Default = dashboard + logger together. Prefer separate services via docker-compose.yml
+# when you want independent restart/logs (web / logger override this CMD).
+CMD ["python", "entrypoint.py", "8088"]
