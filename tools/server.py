@@ -37,7 +37,7 @@ WEB  = os.path.join(HERE, "..", "web")
 
 def _creds():
     try:
-        return json.load(open(os.path.join(_DATA, "creds.json")))
+        return json.load(open(os.path.join(_DATA, "creds.json"), encoding="utf-8"))
     except Exception:
         return {}
 
@@ -46,7 +46,7 @@ def _resync_skip():
     a day. Default "skip": keep them out of daily totals (accurate per-day numbers). "count" = old
     behaviour: add them to the day the car reconnected. Toggled from the dashboard Settings tab."""
     try:
-        return str(json.load(open(os.path.join(_DATA, "creds.json"))).get("resync_km", "skip")).lower() != "count"
+        return str(json.load(open(os.path.join(_DATA, "creds.json"), encoding="utf-8")).get("resync_km", "skip")).lower() != "count"
     except Exception:
         return True
 
@@ -103,7 +103,7 @@ def web_login(email, password, region="sea", gmaps_key=None, dashboard_password=
     if gmaps_key and gmaps_key.strip():
         c["gmaps_key"] = gmaps_key.strip()
     cpath = os.path.join(_DATA, "creds.json")
-    json.dump(c, open(cpath, "w"), indent=2)
+    json.dump(c, open(cpath, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
     try: os.chmod(cpath, 0o600)
     except Exception: pass
     import auth, requests
@@ -121,7 +121,7 @@ def web_login(email, password, region="sea", gmaps_key=None, dashboard_password=
             c["vehicle"]["img"] = img                     # web login now captures the render too
             try: os.remove(_CAR_PHOTO)                    # (previously only CLI setup.py did)
             except Exception: pass                        # bust the old car's cached photo
-        json.dump(c, open(cpath, "w"), indent=2)
+        json.dump(c, open(cpath, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
         try: os.chmod(cpath, 0o600)
         except Exception: pass
         VEHICLE.update(c["vehicle"])                        # reflect immediately, no restart
@@ -236,7 +236,7 @@ def _gated():
 
 def _save_creds(c):
     cpath = os.path.join(_DATA, "creds.json")
-    json.dump(c, open(cpath, "w"), indent=2)
+    json.dump(c, open(cpath, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
     try: os.chmod(cpath, 0o600)
     except Exception: pass
 
@@ -1097,7 +1097,7 @@ def _ev_info(pl):
     return {"dc_kw": dc_kw, "conns": blurb, "avail": avail, "updated": updated}
 
 def _gkey():
-    try: return json.load(open(os.path.join(_DATA, "creds.json"))).get("gmaps_key")
+    try: return json.load(open(os.path.join(_DATA, "creds.json"), encoding="utf-8")).get("gmaps_key")
     except Exception: return None
 
 def _g_post(url, body, fieldmask, timeout=9):
@@ -1604,7 +1604,7 @@ class H(BaseHTTPRequestHandler):
                                "application/json"); return
                 c = _creds(); c.setdefault("vehicle", {})["img"] = img
                 cpath = os.path.join(_DATA, "creds.json")
-                json.dump(c, open(cpath, "w"), indent=2)
+                json.dump(c, open(cpath, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
                 try: os.chmod(cpath, 0o600)
                 except Exception: pass
                 try: os.remove(_CAR_PHOTO)              # force a fresh cache pull
@@ -1626,11 +1626,11 @@ class H(BaseHTTPRequestHandler):
                                "application/json"); return
                 cpath = os.path.join(_DATA, "creds.json")
                 try:
-                    c = json.load(open(cpath))
+                    c = json.load(open(cpath, encoding="utf-8"))
                 except Exception:
                     c = {}
                 c["resync_km"] = body["resync_km"]
-                json.dump(c, open(cpath, "w"), indent=2)
+                json.dump(c, open(cpath, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
                 try: os.chmod(cpath, 0o600)
                 except Exception: pass
                 self._send(200, json.dumps({"ok": True, "resync_km": c["resync_km"]}).encode(),

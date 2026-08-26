@@ -22,7 +22,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _DATA = os.environ.get("CARLINKO_DATA") or _HERE   # Docker data dir; else alongside the code
 def _cfg():
     try:
-        return json.load(open(os.path.join(_DATA, "creds.json")))
+        return json.load(open(os.path.join(_DATA, "creds.json"), encoding="utf-8"))
     except Exception:
         return {}
 _C = _cfg()
