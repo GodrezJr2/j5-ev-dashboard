@@ -162,7 +162,7 @@ def main():
     c = {}
     if os.path.exists(CREDS):
         try:
-            c = json.load(open(CREDS))
+            c = json.load(open(CREDS, encoding="utf-8"))
             print(f"Editing existing {CREDS} (press Enter to keep a value).\n")
         except Exception:
             pass
@@ -179,7 +179,7 @@ def main():
                          c.get("gmaps_key"), secret=True, optional=True)
 
     # write what we have first, so a later failure still saves progress
-    json.dump(c, open(CREDS, "w"), indent=2)
+    json.dump(c, open(CREDS, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
     try:
         os.chmod(CREDS, 0o600)
     except Exception:
@@ -229,7 +229,7 @@ def main():
             pass
         learn_from_config(c, v)
         ask_battery(c, c["vehicle"]["model"])
-        json.dump(c, open(CREDS, "w"), indent=2)
+        json.dump(c, open(CREDS, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
         try:
             os.chmod(CREDS, 0o600)
         except Exception:

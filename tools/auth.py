@@ -26,7 +26,7 @@ TOKEN_FILE = os.path.join(_DATA, "token.txt")
 def cfg():
     """All instance-specific values live in creds.json (gitignored). See creds.example.json."""
     try:
-        return json.load(open(CREDS))
+        return json.load(open(CREDS, encoding="utf-8"))
     except Exception:
         return {}
 
@@ -44,7 +44,7 @@ def _require(val, name):
 
 def _region():
     try:
-        return json.load(open(CREDS)).get("region", "sea")
+        return json.load(open(CREDS, encoding="utf-8")).get("region", "sea")
     except Exception:
         return "sea"
 
@@ -75,7 +75,7 @@ def headers_for(params, token=None):
 
 def login():
     """Log in with stored creds, return the new token (and save it to token.txt)."""
-    c = json.load(open(CREDS))
+    c = json.load(open(CREDS, encoding="utf-8"))
     body = {
         "account": c["email"],
         "password": c["password"],
