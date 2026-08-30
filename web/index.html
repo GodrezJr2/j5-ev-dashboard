@@ -741,7 +741,7 @@
 
   <section id="ctrlSec">
     <div class="head2"><div class="over">Control <span class="badge warn">BETA</span></div><span class="badge" id="ctrlBadge">&mdash;</span></div>
-    <div class="ctrlnote" id="ctrlNote"><b>Beta.</b> Labels use best-effort opcodes decoded from the app (only <b>Stop charging</b> = confirmed). Each tap inits then fires. <b>Long-press a button</b> to fix a wrong opcode. Car must be awake or it fails (<b>50043</b>). Tap = real actuation — watch the car. <b>Cloud only — no Bluetooth</b>, so the car needs cellular signal; the app's Bluetooth-proximity control isn't implemented.</div>
+    <div class="ctrlnote" id="ctrlNote"><b>Beta.</b> Labels come from the app's own jump-table decode (<b>Stop charging</b> = runtime-confirmed; the rest pending one-tap verification — report mismatches). Each tap inits then fires. <b>Long-press a button</b> to fix a wrong opcode. Car must be awake or it fails (<b>50043</b>). Tap = real actuation — watch the car. <b>Cloud only — no Bluetooth</b>, so the car needs cellular signal; the app's Bluetooth-proximity control isn't implemented.</div>
     <div id="ctrlGrid" class="ctrlgrid"></div>
     <div class="ctrlac" id="ctrlAc" style="display:none">
       <div class="acrow"><span class="over">A/C temperature</span><b class="num"><span id="ctrlAcTemp">22.0</span><u>&deg;C</u></b></div>
@@ -1502,30 +1502,43 @@ function applySpecs(){
 // ---- Control tab: fire remote-control opcodes at the car (replaces the CarLinko app) ----
 // Opcodes aren't hardcoded: labels below map to a hex opcode you assign (tap to set / long-press
 // to edit), stored in this browser. Discover each opcode with the tester, then assign it here.
-// op = best-effort opcode from the static decode (74<cmd><state>). 742701 (stop charge) is confirmed;
-// the rest are educated from structure -- long-press any button to correct its opcode, then tell me.
+// op = label map from the assembledSendData jump table + vcLoadingMessage labels (Omoda 9, #11,
+// credited in docs/control-opcodes.md). Only 742701 is runtime-confirmed; the rest are a static
+// decode pending one-tap verification -- long-press any button to correct its opcode, then tell me.
+// CTRL_MAP_VER: bump when the decoded defaults change, so stale localStorage overrides are dropped.
+const CTRL_MAP_VER='2';
 const CTRL_ACTIONS=[
-  {k:'lock',    lbl:'Lock',             op:'741000', cap:c=>c.lock,                    confirm:false},
-  {k:'unlock',  lbl:'Unlock',           op:'741001', cap:c=>c.lock,                    confirm:true},
-  {k:'acOn',    lbl:'A/C on',           op:'742401', cap:c=>c.ac&&c.ac.switch,         confirm:false},
-  {k:'acOff',   lbl:'A/C off',          op:'742400', cap:c=>c.ac&&c.ac.switch,         confirm:false},
-  {k:'winOpen', lbl:'Windows open',     op:'741501', cap:c=>c.windows&&c.windows.open, confirm:true},
-  {k:'winClose',lbl:'Windows close',    op:'741500', cap:c=>c.windows&&c.windows.close,confirm:false},
-  {k:'winVent', lbl:'Windows vent',     op:'741502', cap:c=>c.windows&&c.windows.vent, confirm:false},
-  {k:'roofOpen',lbl:'Sunroof open',     op:'741A01', cap:c=>c.sunroof&&c.sunroof.open,  confirm:true},
-  {k:'roofClose',lbl:'Sunroof close',   op:'741A00', cap:c=>c.sunroof&&c.sunroof.open,  confirm:false},
-  {k:'roofTilt',lbl:'Sunroof tilt',     op:'741A02', cap:c=>c.sunroof&&c.sunroof.tilt,  confirm:false},
-  {k:'liftOpen',lbl:'Tailgate (bagasi)',op:'741201', cap:c=>c.liftgate,                 confirm:true},
-  {k:'find',    lbl:'Find car',         op:'740100', cap:c=>c.find,                     confirm:false},
+  {k:'lock',    lbl:'Lock',             op:'740100', cap:c=>c.lock,                    confirm:false},
+  {k:'unlock',  lbl:'Unlock',           op:'740200', cap:c=>c.lock,                    confirm:true},
+  {k:'acOn',    lbl:'A/C on',           op:'741001', cap:c=>c.ac&&c.ac.switch,         confirm:false},
+  {k:'acOff',   lbl:'A/C off',          op:'741000', cap:c=>c.ac&&c.ac.switch,         confirm:false},
+  {k:'winOpen', lbl:'Windows open',     op:'740600', cap:c=>c.windows&&c.windows.open, confirm:true},
+  {k:'winClose',lbl:'Windows close',    op:'740500', cap:c=>c.windows&&c.windows.close,confirm:false},
+  {k:'winVent', lbl:'Windows vent',     op:'740E00', cap:c=>c.windows&&c.windows.vent, confirm:false},
+  {k:'roofOpen',lbl:'Sunroof open',     op:'740F01', cap:c=>c.sunroof&&c.sunroof.open,  confirm:true},
+  {k:'roofClose',lbl:'Sunroof close',   op:'740F00', cap:c=>c.sunroof&&c.sunroof.open,  confirm:false},
+  {k:'roofTilt',lbl:'Sunroof tilt',     op:'740F02', cap:c=>c.sunroof&&c.sunroof.tilt,  confirm:false},
+  {k:'liftOpen',lbl:'Tailgate (bagasi) buka',  op:'740300', cap:c=>c.liftgate,          confirm:true},
+  {k:'liftClose',lbl:'Tailgate tutup',  op:'740A00', cap:c=>c.liftgate,                 confirm:false},
+  {k:'find',    lbl:'Find car',         op:'740400', cap:c=>c.find,                     confirm:false},
+  {k:'coolOn',  lbl:'Quick cool on',    op:'742001', cap:c=>c.ac&&c.ac.rapidCool,       confirm:false},
+  {k:'coolOff', lbl:'Quick cool off',   op:'742000', cap:c=>c.ac&&c.ac.rapidCool,       confirm:false},
+  {k:'heatOn',  lbl:'Quick heat on',    op:'741F01', cap:c=>c.ac&&c.ac.rapidHeat,       confirm:false},
+  {k:'heatOff', lbl:'Quick heat off',   op:'741F00', cap:c=>c.ac&&c.ac.rapidHeat,       confirm:false},
+  {k:'defogOn', lbl:'Defog on',         op:'741201', cap:c=>c.ac&&c.ac.defog,           confirm:false},
+  {k:'defogOff',lbl:'Defog off',        op:'741200', cap:c=>c.ac&&c.ac.defog,           confirm:false},
   {k:'chgStop', lbl:'Stop charging',    op:'742701', cap:c=>c.charging,                 confirm:true},
 ];
 // REAL control opcodes decoded from send_vehicle_control_data_utils.dart (Blutter). Format
 // 74<CMD><STATE>: STATE 00=off/close 01=on/open 02/03=mode. 742701 confirmed = stop charging.
-// These are the "on/open" variants (visible action) — tap each at the car to identify, then report.
-// The car may need init (2301/24/77) first. UNKNOWN mapping — watch the car; any may actuate.
+// Labels now come from the #11 jump-table decode (see CTRL_ACTIONS); these chips stay as the raw
+// tester for verifying them. The car may need init (2301/24/77) first — watch the car; any may actuate.
 const CTRL_CANDIDATES=["740100","740200","740300","740400","740500","740600","740700","740800","740A00","740E00","740F01","741001","741201","741501","741601","741701","741901","741A01","741B01","741C01","741E01","741F01","742001","742301","742401","742501","742701"];
 let CTRL_CAPS=null, CTRL_KNOWN=[];
-function ctrlMap(){ try{return JSON.parse(localStorage.getItem('ctrlMap')||'{}');}catch(e){return {};} }
+function ctrlMap(){ try{
+  if(localStorage.getItem('ctrlMapV')!==CTRL_MAP_VER){ localStorage.removeItem('ctrlMap'); localStorage.setItem('ctrlMapV',CTRL_MAP_VER); }
+  return JSON.parse(localStorage.getItem('ctrlMap')||'{}');
+}catch(e){return {};} }
 function ctrlSetOp(k,op){ const m=ctrlMap(); if(op) m[k]=op.trim(); else delete m[k]; localStorage.setItem('ctrlMap',JSON.stringify(m)); }
 function ctrlLog(msg){ const el=$('ctrlLog'); if(!el)return; const t=new Date().toLocaleTimeString();
   el.insertAdjacentHTML('afterbegin','<div>'+t+' &mdash; '+msg+'</div>'); }

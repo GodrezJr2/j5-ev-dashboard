@@ -49,29 +49,49 @@ Control set (from `vehicle_control_response_handle.dart` result labels): Lock, U
 Window open/close/vent, Sunroof, FindCar, A/C on/off + cool/heat + temperature, AirPurifier,
 DefrostFront, SeatHeat, SteeringHeat, EngineStart, QuickCool/QuickHeat, Charge start/stop.
 
-## Best-effort label map (wired into the Control tab — VERIFY & report mismatches)
-Only `742701` is confirmed; the rest are educated from opcode structure + the car's capabilities.
-Long-press a Control-tab button to correct its opcode in-place.
+## Label map — jump-table decode (pending runtime verification)
+Contributed by [@elad-bar](https://github.com/elad-bar) in
+[#11](https://github.com/GodrezJr2/j5-ev-dashboard/issues/11): the `assembledSendData` jump table
+cross-read with the `vcLoadingMessage` labels — the authoritative source the section above said was
+missing. Replaces the earlier structure-only guesses (which were wrong on almost every label: our
+"Lock" `741000` is really A/C off, our "Find car" `740100` is really Lock, etc.).
+**Only `742701` is runtime-confirmed** — the rest are a static decode awaiting one-tap verification
+on a live car (that's what the Control tab tester is for).
 
-| Button | Opcode | Confidence |
-|---|---|---|
-| Stop charging | `742701` | **confirmed** (app log) |
-| Lock | `741000` | guess (0x10 off) |
-| Unlock | `741001` | guess (0x10 on) |
-| A/C on | `742401` | guess (0x24 on) |
-| A/C off | `742400` | guess (0x24 off) |
-| Windows open | `741501` | guess (0x15 state1) |
-| Windows close | `741500` | guess (0x15 state0) |
-| Windows vent | `741502` | guess (0x15 state2) |
-| Sunroof open | `741A01` | guess (0x1A on) |
-| Sunroof close | `741A00` | guess (0x1A off) |
-| Sunroof tilt | `741A02` | guess (0x1A state2) |
-| Tailgate (bagasi) | `741201` | guess (0x12 on) |
-| Find car | `740100` | guess (0x01) |
+| Action | Opcode |
+|---|---|
+| Lock / unlock | `740100` / `740200` |
+| Windows close / vent / open | `740500` / `740E00` / `740600` |
+| Trunk open / close | `740300` / `740A00` |
+| Find car | `740400` |
+| Sunroof close / open / tilt | `740F00` / `740F01` / `740F02` |
+| Engine on / off | `740700` / `740800` |
+| A/C on / off | `741001` / `741000` |
+| A/C set temperature | `7411` + temp payload (encoding TBD — °C raw or half-degrees?) |
+| Front defog on / off | `741201` / `741200` |
+| Seat heat L1–L3 / off — left, right, left-rear, right-rear | `741501–03`/`00`, `741601–03`/`00`, `741701–03`/`00`, `741901–03`/`00` |
+| Seat vent L1–L3 / off — left, right, left-rear, right-rear | `741A01–03`/`00`, `741B01–03`/`00`, `741C01–03`/`00`, `741E01–03`/`00` |
+| Quick heat on / off | `741F01` / `741F00` |
+| Quick cool on / off | `742001` / `742000` |
+| Windshield heat on / off | `742301` / `742300` |
+| Steering-wheel heat on / off | `742401` / `742400` |
+| Air purify on / off | `742501` / `742500` |
+| Gear low / high | `742600` / `742602` |
+| **Stop charging** | **`742701`** ✅ runtime-confirmed (app log) |
+
+Known oddities in the decode (see #11):
+- Steering-wheel heat appears twice in the jump table ("left"/"right", indices 24–25 and 36–37) with
+  the **same** opcode — likely one physical heater listed twice, not yet confirmed.
+- Jump-table gaps: indices 28–35 are empty stubs that send nothing; 38–45 and 94 are absent.
+- `7801` is a separate sub-permission family, not a `74xx` actuation.
+- Indices 98–99 reuse the lock/unlock opcodes via the BLE-key path (Bluetooth proximity — not
+  implemented here; this dashboard is cloud-only).
 
 ## To finish the map
-Fire each `74xx01` (on/open variant) at an **awake** car via the dashboard Control tab (it inits
-`77` first, then fires), watch which control moves, and label it. `742701` is already known.
+Fire each button at an **awake** car via the dashboard Control tab (it inits `77` first, then
+fires), watch which control moves, and report mismatches. Suggested order, harmless first:
+find car → windows vent → A/C on/off → lock/unlock → (engine on/off last, PHEV only).
+`742701` is already known.
 Full runtime capture (all labels at once) = mitm the app tapping each control — see
 `D:\android-mitm\README.md` (emulator + mitmproxy stack is built; the last mile is a TUN redirect
 because Flutter ignores the system proxy).
