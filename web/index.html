@@ -741,7 +741,7 @@
 
   <section id="ctrlSec">
     <div class="head2"><div class="over">Control <span class="badge warn">BETA</span></div><span class="badge" id="ctrlBadge">&mdash;</span></div>
-    <div class="ctrlnote" id="ctrlNote"><b>Beta.</b> Labels come from the app's own jump-table decode (<b>Stop charging</b> = runtime-confirmed; the rest pending one-tap verification — report mismatches). Each tap inits then fires. <b>Long-press a button</b> to fix a wrong opcode. Car must be awake or it fails (<b>50043</b>). Tap = real actuation — watch the car. <b>Cloud only — no Bluetooth</b>, so the car needs cellular signal; the app's Bluetooth-proximity control isn't implemented.</div>
+    <div class="ctrlnote" id="ctrlNote"><b>Beta.</b> Labels come from the app's own jump-table decode — lock/unlock, windows open/close, tailgate and stop charging are runtime-confirmed on a J5; the rest pending one-tap verification (report mismatches). Each tap inits then fires. <b>Long-press a button</b> to fix a wrong opcode. Car must be awake or it fails (<b>50043</b>). Tap = real actuation — watch the car. <b>Cloud only — no Bluetooth</b>, so the car needs cellular signal; the app's Bluetooth-proximity control isn't implemented.</div>
     <div id="ctrlGrid" class="ctrlgrid"></div>
     <div class="ctrlac" id="ctrlAc" style="display:none">
       <div class="acrow"><span class="over">A/C temperature</span><b class="num"><span id="ctrlAcTemp">22.0</span><u>&deg;C</u></b></div>
@@ -1503,8 +1503,9 @@ function applySpecs(){
 // Opcodes aren't hardcoded: labels below map to a hex opcode you assign (tap to set / long-press
 // to edit), stored in this browser. Discover each opcode with the tester, then assign it here.
 // op = label map from the assembledSendData jump table + vcLoadingMessage labels (Omoda 9, #11,
-// credited in docs/control-opcodes.md). Only 742701 is runtime-confirmed; the rest are a static
-// decode pending one-tap verification -- long-press any button to correct its opcode, then tell me.
+// credited in docs/control-opcodes.md). Runtime-confirmed: 742701 (app log), lock/unlock, trunk
+// open/close, windows open/close (J5, 2026-08-30); the rest pending one-tap verification --
+// long-press any button to correct its opcode, then tell me.
 // CTRL_MAP_VER: bump when the decoded defaults change, so stale localStorage overrides are dropped.
 const CTRL_MAP_VER='2';
 const CTRL_ACTIONS=[
