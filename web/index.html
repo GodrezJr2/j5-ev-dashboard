@@ -27,7 +27,14 @@
     --warn:   oklch(0.74 0.13 70);
     --bad:    oklch(0.58 0.16 27);
     --inset:  oklch(0.955 0.006 95);
+    /* motion: one confident deceleration curve everywhere; feedback 120ms, state 200ms, view 260ms */
+    --e-out:  cubic-bezier(.16,1,.3,1);
+    --e-io:   cubic-bezier(.2,.8,.2,1);
   }
+  html{scroll-behavior:smooth}
+  /* tab switch = the app's one recurring view transition: soft rise + fade of the incoming pane */
+  [data-tab].tabin{animation:tabin .26s var(--e-out)}
+  @keyframes tabin{from{opacity:0;transform:translateY(10px)}}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0}
   html{background:var(--canvas)}
   body{
@@ -79,7 +86,7 @@
   .batt{display:flex;align-items:center;gap:24px}
   .gauge{position:relative;width:104px;height:104px;flex:none}
   .gauge svg{display:block}
-  .gauge svg circle{transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1)}
+  .gauge svg circle{transition:stroke-dashoffset .6s var(--e-out)}
   .gauge .c{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
   .gauge .grp{display:inline-flex;align-items:baseline}
   .gauge .c b{font-size:30px;font-weight:700;line-height:1}
@@ -140,7 +147,9 @@
   .caltot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:7px}
   .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:13px}
   .caldow{text-align:center;font-size:9.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.3px}
-  .calday{border:1px solid var(--line);border-radius:10px;padding:5px 2px 6px;text-align:center;cursor:pointer;position:relative;min-height:46px}
+  .calday{border:1px solid var(--line);border-radius:10px;padding:5px 2px 6px;text-align:center;cursor:pointer;position:relative;min-height:46px;
+    transition:transform .12s var(--e-out),border-color .18s}
+  .calday.tappable:active{transform:scale(.93);border-color:var(--accent)}
   .calday.z{cursor:default;color:var(--faint)}
   .calday .cd{font-size:10.5px;font-weight:650;color:var(--muted)}
   .calday .ck{display:block;font-size:11.5px;font-weight:750;margin-top:2px}
@@ -148,7 +157,8 @@
   .calday.empty{visibility:hidden}
   .calcap{text-align:center;font-size:11.5px;color:var(--faint);margin-top:11px}
   .setbtn{border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit;font-size:12.5px;
-    background:none;color:var(--accent);cursor:pointer;font-weight:600}
+    background:none;color:var(--accent);cursor:pointer;font-weight:600;transition:transform .12s var(--e-out),border-color .18s}
+  .setbtn:active{transform:scale(.94);border-color:var(--accent)}
   .setbtn:disabled{opacity:.5;cursor:default}
 
   /* footer stats */
@@ -197,7 +207,9 @@
   /* charge curve expander + chart */
   .expander{display:flex;justify-content:space-between;align-items:center;margin-top:16px;
     padding:11px 15px;border:1px solid var(--line);border-radius:12px;background:var(--surface);
-    font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none}
+    font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none;
+    transition:transform .12s var(--e-out),color .18s,border-color .18s}
+  .expander:active{transform:scale(.985);color:var(--ink);border-color:var(--accent)}
   .expander .chev{transition:transform .25s;font-size:20px;color:var(--faint);line-height:1}
   .expander.open .chev{transform:rotate(90deg)}
   #chgChart{margin-top:14px}
@@ -235,7 +247,7 @@
   .meta{text-align:center;font-size:11px;color:var(--faint);margin-top:26px;line-height:1.6}
 
   /* tappable affordance */
-  .tappable{cursor:pointer;user-select:none;transition:transform .12s ease}
+  .tappable{cursor:pointer;user-select:none;transition:transform .12s var(--e-out)}
   .tappable:active{transform:scale(.985)}
   .hint{font-size:12px;color:var(--faint);padding:12px 0 0;display:flex;align-items:center;gap:6px;transition:opacity .3s}
   .hint:before{content:"›";font-weight:700;color:var(--accent)}
@@ -254,7 +266,7 @@
   .sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-width:440px;margin:0 auto;
     background:var(--surface);border-radius:22px 22px 0 0;box-shadow:0 -10px 44px rgba(0,0,0,.20);
     padding:8px 22px calc(28px + env(safe-area-inset-bottom));max-height:84vh;overflow-y:auto;
-    transform:translateY(102%);transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+    transform:translateY(102%);transition:transform .32s var(--e-io)}
   .sheet.open{transform:translateY(0)}
   .sheet .grip{width:38px;height:4px;border-radius:99px;background:var(--line);margin:8px auto 16px}
   .sheet h3{font-size:21px;font-weight:750;letter-spacing:-.01em;margin-bottom:4px}
@@ -289,7 +301,7 @@
     padding:max(8px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-left)) 9px;
     background:color-mix(in oklch,var(--canvas) 72%,transparent);-webkit-backdrop-filter:saturate(1.7) blur(18px);
     backdrop-filter:saturate(1.7) blur(18px);border-bottom:1px solid var(--line);
-    transform:translateY(-101%);opacity:0;transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .2s;
+    transform:translateY(-101%);opacity:0;transition:transform .28s var(--e-io),opacity .2s;
     pointer-events:none}
   .appbar.show{transform:none;opacity:1;pointer-events:auto}
   .appbar .ttl{font-size:15px;font-weight:700;letter-spacing:.01em}
@@ -303,7 +315,7 @@
   .appbar .ab-rf.spin{animation:spin .7s linear}
 
   /* scroll-reveal */
-  .reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s cubic-bezier(.2,.7,.2,1)}
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s var(--e-out)}
   .reveal.in{opacity:1;transform:none}
 
   .tiles.two{grid-template-columns:repeat(2,1fr)}
@@ -324,7 +336,8 @@
   .ctrlgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:6px 0 4px}
   .ctrlbtn{display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding:14px;border-radius:14px;
     border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;
-    font-weight:700;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
+    font-weight:700;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;
+    transition:transform .14s var(--e-out),border-color .2s,opacity .2s}
   .ctrlbtn small{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
   .ctrlbtn.unset{border-style:dashed;opacity:.72}
   .ctrlbtn.busy{opacity:.45;pointer-events:none}
@@ -334,8 +347,9 @@
   .acrow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
   .ctrlknown{margin:12px 0 4px;font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .chipbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;
-    padding:5px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
-  .chipbtn:active{border-color:var(--accent);color:var(--accent)}
+    padding:5px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;
+    transition:transform .12s var(--e-out),color .18s,border-color .18s}
+  .chipbtn:active{border-color:var(--accent);color:var(--accent);transform:scale(.95)}
   .ctrllog{margin-top:10px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;max-height:170px;overflow:auto}
   .ctrllog div{padding:3px 0;border-top:1px solid var(--hair)}
   :root[data-theme="dark"] .ctrlbtn{background:var(--inset)}
@@ -358,16 +372,17 @@
     padding-bottom:env(safe-area-inset-bottom)}
   .tabbar .tb{flex:1;background:none;border:0;padding:9px 0 7px;display:flex;flex-direction:column;
     align-items:center;gap:3px;color:var(--faint);font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;
-    transition:color .18s}
+    transition:color .18s,transform .14s var(--e-out)}
   .tabbar .tb.on{color:var(--accent)}
+  .tabbar .tb svg{width:23px;height:23px;transition:transform .22s var(--e-out)}
+  .tabbar .tb.on svg{transform:translateY(-1.5px) scale(1.06)}
   .tabbar .tb:active{transform:scale(.94)}
-  .tabbar .tb svg{width:23px;height:23px}
   .tabbar .tb span{font-size:10px;font-weight:600;letter-spacing:.02em}
 
   /* flex / share card */
   .flexbtn{display:block;width:100%;margin-top:24px;padding:14px;border-radius:14px;border:1px solid var(--accent);
     background:var(--accent-soft);color:var(--accent);font:inherit;font-weight:700;font-size:15px;cursor:pointer;
-    transition:transform .12s}
+    transition:transform .12s var(--e-out)}
   .flexbtn:active{transform:scale(.99)}
   .flexcard{background:linear-gradient(158deg,var(--accent-soft),transparent 60%),var(--surface);
     border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:4px}
@@ -407,7 +422,9 @@
   .setrow .sl{font-size:14px;font-weight:600}
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
   .seg button{background:none;border:0;padding:8px 17px;font:inherit;font-size:13px;font-weight:600;
-    color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s,color .15s}
+    color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;
+    transition:background .15s,color .15s,transform .12s var(--e-out)}
+  .seg button:active{transform:scale(.94)}
   .seg button.on{background:var(--accent);color:var(--surface)}
   .fuelsel{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);
     border:1px solid var(--line);border-radius:10px;padding:8px 12px;-webkit-appearance:none;appearance:none;max-width:180px}
@@ -449,7 +466,7 @@
   .spksub{font-size:12px;color:var(--muted);margin-top:1px}
   .spkdist{flex:none;font-size:12px;font-weight:700;color:var(--muted)}
   .tpbtn{margin-left:auto;background:var(--accent);color:var(--surface);border:0;border-radius:11px;
-    padding:11px 24px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:transform .12s}
+    padding:11px 24px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:transform .12s var(--e-out),opacity .18s}
   .tpbtn:active{transform:scale(.98)}
   .tpbtn.busy{opacity:.6;pointer-events:none}
   .tpsum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 6px;text-align:center}
@@ -476,7 +493,7 @@
   .tptot{font-size:13px;font-weight:700;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
   .tpnote{font-size:11px;color:var(--faint);line-height:1.55;margin-top:12px}
   .gmapbtn{display:block;text-align:center;margin-top:14px;padding:13px;border-radius:12px;
-    background:var(--accent);color:var(--surface);font-weight:700;font-size:14px;text-decoration:none;transition:transform .12s}
+    background:var(--accent);color:var(--surface);font-weight:700;font-size:14px;text-decoration:none;transition:transform .12s var(--e-out)}
   .gmapbtn:active{transform:scale(.99)}
 </style>
 </head>
@@ -1909,7 +1926,8 @@ function setupTabs(){
   $('flex').dataset.tab='more';
 }
 function showTab(t){
-  document.querySelectorAll('[data-tab]').forEach(el=>{ const on=el.dataset.tab===t; el.style.display=on?'':'none'; if(on) el.classList.add('in'); });
+  document.querySelectorAll('[data-tab]').forEach(el=>{ const on=el.dataset.tab===t; el.style.display=on?'':'none';
+    if(on){ el.classList.add('in'); el.classList.remove('tabin'); void el.offsetWidth; el.classList.add('tabin'); } });
   document.querySelectorAll('.tabbar .tb').forEach(b=>{ const on=b.dataset.t===t; b.classList.toggle('on',on);
     if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   window.scrollTo(0,0); $('appbar').classList.remove('show');
