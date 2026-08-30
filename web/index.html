@@ -339,6 +339,7 @@
     font-weight:700;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;
     transition:transform .14s var(--e-out),border-color .2s,opacity .2s}
   .ctrlbtn small{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
+  .ctrlbtn svg{width:22px;height:22px;flex:none;margin-bottom:5px;color:var(--ink)}
   .ctrlbtn.unset{border-style:dashed;opacity:.72}
   .ctrlbtn.busy{opacity:.45;pointer-events:none}
   .ctrlbtn:active{transform:scale(.97)}
@@ -1579,6 +1580,31 @@ const CTRL_ACTIONS=[
 // Labels now come from the #11 jump-table decode (see CTRL_ACTIONS); these chips stay as the raw
 // tester for verifying them. The car may need init (2301/24/77) first — watch the car; any may actuate.
 const CTRL_CANDIDATES=["740100","740200","740300","740400","740500","740600","740700","740800","740A00","740E00","740F01","741001","741201","741501","741601","741701","741901","741A01","741B01","741C01","741E01","741F01","742001","742301","742401","742501","742701"];
+// control-button icons: hand-authored 24px stroke glyphs, same language as the tab bar
+// (1.9px round stroke). On/off pairs share a glyph -- the label carries the direction.
+const CTRL_ICONS={
+  lock:    '<rect x="6" y="11" width="12" height="8.5" rx="2"/><path d="M9 11V7.5a3 3 0 016 0V11"/><circle cx="12" cy="15.2" r="1.1" fill="currentColor" stroke="none"/>',
+  unlock:  '<rect x="6" y="11" width="12" height="8.5" rx="2"/><path d="M9 11V7.5a3 3 0 015.9-.7"/><circle cx="12" cy="15.2" r="1.1" fill="currentColor" stroke="none"/>',
+  acOn:    '<path d="M12 3.5v17M4.2 7.8l15.6 8.4M4.2 16.2l15.6-8.4"/>',
+  acOff:   '<path d="M12 3.5v17M4.2 7.8l15.6 8.4M4.2 16.2l15.6-8.4"/>',
+  winOpen: '<rect x="5.5" y="4.5" width="13" height="15" rx="2"/><path d="M12 8.5v5.5M9.8 11.8l2.2 2 2.2-2"/>',
+  winClose:'<rect x="5.5" y="4.5" width="13" height="15" rx="2"/><path d="M12 14V8.5M9.8 10.7l2.2-2 2.2 2"/>',
+  winVent: '<rect x="5.5" y="4.5" width="13" height="15" rx="2"/><path d="M12 6.8v3.4M10.2 8.4l1.8 1.7 1.8-1.7"/>',
+  roofOpen:'<path d="M4.5 15.5c1.8-4.6 4.3-6.8 7.5-6.8s5.7 2.2 7.5 6.8"/><path d="M14.8 12.6h4.4M17.2 10.5l2.1 2.1-2.1 2.1"/>',
+  roofClose:'<path d="M4.5 15.5c1.8-4.6 4.3-6.8 7.5-6.8s5.7 2.2 7.5 6.8"/><path d="M9.2 12.6H4.8M6.8 10.5l-2.1 2.1 2.1 2.1"/>',
+  roofTilt:'<path d="M4.5 15.5c1.8-4.6 4.3-6.8 7.5-6.8s5.7 2.2 7.5 6.8"/><path d="M16.8 14V9.5M14.9 11.4l1.9-1.9 1.9 1.9"/>',
+  liftOpen:'<path d="M6.5 19v-6.5a2 2 0 012-2h7a2 2 0 012 2V19"/><path d="M12 14.5v-9M9.2 8.3L12 5.5l2.8 2.8"/>',
+  liftClose:'<path d="M6.5 19v-6.5a2 2 0 012-2h7a2 2 0 012 2V19"/><path d="M12 5.5v9M9.2 11.7l2.8 2.8 2.8-2.8"/>',
+  find:    '<path d="M4 10.5v3h3l4.5 3.8V6.7L7 10.5H4z"/><path d="M14.8 9.8a3.4 3.4 0 010 4.4M17.4 7.6a6.6 6.6 0 010 8.8"/>',
+  coolOn:  '<path d="M12 2.5v11M4.7 7l14.6 8.4M4.7 15.4L19.3 7"/><path d="M8.5 17.8L12 21.2l3.5-3.4"/>',
+  coolOff: '<path d="M12 2.5v11M4.7 7l14.6 8.4M4.7 15.4L19.3 7"/><path d="M8.5 17.8L12 21.2l3.5-3.4"/>',
+  heatOn:  '<path d="M8.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M13.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M18.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4"/><path d="M8.5 20.5L12 17l3.5 3.5"/>',
+  heatOff: '<path d="M8.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M13.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M18.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4"/><path d="M8.5 20.5L12 17l3.5 3.5"/>',
+  defogOn: '<path d="M4.5 18.5l2.6-9.5h9.8l2.6 9.5"/><path d="M9.3 12.3c0 1.3-1.1 1.6-1.1 2.9M13 12.3c0 1.3-1.1 1.6-1.1 2.9M16.7 12.3c0 1.3-1.1 1.6-1.1 2.9"/>',
+  defogOff:'<path d="M4.5 18.5l2.6-9.5h9.8l2.6 9.5"/><path d="M9.3 12.3c0 1.3-1.1 1.6-1.1 2.9M13 12.3c0 1.3-1.1 1.6-1.1 2.9M16.7 12.3c0 1.3-1.1 1.6-1.1 2.9"/>',
+  chgStop: '<path d="M9.5 6.5V4M14.5 6.5V4M7.5 6.5h9V11a4.5 4.5 0 01-9 0V6.5z"/><path d="M12 15.5V18"/><rect x="15" y="14.5" width="6" height="6" rx="1.2" fill="currentColor" stroke="none"/>',
+};
+function ctrlIcon(k){ const p=CTRL_ICONS[k]; return p?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>':''; }
 let CTRL_CAPS=null, CTRL_KNOWN=[];
 function ctrlMap(){ try{
   if(localStorage.getItem('ctrlMapV')!==CTRL_MAP_VER){ localStorage.removeItem('ctrlMap'); localStorage.setItem('ctrlMapV',CTRL_MAP_VER); }
@@ -1608,7 +1634,7 @@ function renderControls(){
   CTRL_ACTIONS.filter(a=>{ try{return a.cap(caps);}catch(e){return false;} }).forEach(a=>{
     const op=map[a.k]||a.op||'';                    // localStorage override wins, else the decoded default
     const b=document.createElement('button'); b.className='ctrlbtn'+(op?'':' unset');
-    b.innerHTML='<span>'+T(a.lbl)+'</span><small>'+(op?op:'tap to set')+'</small>';
+    b.innerHTML=ctrlIcon(a.k)+'<span>'+T(a.lbl)+'</span><small>'+(op?op:'tap to set')+'</small>';
     b.addEventListener('click',async()=>{
       const code=ctrlMap()[a.k]||a.op;
       if(!code){ const nv=(prompt('Opcode (hex) for "'+a.lbl+'"','')||'').trim(); if(!nv) return; ctrlSetOp(a.k,nv); renderControls(); return; }
