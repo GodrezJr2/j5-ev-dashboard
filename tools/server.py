@@ -796,6 +796,8 @@ def demo_summary():
         "vehicle": {"plate": "B 1234 DEMO", "model": "Jaecoo J5 EV", "vin": "DEMOVIN00000J5EV"},
         "online": True, "battery": 72, "range_km": 318, "odometer": 8421, "volt12": 13.6,
         "unlocked": False, "speed": None, "moving": False, "avg_speed": 41,
+        "doors": 0, "trunk_open": False, "windows": 0, "sunroof_open": False,
+        "ac_on": False, "ac_temp_c": None, "seat_heat": [0, 0], "seat_vent": [0, 0],
         "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
         "battery_kwh": cap, "battery_kwh_source": "known", "wltp_kwh_100": 14.8,
         "chemistry_known": True, "powertrain": "bev", "fuel": None,
@@ -876,7 +878,12 @@ def summary():
     ts, dt, dec = data[-1]
     out.update(battery=dec.get("battery"), range_km=dec.get("range_km"),
                odometer=dec.get("odometer"), volt12=dec.get("volt12"),
-               unlocked=dec.get("unlocked"), speed=None, updated=dt)
+               unlocked=dec.get("unlocked"), speed=None, updated=dt,
+               # body-state bytes, decoded since #5 — pass-through for the V  2 status surfaces
+               doors=dec.get("doors"), trunk_open=dec.get("trunk_open"),
+               windows=dec.get("windows"), sunroof_open=dec.get("sunroof_open"),
+               ac_on=dec.get("ac_on"), ac_temp_c=dec.get("ac_temp_c"),
+               seat_heat=dec.get("seat_heat"), seat_vent=dec.get("seat_vent"))
     out["age_min"] = round((time.time() - ts) / 60, 1)
     out["online"] = out["age_min"] is not None and out["age_min"] < 40
     # Fuel side of a PHEV. Decided over the whole window, not the latest frame, so a car sitting at
@@ -1410,7 +1417,7 @@ class H(BaseHTTPRequestHandler):
                                         "authed": self._authed()}).encode(), "application/json")
             return
         if _gated() and not self._authed() and path not in self._PUBLIC:
-            if path == "/" or path == "/index.html":       # gated + locked -> show the unlock page
+            if path in ("/", "/index.html", "/v2.html"):  # gated + locked -> show the unlock page
                 with open(os.path.join(WEB, "login.html"), "rb") as f:
                     self._send(200, f.read(), "text/html; charset=utf-8")
                 return

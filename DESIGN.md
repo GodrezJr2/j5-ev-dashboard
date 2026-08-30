@@ -33,3 +33,26 @@ choreography.
 
 **Bans honored**: no gradient text, no glass, no side-stripe borders, no glossy hero-ring
 template, no neon, no em dashes.
+
+---
+
+# V2 surface (`web/v2.html`, experimental, pinned by owner 2026-08-31)
+
+A second, BYD-Auto-app-inspired front end on the same backend. v1 stays the default at `/`;
+V2 lives at `/v2.html` and shares manifest, auth gate, `/api/summary`, `/api/control`.
+
+**Theme**: cool porcelain (light only). Steel-blue gradient hero owning the top half, white
+elevated cards on a porcelain ground, charcoal primary buttons. Product green (oklch 0.55/0.11/165)
+kept as the state accent so the two surfaces read as one product.
+
+**Layout**: car-first. Hero = model, 46px range, SoC, freshness line, the car's own render,
+4 round quick actions floating on the hero seam, charging pill when active. Below: 2-column
+status cards (Climate with inline stepper, Doors & windows, Tires, Energy, Seats, Vehicle).
+Two tabs only: My Vehicle / My Account. Detail pages are right-slide overlays
+(doors/tyres use a top-view car diagram; energy = BYD-style 7-day area chart vs dashed WLTP line).
+
+**Honesty rules inherited**: windows row hidden on the J5 (byte 8 quirk, #5) rather than guessed;
+indirect-TPMS cars get status only; seats show "Not available" when the car reports none.
+
+**Motion**: same contract as v1 — one ease token (cubic-bezier(.16,1,.3,1)), 120-340ms,
+transform/opacity only, prefers-reduced-motion honored.

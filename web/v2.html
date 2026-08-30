@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#b8c6d6" id="themeColor">
+<title>My Vehicle</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  :root{
+    /* V2: cool porcelain, car-first. Pinned world: BYD Auto app grammar, this product's facts. */
+    --bg:    oklch(0.957  0.006 240);
+    --card:  oklch(1.0 0 0);
+    --ink:   oklch(0.27 0.020 260);
+    --mut:   oklch(0.50 0.018 260);
+    --fnt:   oklch(0.60 0.015 260);
+    --line:  oklch(0.925 0.006 240);
+    --acc:   oklch(0.55 0.11 165);   /* product green: charging, good states, chart */
+    --acc-soft: oklch(0.55 0.11 165 / .12);
+    --warn:  oklch(0.66 0.14 70);
+    --bad:   oklch(0.55 0.17 27);
+    --heroA: oklch(0.80 0.035 245);  /* steel-blue top of the hero */
+    --heroB: oklch(0.93 0.012 240);
+    --dark:  oklch(0.30 0.02 260);   /* primary button charcoal */
+    --eo:    cubic-bezier(.16,1,.3,1);
+  }
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  html{background:var(--bg);scroll-behavior:smooth}
+  body{font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;
+    color:var(--ink);background:var(--bg);max-width:430px;margin:0 auto;
+    -webkit-font-smoothing:antialiased;overscroll-behavior-y:none;
+    -webkit-touch-callout:none;user-select:none;-webkit-user-select:none;
+    padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  .num{font-variant-numeric:tabular-nums}
+  :focus{outline:none}
+  :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:8px}
+  @media (prefers-reduced-motion:reduce){
+    *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+      transition-duration:.01ms!important;scroll-behavior:auto!important}
+  }
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;padding:max(18px,env(safe-area-inset-top)) 22px 0;
+    background:linear-gradient(180deg,var(--heroA),var(--heroB) 62%,var(--bg));
+    overflow:hidden}
+  .hero .model{font-size:22px;font-weight:800;letter-spacing:.01em;margin-top:2px}
+  .hero .range{display:flex;align-items:baseline;gap:6px;margin-top:14px}
+  .hero .range b{font-size:46px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .hero .range u{font-size:16px;font-weight:600;color:var(--mut);text-decoration:none}
+  .hero .soc{display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-size:15px;font-weight:700;color:var(--mut)}
+  .hero .soc svg{width:14px;height:14px}
+  .hero .status{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:13px;color:var(--mut)}
+  .hero .status .dot{width:7px;height:7px;border-radius:50%;background:var(--fnt)}
+  .hero .status .dot.on{background:var(--acc)}
+  .hero .status .rf{margin-left:auto;width:30px;height:30px;border-radius:50%;display:flex;
+    align-items:center;justify-content:center;color:var(--mut);transition:transform .14s var(--eo)}
+  .hero .status .rf:active{transform:scale(.9)}
+  .hero .status .rf.spin svg{animation:spin .7s linear}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hero .car{display:block;width:100%;max-width:340px;margin:6px auto 0;
+    filter:drop-shadow(0 18px 18px oklch(0.3 0.03 250 / .18))}
+
+  /* quick actions floating over the hero seam */
+  .qa{position:relative;display:flex;justify-content:center;gap:26px;margin:-30px 0 6px;z-index:2}
+  .qa button{width:58px;height:58px;border-radius:50%;background:var(--card);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 18px oklch(0.3 0.03 250 / .14);
+    transition:transform .14s var(--eo),opacity .2s,box-shadow .2s}
+  .qa button:active{transform:scale(.9)}
+  .qa button.busy{opacity:.45;pointer-events:none}
+  .qa button.on{color:var(--acc);box-shadow:0 6px 18px oklch(0.55 0.11 165 / .30)}
+  .qa svg{width:24px;height:24px}
+
+  /* charging pill */
+  .chg{margin:12px 18px 0;background:var(--card);border-radius:14px;padding:12px 16px;
+    display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600;
+    box-shadow:0 2px 10px oklch(0.3 0.03 250 / .07)}
+  .chg svg{width:15px;height:15px;color:var(--acc);flex:none}
+  .chg .dim{color:var(--mut);font-weight:600;margin-left:auto}
+
+  /* ---------- card grid ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 18px 8px}
+  .card{background:var(--card);border-radius:18px;padding:16px;min-height:96px;position:relative;
+    box-shadow:0 2px 10px oklch(0.3 0.03 250 / .06);text-align:left;
+    transition:transform .14s var(--eo)}
+  button.card:active{transform:scale(.97)}
+  .card .ic{width:30px;height:30px;color:var(--mut);margin-bottom:8px;display:block}
+  .card .ic svg{width:100%;height:100%}
+  .card .t{font-size:15px;font-weight:700;line-height:1.25;display:block}
+  .card .s{font-size:12.5px;color:var(--fnt);margin-top:3px;display:block}
+  .card .s.ok{color:var(--acc)} .card .s.warn{color:var(--warn)} .card .s.bad{color:var(--bad)}
+  .card.wide{grid-column:1/-1}
+
+  /* climate card stepper */
+  .clim{display:flex;flex-direction:column;justify-content:space-between}
+  .clim .row{display:flex;align-items:center;justify-content:space-between}
+  .clim .temp{font-size:26px;font-weight:800}
+  .step{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);color:var(--ink);
+    font-size:20px;font-weight:600;display:flex;align-items:center;justify-content:center;
+
+    transition:transform .12s var(--eo),border-color .2s}
+  .step:active{transform:scale(.9);border-color:var(--acc)}
+  .step:disabled{opacity:.35}
+
+  /* ---------- bottom tab ---------- */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;max-width:430px;margin:0 auto;
+    background:oklch(1 0 0 / .86);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);
+    border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar button{flex:1;padding:10px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--fnt);transition:color .18s,transform .14s var(--eo)}
+  .tabbar button:active{transform:scale(.94)}
+  .tabbar button.on{color:var(--ink)}
+  .tabbar svg{width:23px;height:23px;transition:transform .22s var(--eo)}
+  .tabbar button.on svg{transform:translateY(-1.5px)}
+  .tabbar span{font-size:10.5px;font-weight:600}
+
+  /* ---------- subpage overlay ---------- */
+  .page{position:fixed;inset:0;z-index:60;background:var(--bg);max-width:430px;margin:0 auto;
+    transform:translateX(103%);transition:transform .34s var(--eo);overflow-y:auto;
+    padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+  .page.open{transform:none}
+  .page .phead{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;
+    padding:max(14px,env(safe-area-inset-top)) 14px 12px;
+    background:oklch(0.957 0.006 240 / .86);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+  .page .phead h2{flex:1;text-align:center;font-size:16.5px;font-weight:700;margin-right:42px}
+  .page .pback{width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+    font-size:22px;color:var(--ink);border-radius:50%;transition:transform .12s var(--eo)}
+  .page .pback:active{transform:scale(.88)}
+  .page .pbody{padding:6px 18px}
+
+  /* doors/tyres top-view */
+  .topwrap{position:relative;width:230px;margin:8px auto 4px}
+  .topwrap svg{width:100%;display:block}
+  .twv{position:absolute;font-size:17px;font-weight:800}
+  .twv u{font-size:11px;font-weight:600;color:var(--mut);text-decoration:none;margin-left:2px}
+  .twv.ok{color:var(--acc)} .twv.warn{color:var(--warn)} .twv.bad{color:var(--bad)}
+
+  .rowlist{background:var(--card);border-radius:16px;overflow:hidden;margin-top:14px;
+    box-shadow:0 2px 10px oklch(0.3 0.03 250 / .06)}
+  .rowlist .ri{display:flex;align-items:center;gap:10px;padding:14px 16px;font-size:14.5px;font-weight:600}
+  .rowlist .ri+.ri{border-top:1px solid var(--line)}
+  .rowlist .ri .st{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:13px;color:var(--fnt);font-weight:600}
+  .rowlist .ri .st.ok{color:var(--acc)} .rowlist .ri .st.bad{color:var(--bad)}
+  .ckc{width:19px;height:19px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .ckc.ok{background:var(--acc);color:#fff} .ckc.bad{background:var(--bad);color:#fff}
+  .ckc svg{width:11px;height:11px}
+
+  .bigbtn{display:block;width:100%;margin-top:18px;background:var(--dark);color:#fff;
+    border-radius:16px;padding:16px;font-size:15px;font-weight:700;transition:transform .14s var(--eo),opacity .2s}
+  .bigbtn:active{transform:scale(.98)}
+  .bigbtn:disabled{opacity:.4}
+  .note{font-size:12px;color:var(--fnt);line-height:1.55;margin-top:14px}
+
+  /* A/C page */
+  .acbig{display:flex;align-items:center;justify-content:center;gap:30px;margin:36px 0 6px}
+  .acbig .cur{font-size:64px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .acbig .cur u{font-size:24px;font-weight:700;color:var(--mut);text-decoration:none}
+  .acbig .side{font-size:26px;font-weight:700;color:var(--fnt)}
+  .acsub{text-align:center;font-size:13px;color:var(--mut);margin-bottom:26px}
+  .acacts{display:flex;justify-content:center;gap:40px;margin-top:10px}
+  .acacts button{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12.5px;
+    font-weight:600;color:var(--mut);transition:transform .12s var(--eo),color .18s}
+  .acacts button:active{transform:scale(.92)}
+  .acacts button.on{color:var(--acc)}
+  .acacts .cic{width:56px;height:56px;border-radius:50%;background:var(--card);display:flex;
+    align-items:center;justify-content:center;box-shadow:0 2px 10px oklch(0.3 0.03 250 / .08);color:var(--ink)}
+  .acacts button.on .cic{color:var(--acc)}
+  .acacts .cic svg{width:24px;height:24px}
+
+  /* energy page */
+  .ebig{background:var(--card);border-radius:18px;padding:20px;box-shadow:0 2px 10px oklch(0.3 0.03 250 / .06)}
+  .ebig .lbl{font-size:13px;color:var(--mut)}
+  .ebig .v{font-size:40px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+  .ebig .v u{font-size:15px;font-weight:600;color:var(--mut);text-decoration:none;margin-left:4px}
+  .etot{display:flex;gap:22px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .etot b{display:block;font-size:17px;font-weight:800}
+  .etot span{font-size:11px;color:var(--fnt)}
+  #echart{display:block;width:100%;margin-top:16px}
+  .secttl{font-size:17px;font-weight:800;margin:22px 2px 12px}
+
+  /* account */
+  .vveh{background:linear-gradient(120deg,oklch(0.88 0.03 245),oklch(0.80 0.04 250));
+    border-radius:18px;padding:18px;margin-top:10px;position:relative;overflow:hidden;
+    box-shadow:0 2px 12px oklch(0.3 0.03 250 / .10)}
+  .vveh .vm{font-size:19px;font-weight:800}
+  .vveh .vv{font-size:12.5px;color:var(--mut);margin-top:6px;letter-spacing:.02em}
+  .vveh .vo{font-size:24px;font-weight:800;margin-top:8px}
+  .vveh .vo u{font-size:13px;font-weight:600;color:var(--mut);text-decoration:none;margin-left:3px}
+  .vveh img{position:absolute;right:-8px;bottom:-6px;width:170px;filter:drop-shadow(0 8px 8px oklch(0.3 0.03 250 / .25))}
+  .vveh .ve{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;
+    background:oklch(1 0 0 / .5);display:flex;align-items:center;justify-content:center;color:var(--mut)}
+  .rowlist .ri .chev{margin-left:auto;color:var(--fnt);font-size:19px;line-height:1}
+
+  .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(8px);
+    background:var(--dark);color:#fff;font-size:13px;font-weight:600;padding:10px 18px;border-radius:12px;
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--eo);z-index:80;max-width:86%}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  [hidden]{display:none!important}
+  .fadein{animation:fadein .3s var(--eo)}
+  @keyframes fadein{from{opacity:0;transform:translateY(8px)}}
+</style>
+</head>
+<body>
+<!-- DIRECTION CONTRACT (v2)
+THESIS: The car is the home screen. One glance answers "how far, how charged, is it safe"; everything else lives one tap below. Refuses the stat-tile dashboard default.
+OWN-WORLD: BYD Auto app grammar, pinned by the owner: cool steel-blue gradient hero with the real car render, white cards on porcelain, round quick-action buttons floating on the hero seam, top-view car diagrams for body status, charcoal primary buttons. Product green stays as the state accent.
+STORY: Owner opens from the iPhone home screen, checks range and charge in one second, fires lock or A/C without reading, walks one level down into doors, tyres, climate, or energy.
+FIRST VIEWPORT: gradient hero fills the top half (model name, 46px range, SoC, freshness line), car render centered, four round actions floating on the seam, charging pill when active, then the 2-col status card grid.
+FORM: pinned reference world (BYD Auto app), code-led build, no concept roll per the owner's explicit pin.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance. -->
+
+<div id="viewHome">
+  <div class="hero">
+    <div class="model" id="hModel">&mdash;</div>
+    <div class="range"><b class="num" id="hRange">&mdash;</b><u>km</u></div>
+    <div class="soc" id="hSoc"></div>
+    <div class="status"><span class="dot" id="hDot"></span><span id="hState">&mdash;</span>
+      <button class="rf" id="hRefresh" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 11a8 8 0 10.6 5"/><path d="M20 4v7h-7"/></svg></button></div>
+    <img class="car" id="hCar" src="car-generic.svg" alt="Your car" width="340" height="218">
+  </div>
+  <div class="qa" id="qaRow"></div>
+  <div class="chg" id="chgPill" hidden></div>
+  <div class="grid" id="cardGrid"></div>
+</div>
+
+<div id="viewAcct" hidden>
+  <div class="pbody" style="padding:calc(max(18px,env(safe-area-inset-top)) + 6px) 18px 0">
+    <div class="vveh">
+      <div class="vm" id="aModel">&mdash;</div>
+      <div class="vv" id="aVin">&mdash;</div>
+      <div class="vo"><span class="num" id="aOdo">&mdash;</span> <u>km</u></div>
+      <button class="ve" id="aEye" aria-label="Show or hide VIN"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg></button>
+      <img id="aCar" src="car-generic.svg" alt="">
+    </div>
+    <div class="rowlist" id="acctRows"></div>
+    <div class="note" id="aNote"></div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <button class="on" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l2-6a3 3 0 013-2h6a3 3 0 013 2l2 6"/><rect x="3" y="16" width="18" height="4" rx="1.6"/><circle cx="7.5" cy="18" r="0.4"/><circle cx="16.5" cy="18" r="0.4"/></svg><span>My Vehicle</span></button>
+  <button data-v="acct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0115 0"/></svg><span>My Account</span></button>
+</div>
+
+<div class="page" id="pgAc"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>A/C</h2></div>
+  <div class="pbody" id="pgAcBody"></div></div>
+<div class="page" id="pgDoors"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Doors and windows</h2></div>
+  <div class="pbody" id="pgDoorsBody"></div></div>
+<div class="page" id="pgTyres"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Tire pressure</h2></div>
+  <div class="pbody" id="pgTyresBody"></div></div>
+<div class="page" id="pgEnergy"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Energy consumption</h2></div>
+  <div class="pbody" id="pgEnergyBody"></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let S = null, CAPS = null;
+async function api(p, opt){ const r = await fetch(p, opt); if(r.status === 401){ location.href = '/'; throw 0; } return r.json(); }
+let toastT = null;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+
+// stroke icon glyphs (24px, same family  as v1's control icons)
+const IC = {
+  lock:    '<rect x="6" y="11" width="12" height="8.5" rx="2"/><path d="M9 11V7.5a3 3 0 016 0V11"/><circle cx="12" cy="15.2" r="1.1" fill="currentColor" stroke="none"/>',
+  unlock:  '<rect x="6" y="11" width="12" height="8.5" rx="2"/><path d="M9 11V7.5a3 3 0 015.9-.7"/><circle cx="12" cy="15.2" r="1.1" fill="currentColor" stroke="none"/>',
+  find:    '<path d="M4 10.5v3h3l4.5 3.8V6.7L7 10.5H4z"/><path d="M14.8 9.8a3.4 3.4 0 010 4.4M17.4 7.6a6.6 6.6 0 010 8.8"/>',
+  ac:      '<path d="M12 3.5v17M4.2 7.8l15.6 8.4M4.2 16.2l15.6-8.4"/>',
+  cool:    '<path d="M12 2.5v11M4.7 7l14.6 8.4M4.7 15.4L19.3 7"/><path d="M8.5 17.8L12 21.2l3.5-3.4"/>',
+  heat:    '<path d="M8.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M13.2  3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M18.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4"/>',
+  power:   '<path d="M12 4v8"/><path d="M6.3 6.8a8 8 0 1011.4 0"/>',
+  bolt:    '<path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13z"/>',
+  door:    '<rect x="5" y="4" width="14" height="16" rx="2"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/>',
+  tyre:    '<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="3"/><path d="M12 4.5v3M12 16.5v3M4.5 12h3M16.5 12h3"/>',
+  chart:   '<path d="M4.5 19.5L9 13l4 3 6.5-8"/><path d="M15.5 8h4v4"/>',
+  seat:    '<path d="M7 4v8a3 3 0 003 3h6"/><path d="M7 12H5M17 15l2 5M9 15l-2 5"/><path d="M6 4a2 2 0 014 0v3H6z"/>',
+  car:     '<path d="M4 16l2-6a3 3 0 013-2h6a3 3 0 013 2l2 6"/><rect x="3" y="16" width="18" height="4" rx="1.6"/>',
+  globe:   '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c-5.5 5-5.5 12 0 17 5.5-5 5.5-12 0-17z"/>',
+  gauge:   '<path d="M5 19a9 9 0 1114 0"/><path d="M12 14l3.5-5"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/>',
+  camera:  '<rect x="3.5" y="7" width="17" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8.5 7l1.2-2h4.6l1.2 2"/>',
+  link:    '<path d="M10 14a5 5 0 007 0l2.5-2.5a5 5 0 00-7-7L11 6"/><path d="M14 10a5 5 0 00-7 0l-2.5 2.5a5 5 0 007 7L13 18"/>',
+};
+function icon(k, w){ return '<svg viewBox="0 OWER 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.9) +
+  '" stroke-linecap="round" stroke-linejoin="round">' + (IC[k] || '') + '</svg>'; }
+
+const CK_OK  = '<span class="ckc ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>';
+const CK_BAD = '<span class="ckc bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M12 6v7.5"/><circle cx="12" cy="17.6" r="1.2" fill="currentColor" stroke="none"/></svg></span>';
+
+function ago(dt){ if(!dt) return ''; const s = (Date.now() - new Date(dt.replace(' ', 'T'))) / 1000;
+  if(s < 90) return 'just now'; if(s < 3600) return Math.round(s / 60) + ' min ago';
+  if(s < 86400) return Math.round(s / 3600) + ' h ago'; return Math.round(s / 86400) + ' d ago'; }
+
+// ---- remote control: same pipe as v1 (init 77, then fire) ----
+async function fire(op, btn){
+  if(btn) btn.classList.add('busy');
+  try{
+    await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
+      body: JSON.stringify({data: '77', timeOut: 20})});
+    await new Promise(r => setTimeout(r, 600));
+    const d = await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
+      body: JSON.stringify({data: op, timeOut: 20})});
+    if(d.ok){ toast('Sent ' + op); setTimeout(load, 1800); }
+    else if(String(d.code) === '50043') toast('Car is asleep or out of signal');
+    else toast(d.msg || d.error || ('Failed: ' + d.code));
+  }catch(e){ toast('Network error'); }
+  if(btn) btn.classList.remove('busy');
+}
+
+// ---- renderers ----
+function renderHero(){
+  $('hModel').textContent = (S.vehicle && S.vehicle.model) || 'My car';
+  $('hRange').textContent = S.range_km != null ? Math.round(S.range_km) : '\u2014';
+  $('hSoc').innerHTML = icon('bolt', 2.2) + '<span class="num">' +
+    (S.battery != null ? S.battery + '%' : '\u2014') + '</span>';
+  $('hDot').className = 'dot' + (S.online ? ' on' : '');
+  $('hState').textContent =
+    (S.moving ? 'Driving' : (S.charging && S.charging.active) ? 'Charging' : 'Powered off') +
+    '  \u00b7  Updated ' + (ago(S.updated) || 'never');
+  const img = $('hCar');
+  img.onerror = () => { img.onerror = null; img.src = 'car-generic.svg'; };
+  img.src = '/car-photo';
+}
+
+function renderQA(){
+  const acOn = !!S.ac_on;
+  const locked = !S.unlocked;
+  const qa = $('qaRow'); qa.innerHTML = '';
+  const defs = [
+    {k: locked ? 'unlock' : 'lock', label: locked ? 'Unlock' : 'Lock',
+     op: locked ? '740200' : '740100', ask: locked, active: !locked},
+    {k: 'ac',   label: acOn ? 'A/C off' : 'A/C on', op: acOn ? '741000' : '741001', active: acOn},
+    {k: 'find', label: 'Find car', op: '740400'},
+  ];
+  if(S.charging && S.charging.active)
+    defs.push({k: 'power', label: 'Stop charging', op: '742701', ask: true});
+  defs.forEach(d => {
+    const b = document.createElement('button');
+    b.className = d.active ? 'on' : '';
+    b.title = d.label; b.setAttribute('aria-label', d.label);
+    b.innerHTML = icon(d.k);
+    b.onclick = () => {
+      if(d.ask && !confirm(d.label + ' \u2014 send now?')) return;
+      fire(d.op, b);
+    };
+    qa.appendChild(b);
+  });
+}
+
+// windows byte: 0 = all closed (E5-verified). On the J5 it reads 16 while parked for unknown
+// reasons (model-specific, #5), so on a J5 we refuse to guess and report null.
+function windowsOpen(){
+  if(S.windows == null) return null;
+  const m = ((S.vehicle && S.vehicle.model) || '').toLowerCase();
+  if(m.indexOf('j5') >= 0 || m.indexOf('jaecoo') >= 0) return null;
+  return S.windows !== 0;
+}
+
+function doorSummary(){
+  const parts = [];
+  const openDoors = S.doors == null ? null : (S.doors & 15) !== 0;
+  const winOpen = windowsOpen();
+  if(openDoors) parts.push('door open');
+  if(winOpen === true) parts.push('windows open');
+  if(S.trunk_open) parts.push('trunk open');
+  if(S.sunroof_open) parts.push('sunroof open');
+  if(!parts.length && openDoors === false && !S.unlocked) return {t: 'All closed and locked', cls: 'ok'};
+  if(!parts.length) return {t: S.unlocked ? 'Unlocked' : 'All closed', cls: S.unlocked ? 'warn' : 'ok'};
+  return {t: parts.join(' \u00b7 '), cls: 'bad'};
+}
+
+function renderCharging(){
+  const c = S.charging || {}, el = $('chgPill');
+  if(!c.active){ el.hidden = true; return; }
+  el.hidden = false;
+  const bits = [];
+  if(c.mode) bits.push(c.mode === 'dc' ? 'DC fast' : 'AC');
+  if(c.rate_kw != null) bits.push(c.rate_kw + ' kW');
+  if(c.remaining_min != null) bits.push(Math.floor(c.remaining_min / 60) ?
+    (Math.floor(c.remaining_min / 60) + ' h ' + (c.remaining_min % 60) + ' min left') :
+    (c.remaining_min + ' min left'));
+  el.innerHTML = icon('bolt', 2.2) + '<span>Charging</span><span class="dim">' +
+    (bits.join(' \u00b7 ') || '') + '</span>';
+}
+
+function card(ic, title, sub, cls  , page){
+  return '<button class="card" data-page="' + page + '"><span class="ic">' + icon(ic) + '</span>' +
+    '<span class="t">' + title + '</span><span class="s ' + (cls || '') + '">' + sub + '</span></button>';
+}
+
+function renderCards(){
+  const g = $('cardGrid');
+  const ds = doorSummary();
+  const e = S.energy || {};
+  const cons = e.consumption != null ? e.consumption + ' kWh/100km' : 'No data yet';
+  const tyreSub = S.tyre_indirect === false
+    ? (S.tyre_status === 'Normal' ? 'Normal' : 'Check tyres')
+    : (S.tyre_status || 'Status only');
+  const acSub = S.ac_on ? 'On' + (S.ac_temp_c && S.ac_temp_c < 60 ? ' \u00b7 cabin ' + S.ac_temp_c + '\u00b0' : '') : 'Off';
+  const seatsKnown = (S.seat_heat && (S.seat_heat[0] || S.seat_heat[1])) ||
+                     (S.seat_vent && (S.seat_vent[0] || S.seat_vent[1]));
+  g.innerHTML =
+    '<div class="card clim" data-page="ac" role="button" tabindex="0">' +
+      '<div class="row"><button class="step" data-step="-1" aria-label="Cooler">\u2212</button>' +
+      '<span class="temp num" id="climTemp">' + acTarget + '\u00b0</span>' +
+      '<button class="step" data-step="1" aria-label="Warmer">+</button></div>' +
+      '<div class="row" style="margin-top:10px"><span class="s ' + (S.ac_on ? 'ok' : '') + '" id="climState">' +
+      acSub + '</span><span class="ic" style="margin:0">' + icon('ac') + '</span></div></div>' +
+    card('door', 'Doors and windows', ds.t, ds.cls, 'doors') +
+    card('tyre', 'Tire pressure', tyreSub, S.tyre_status === 'Normal' ? 'ok' : 'warn', 'tyres') +
+    card('chart', 'Energy', cons, '', 'energy') +
+    card('seat', 'Seats', seatsKnown ? 'Active' : 'Not available', '', 'none') +
+    card('car', 'Vehicle', (S.odometer != null ? Math.round(S.odometer) + ' km' : '') +
+      (S.volt12 ? ' \u00b7 ' + S.volt12.toFixed(1) + ' V' : ''), '', 'none');
+  g.querySelectorAll('[data-page]').forEach(b => {
+    if(b.dataset.page !== 'none') b.onclick = () => openPage(b.dataset.page);
+  });
+  g.querySelectorAll('[data-step]').forEach(b => b.onclick = ev => {
+    ev.stopPropagation();
+    const caps = (CAPS && CAPS.ac) || {};
+    const mn = caps.min != null ? Math.ceil(caps.min) : 16;
+    const mx = caps.max != null ? Math.floor(caps.max) : 30;
+    acTarget = Math.min(mx, Math.max(mn, acTarget + Number(b.dataset.step)));
+    $('climTemp').textContent = acTarget + '\u00b0';
+    sendTemp();
+  });
+}
+
+// ---- subpages ----
+let acTarget = 24, acTimer = null;
+function sendTemp(){
+  // 7411 + temp as one hex byte (#11, jump table). Encoding is integer degC, pending runtime
+  // verification; debounced so stepping does not spam the car.
+  clearTimeout(acTimer);
+  acTimer = setTimeout(() => fire('7411' + Math.round(acTarget).toString(16).padStart(2, '0')), 800);
+}
+function renderAc(){
+  const el = $('pgAcBody');
+  const caps = (CAPS && CAPS.ac) || {};
+  const mn = caps.min != null ? Math.ceil(caps.min) : 16;
+  const mx = caps.max != null ? Math.floor(caps.max) : 30;
+  const cabin = S.ac_temp_c && S.ac_temp_c < 60 ? S.ac_temp_c + '\u00b0C' : null;
+  el.innerHTML =
+    '<div class="acsub">' + (cabin ? 'Interior temperature ' + cabin : 'Set a target, then power on') + '</div>' +
+    '<div class="acbig"><span class="side">' + Math.max(mn, acTarget - 1) + '</span>' +
+    '<span class="cur num">' + acTarget + '<u>\u00b0C</u></span>' +
+    '<span class="side">' + Math.min(mx, acTarget + 1) + '</span></div>' +
+    '<div class="row" style="display:flex;justify-content:center;gap:22px;margin-bottom:26px">' +
+    '<button class="step" id="acMinus" aria-label="Cooler">\u2212</button>' +
+    '<button class="step" id="acPlus" aria-label="Warmer">+</button></div>' +
+    '<div class="acacts">' +
+    '<button data-ac="heat"><span class="cic">' + icon('heat') + '</span>Heat</button>' +
+    '<button data-ac="cool"><span class="cic">' + icon('cool') + '</span>Cool</button>' +
+    '<button data-ac="pwr"><span class="cic">' + icon('power') + '</span><span id="acPwrLbl">' +
+      (S.ac_on ? 'Turn off' : 'Turn on') + '</span></button></div>' +
+    '<div class="note">Temperature command (7411 + hex) comes from the jump-table decode and is pending ' +
+    'on-car verification. Power and quick heat/cool use the verified map.</div>';
+  $('acMinus').onclick = () => { acTarget = Math.max(mn, acTarget -  1); renderAc(); sendTemp(); };
+  $('acPlus').onclick  = () => { acTarget = Math.min(mx, acTarget + 1); renderAc(); sendTemp(); };
+  el.querySelector('[data-ac="heat"]').onclick = ev => fire(S.ac_on ? '741F00' : '741F01');
+  el.querySelector('[data-ac="cool"]').onclick = ev => fire(S.ac_on ? '742000' : '742001');
+  el.querySelector('[data-ac="pwr"]').onclick  = ev => fire(S.ac_on ? '741000' : '741001');
+  el.querySelector('[data-ac="pwr"]').classList.toggle('on', !!S.ac_on);
+}
+
+function topCarSvg(){
+  return '<svg viewBox="0 0 120 190">' +
+    '<path d="M38 12C31 12 27 22 26 36L24 148C24 166 29 178 39 178h42c10 0 15-12 15-30l-2-112C94 22 89 12 82 12Z" ' +
+      'fill="oklch(0.98 0.004 240)" stroke="oklch(0.80 0.02 250)" stroke-width="1.5"/>' +
+    '<path d="M31 52C33 40 37 33 43 31h34c6 2 10 9 12 21-8-4-18-6-29-6s-21 2-29 6Z" fill="oklch(0.35 0.03 255)"/>' +
+    '<rect x="37" y="70" width="46" height="58" rx="7" fill="oklch(0.35 0.03 255)"/>' +
+    '<path d="M26 60h-6v10h6M94 60h6v10h-6" fill="oklch(0.80 0.02 250)"/></svg>';
+}
+
+function renderDoors(){
+  const el = $('pgDoorsBody');
+  const winOpen = windowsOpen();
+  const doorsOpen = S.doors != null && (S.doors & 15) !== 0;
+  const rows = [];
+  function row(label, ok, okTxt, badTxt){
+    rows.push('<div class="ri">' + label +
+      '<span class="st ' + (ok ? 'ok' : 'bad') + '">' + (ok ? CK_OK : CK_BAD) +
+      (ok ? okTxt : badTxt) + '</span></div>');
+  }
+  row('Doors', !doorsOpen && !S.unlocked,
+      S.unlocked ? 'Closed' : 'Closed and locked',
+      doorsOpen ? 'Open' : 'Unlocked');
+  if(winOpen !== null) row('Windows', !winOpen, 'Closed', 'Open');
+  if(CAPS && CAPS.sunroof && (CAPS.sunroof.open || CAPS.sunroof.tilt))
+    row('Sunroof', !S.sunroof_open, 'Closed', 'Open');
+  row('Rear trunk', !S.trunk_open, 'Closed', 'Open');
+  el.innerHTML = '<div class="topwrap">' + topCarSvg() + '</div>' +
+    '<div class="rowlist">' + rows.join('') + '</div>';
+  if(winOpen === true && CAPS && CAPS.windows && CAPS.windows.close){
+    const b = document.createElement('button');
+    b.className = 'bigbtn'; b.textContent = 'Close windows remotely';
+    b.onclick = () => fire('740500', b);
+    el.appendChild(b);
+  }
+  if(winOpen === null){
+    const note = document.createElement('div');
+    note.className = 'note';
+    note.textContent = 'Window position is not decoded reliably on this model yet; hidden rather than guessed.';
+    el.appendChild(note);
+  }
+}
+
+function renderTyres(){
+  const el = $('pgTyresBody');
+  const t = S.tpms || [];
+  const unit = S.tyre_unit || 'psi';
+  const pos = [{x: '4%', y: '13%'}, {x: '78%', y: '13%'}, {x: '4%', y: '72%'}, {x: '78%', y: '72%'}];
+  let vals = '';
+  t.forEach((w, i) => {
+    if(w.psi == null) return;
+    const cls = (w.psi < 28 || w.psi > 40) ? 'bad' : 'ok';
+    vals += '<div class="twv ' + cls + '" style="left:' + pos[i].x + ';top:' + pos[i].y + '">' +
+      Math.round(w.psi) + '<u>' + unit + '</u></div>';
+  });
+  const indirect = S.tyre_indirect !== false;
+  el.innerHTML = '<div class="topwrap">' + topCarSvg() + vals + '</div>' +
+    '<div class="rowlist"><div class="ri">Status<span class="st ' +
+      (S.tyre_status === 'Normal' ? 'ok' : 'bad') + '">' +
+      (S.tyre_status === 'Normal' ? CK_OK : CK_BAD) + (S.tyre_status || '\u2014') + '</span></div></div>' +
+    '<div class="note">' + (indirect
+      ? 'This car uses indirect TPMS: it infers a soft tyre from wheel speed and reports normal or not. ' +
+        'Live pressures appear here on cars with real sensors.'
+      : 'Pressures from the last frame that carried live sensors.') + '</div>';
+}
+
+function renderEnergy(){
+  const el = $('pgEnergyBody');
+  const e = S.energy || {};
+  const hist = S.history || [];
+  const wltp = S.wltp_kwh_100;
+  el.innerHTML =
+    '<div class="ebig"><div class="lbl">Recent average consumption</div>' +
+    '<div class="v num">' + (e.consumption != null ? e.consumption : '\u2014') +
+      '<u>kWh/100km</u></div>' +
+    '<div class="etot">' +
+      '<div><b class="num">' + (S.km && S.km.today != null ? S.km.today : '\u2014') + '</b><span>km today</span></div>' +
+      '<div><b class="num">' + (e.today_kwh != null ? e.today_kwh : '\u2014') + '</b><span>kWh today</span></div>' +
+      '<div><b class="num">' + (S.km && S.km.week != null ? S.km.week : '\u2014') + '</b><span>km this week</span></div>' +
+    '</div></div>' +
+    '<div class="secttl">Past 7 days</div>' +
+    '<div class="ebig"><svg id="echart" viewBox="0 0 340 150"></svg></div>';
+  const svg = $('echart');
+  const W = 340, H = 150, P = 26;
+  const vals = hist.map(h => (h.eff == null ? null : h.eff));
+  const present = vals.filter(v => v != null);
+  const maxV = Math.max(20, ...present, wltp || 0) * 1.15;
+  const xs = i => P + i * (W - P - 26) / 6;
+  const ys = v => H - P - (v / maxV) * (H - P - 14);
+  const segs = [];
+  let cur = null;
+  vals.forEach((v, i) => {
+    if(v == null){ cur = null; return; }
+    if(!cur){ cur = []; segs.push(cur); }
+    cur.push(i);
+  });
+  let path = '', area = '', dots = '';
+  segs.forEach(seg => {
+    seg.forEach((i, j) => {
+      const v = vals[i];
+      const cmd = (j ? 'L' : 'M') + xs(i).toFixed(1) + ' ' + ys(v).toFixed(1);
+      path += cmd; area += cmd;
+      dots += '<circle cx="' + xs(i) + '" cy="' + ys(v) + '" r="3" fill="oklch(0.55 0.11 165)"/>' +
+        '<text x="' + xs(i) + '" y="' + (ys(v) - 8) + '" font-size="9.5" text-anchor="middle" ' +
+        'fill="oklch(0.50 0.018 260)" font-weight="600">' + v + '</text>';
+    });
+    area += 'L' + xs(seg[seg.length - 1]) + ' ' + (H - P) + 'L' + xs(seg[0]) + ' ' + (H - P) + 'Z';
+  });
+  let wl = '';
+  if(wltp){
+    wl = '<line x1="' + P + '" y1="' + ys(wltp) + '" x2="' + (W - 26) + '" y2="' + ys(wltp) +
+      '" stroke="oklch(0.60 0.015 260)" stroke-dasharray="5 4" stroke-width="1.4"/>' +
+      '<text x="' + (P + 4) + '" y="' + (ys(wltp) - 5) + '" font-size="9" text-anchor="start" ' +
+      'fill="oklch(0.60 0.015 260)">WLTP ' + wltp + '</text>';
+  }
+  const days = hist.map((h, i) =>
+    '<text x="' + xs(i) + '" y="' + (H - 8) + '" font-size="8.5" text-anchor="middle" ' +
+    'fill="oklch(0.60 0.015 260)">' + (h.day || '') + '</text>').join('');
+  svg.innerHTML =
+    '<path d="' + area + '" fill="oklch(0.55 0.11 165 / .13)"/>' +
+    '<path d="' + path + '" fill="none" stroke="oklch(0.55 0.11 165)" stroke-width="2.2" ' +
+      'stroke-linecap="round"/>' + dots + wl + days;
+}
+
+// ---- account tab ----
+let vinShown = false;
+function renderAcct(){
+  $('aModel').textContent = (S.vehicle && S.vehicle.model) || 'My car';
+  const vin = (S.vehicle && S.vehicle.vin) || '';
+  $('aVin').textContent = vin ? (vinShown ? vin : 'VIN ' + vin.slice(0, 3) + '\u2026' + vin.slice(-3)) : '';
+  $('aOdo').textContent = S.odometer != null ? Math.round(S.odometer).toLocaleString() : '\u2014';
+  $('aCar').src = $('hCar').src;
+  const rows = [
+    {ic: 'gauge',  t: 'Classic dashboard',  s: 'Full stats, trips, planner', fn: () => location.href = '/'},
+    {ic: 'camera', t: 'Update car photo',   s: 'Re-fetch the render from CarLinko', fn: async ev => {
+        const d = await api('/api/photorefresh', {method: 'POST'});
+        toast(d.ok ? 'Photo updated' : (d.error || 'failed')); if(d.ok) load(); }},
+    {ic: 'link',   t: 'About', s: '', fn: () => toast('J5 EV Dashboard V2 \u00b7 CarLinko, reverse-engineered')},
+  ];
+  $('acctRows').innerHTML = rows.map((r, i) =>
+    '<div class="ri" data-r="' + i + '" role="button" tabindex="0">' +
+    '<span class="ic" style="width:24px;height:24px;color:var(--mut);display:inline-flex">' +
+    icon(r.ic) + '</span><span>' + r.t + (r.s ? '<br><span style="font-size:12px;color:var(--fnt);font-weight:500">' +
+    r.s + '</span>' : '') + '</span><span class="chev">\u203a</span></div>').join('');
+  rows.forEach((r, i) => $('acctRows').querySelector('[data-r="' + i + '"]').onclick = r.fn);
+  $('aNote').textContent = 'Data source: your own CarLinko account, self-hosted. Nothing leaves this server.';
+}
+
+// ---- navigation ----
+const PAGES = {ac: ['pgAc', renderAc], doors: ['pgDoors', renderDoors],
+               tyres: ['pgTyres', renderTyres], energy: ['pgEnergy', renderEnergy]};
+function openPage(k){
+  const p = PAGES[k]; if(!p) return;
+  if(k === 'ac' && CAPS && CAPS.ac && CAPS.ac.min != null)
+    acTarget = Math.min(Math.max(acTarget, Math.ceil(CAPS.ac.min)), Math.floor(CAPS.ac.max));
+  p[1]();
+  $(p[0]).classList.add('open');
+}
+document.querySelectorAll('[data-close]').forEach(b =>
+  b.onclick = () => b.closest('.page').classList.remove('open'));
+document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabbar button').forEach(x => x.classList.toggle('on', x === b));
+  const home = b.dataset.v === 'home';
+  $('viewHome').hidden = !home; $('viewAcct').hidden = home;
+  if(home){ $('viewHome').classList.remove('fadein'); void $('viewHome').offsetWidth;
+            $('viewHome').classList.add('fadein'); }
+  else if(!S._acctDone){ renderAcct(); S._acctDone = true; }
+});
+
+// ---- data ----
+async function load(){
+  try{
+    S = await api('/api/summary');
+    renderHero(); renderQA(); renderCharging(); renderCards();
+  }catch(e){ /* auth redirect handled in api() */ }
+}
+$('hRefresh').onclick = async ev => {
+  const b = $('hRefresh'); b.classList.add('spin');
+  try{ await api('/api/refresh'); }catch(e){}
+  await load(); b.classList.remove('spin');
+};
+$('aEye').onclick = () => { vinShown = !vinShown; renderAcct(); };
+
+(async () => {
+  try{ CAPS = (await api('/api/controls')).caps; }catch(e){ CAPS = null; }
+  await load();
+  const h = location.hash.slice(1);
+  if(PAGES[h]) openPage(h);           // deep link: v2.html#doors / #tyres / #energy / #ac
+  if(h === 'acct') document.querySelector('.tabbar button[data-v="acct"]').click();
+  setInterval(() => { if(!document.hidden) load(); }, 60000);
+})();
+</script>
+
