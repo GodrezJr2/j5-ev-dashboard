@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="J5 EV">
@@ -18,14 +18,15 @@
     --canvas: oklch(0.972 0.006 95);
     --surface: oklch(0.992 0.004 95);
     --ink:    oklch(0.27 0.012 95);
-    --muted:  oklch(0.55 0.012 95);
-    --faint:  oklch(0.70 0.010 95);
+    --muted:  oklch(0.50 0.012 95);
+    --faint:  oklch(0.55 0.010 95);
     --line:   oklch(0.90 0.008 95);
     --hair:   oklch(0.93 0.007 95);
     --accent: oklch(0.52 0.10 158);
     --accent-soft: oklch(0.52 0.10 158 / .12);
     --warn:   oklch(0.74 0.13 70);
     --bad:    oklch(0.58 0.16 27);
+    --inset:  oklch(0.955 0.006 95);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0}
   html{background:var(--canvas)}
@@ -38,6 +39,24 @@
   .wrap{max-width:440px;margin:0 auto}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
   .over{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+
+  /* a11y: visible keyboard focus (slider's outline:none above is overridden back here) */
+  :focus{outline:none}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+  /* a11y: keep small icons visually small but grow their hit area to ~44px */
+  .viewtoggle button,.calnav,.chipbtn,.refresh,.appbar .ab-rf{position:relative}
+  .viewtoggle button:before,.calnav:before,.chipbtn:before,.refresh:before,.appbar .ab-rf:before{
+    content:"";position:absolute;inset:-8px}
+  .seg button{position:relative}
+  .seg button:before{content:"";position:absolute;inset:-6px 0}
+
+  /* a11y: honor reduced motion — instant state change, no rolling/reveal choreography */
+  @media (prefers-reduced-motion:reduce){
+    *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+      transition-duration:.01ms!important;scroll-behavior:auto!important}
+    .reveal{opacity:1;transform:none}
+  }
 
   /* header */
   header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;border-bottom:1px solid var(--line)}
@@ -152,7 +171,7 @@
   .badge.warn{color:var(--warn);background:oklch(0.74 0.13 70 / .14)}
   .badge.idle{color:var(--faint);background:oklch(0.70 0.010 95 / .14)}
   .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .tile{background:oklch(0.955 0.006 95);border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center}
+  .tile{background:var(--inset);border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center}
   .tile b{font-size:22px;font-weight:700;display:block;margin-bottom:4px;line-height:1}
   .tile span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 
@@ -246,7 +265,7 @@
   .sheet .row span{color:var(--muted)}
   .sheet .row b{font-weight:700;font-size:16px;text-align:right}
   .sheet .note{font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:16px;
-    background:oklch(0.955 0.006 95);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+    background:var(--inset);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
   .sheet .note b{color:var(--ink);font-weight:700}
 
   /* slot-text (vendored) — rolling-digit animation for live numbers */
@@ -268,7 +287,7 @@
   /* iOS collapsing large-title -> frosted sticky app bar */
   .appbar{position:fixed;top:0;left:0;right:0;z-index:45;display:flex;align-items:center;gap:10px;
     padding:max(8px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-left)) 9px;
-    background:oklch(0.972 0.006 95 / .72);-webkit-backdrop-filter:saturate(1.7) blur(18px);
+    background:color-mix(in oklch,var(--canvas) 72%,transparent);-webkit-backdrop-filter:saturate(1.7) blur(18px);
     backdrop-filter:saturate(1.7) blur(18px);border-bottom:1px solid var(--line);
     transform:translateY(-101%);opacity:0;transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .2s;
     pointer-events:none}
@@ -319,7 +338,7 @@
   .chipbtn:active{border-color:var(--accent);color:var(--accent)}
   .ctrllog{margin-top:10px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;max-height:170px;overflow:auto}
   .ctrllog div{padding:3px 0;border-top:1px solid var(--hair)}
-  :root[data-theme="dark"] .ctrlbtn{background:oklch(0.285 0.012 95)}
+  :root[data-theme="dark"] .ctrlbtn{background:var(--inset)}
 
   /* car hero (official render, self-hosted) */
   .hero{position:relative;margin:-6px 0 14px;text-align:center;isolation:isolate}
@@ -334,7 +353,7 @@
 
   /* bottom tab bar (frosted, fixed) */
   .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:46;display:flex;max-width:440px;margin:0 auto;
-    background:oklch(0.972 0.006 95 / .82);-webkit-backdrop-filter:saturate(1.7) blur(20px);
+    background:color-mix(in oklch,var(--canvas) 82%,transparent);-webkit-backdrop-filter:saturate(1.7) blur(20px);
     backdrop-filter:saturate(1.7) blur(20px);border-top:1px solid var(--line);
     padding-bottom:env(safe-area-inset-bottom)}
   .tabbar .tb{flex:1;background:none;border:0;padding:9px 0 7px;display:flex;flex-direction:column;
@@ -367,18 +386,17 @@
     --surface:oklch(0.252 0.012 95);
     --ink:    oklch(0.95 0.008 95);
     --muted:  oklch(0.70 0.012 95);
-    --faint:  oklch(0.55 0.012 95);
+    --faint:  oklch(0.61 0.012 95);
     --line:   oklch(0.34 0.012 95);
     --hair:   oklch(0.30 0.010 95);
     --accent: oklch(0.74 0.13 158);
     --accent-soft: oklch(0.74 0.13 158 / .17);
     --warn:   oklch(0.80 0.13 70);
     --bad:    oklch(0.67 0.17 27);
+    --inset:  oklch(0.285 0.012 95);
   }
-  :root[data-theme="dark"] .tile{background:oklch(0.285 0.012 95)}
-  :root[data-theme="dark"] .sheet .note{background:oklch(0.285 0.012 95)}
-  :root[data-theme="dark"] .appbar{background:oklch(0.205 0.012 95 / .72)}
-  :root[data-theme="dark"] .tabbar{background:oklch(0.205 0.012 95 / .82)}
+  :root[data-theme="dark"] .appbar{background:color-mix(in oklch,var(--canvas) 72%,transparent)}
+  :root[data-theme="dark"] .tabbar{background:color-mix(in oklch,var(--canvas) 82%,transparent)}
   :root[data-theme="dark"] .badge.bad{background:oklch(0.67 0.17 27 / .18)}
   :root[data-theme="dark"] .badge.warn{background:oklch(0.80 0.13 70 / .18)}
   :root[data-theme="dark"] .vd.warn{background:oklch(0.80 0.13 70 / .18)}
@@ -544,9 +562,9 @@
     <div class="bars" id="bars"></div>
     <div id="calWrap" hidden>
       <div class="calhead">
-        <button class="calnav" id="calPrev">&#8249;</button>
+        <button class="calnav" id="calPrev" aria-label="Previous month">&#8249;</button>
         <div class="caltitle" id="calTitle">&mdash;</div>
-        <button class="calnav" id="calNext">&#8250;</button>
+        <button class="calnav" id="calNext" aria-label="Next month">&#8250;</button>
       </div>
       <div class="caltot" id="calTot"></div>
       <div class="calgrid" id="calGrid"></div>
@@ -839,6 +857,13 @@ const MAP_ID={
   "duration":"durasi","kWh in":"kWh masuk","avg kW":"rata kW","peak kW":"puncak kW","kW charging now":"kW mengisi kini",
   "Front L":"Depan Ki","Front R":"Depan Ka","Rear L":"Belakang Ki","Rear R":"Belakang Ka",
   "Home":"Beranda","Charge":"Isi","Trips":"Jalan","More":"Lainnya",
+  "Control":"Kontrol","Lock":"Kunci","Unlock":"Buka kunci","A/C on":"AC nyala","A/C off":"AC mati",
+  "Windows open":"Buka jendela","Windows close":"Tutup jendela","Windows vent":"Ventilasi jendela",
+  "Sunroof open":"Buka sunroof","Sunroof close":"Tutup sunroof","Sunroof tilt":"Angkat sunroof",
+  "Tailgate open":"Buka bagasi","Tailgate close":"Tutup bagasi","Find car":"Cari mobil",
+  "Quick cool on":"Pendingin cepat nyala","Quick cool off":"Pendingin cepat mati",
+  "Quick heat on":"Pemanas cepat nyala","Quick heat off":"Pemanas cepat mati",
+  "Defog on":"Defog nyala","Defog off":"Defog mati","Stop charging":"Stop isi",
   "Tap any card, bar or stat for the detail behind it.":"Ketuk kartu, bar, atau statistik mana pun untuk detailnya.",
   "SPKLU DC ≈ Rp 2.467/kWh + 3% tax (≈2.540 all-in) · admin Rp 0 · home AC cheaper":"SPKLU DC ≈ Rp 2.467/kWh + pajak 3% (≈2.540 total) · admin Rp 0 · AC rumah lebih murah",
   "Settings":"Pengaturan","Theme":"Tema","Light":"Terang","Dark":"Gelap","Language":"Bahasa",
@@ -900,9 +925,11 @@ function applyLang(){ document.documentElement.lang=lang;
   const ss=$('spkluSearch'); if(ss) ss.textContent=T('Search this area');
   const sm=$('tpModeSeg'); if(sm){ const bs=sm.querySelectorAll('button'); if(bs[0]) bs[0].textContent=T('Planner'); if(bs[1]) bs[1].textContent=T('SPKLU Map'); }
   const to=$('tpOver'); if(to) to.textContent=T(to.dataset.en||'Trip planner');
-  applyCurrency(); }
+  applyCurrency(); if(typeof renderControls==='function') renderControls(); }
 function syncSeg(){ document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===theme));
-  document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===lang)); }
+  document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===lang));
+  ['themeSeg','langSeg','resyncSeg'].forEach(id=>{ const seg=$(id); if(!seg) return;
+    seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('on')?'true':'false')); }); }
 function syncResyncSeg(){ const v=(DATA&&DATA.resync_km)||'skip';
   document.querySelectorAll('#resyncSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); }
 $('resyncSeg').addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b)return;
@@ -1519,8 +1546,8 @@ const CTRL_ACTIONS=[
   {k:'roofOpen',lbl:'Sunroof open',     op:'740F01', cap:c=>c.sunroof&&c.sunroof.open,  confirm:true},
   {k:'roofClose',lbl:'Sunroof close',   op:'740F00', cap:c=>c.sunroof&&c.sunroof.open,  confirm:false},
   {k:'roofTilt',lbl:'Sunroof tilt',     op:'740F02', cap:c=>c.sunroof&&c.sunroof.tilt,  confirm:false},
-  {k:'liftOpen',lbl:'Tailgate (bagasi) buka',  op:'740300', cap:c=>c.liftgate,          confirm:true},
-  {k:'liftClose',lbl:'Tailgate tutup',  op:'740A00', cap:c=>c.liftgate,                 confirm:false},
+  {k:'liftOpen',lbl:'Tailgate open',    op:'740300', cap:c=>c.liftgate,                 confirm:true},
+  {k:'liftClose',lbl:'Tailgate close',  op:'740A00', cap:c=>c.liftgate,                 confirm:false},
   {k:'find',    lbl:'Find car',         op:'740400', cap:c=>c.find,                     confirm:false},
   {k:'coolOn',  lbl:'Quick cool on',    op:'742001', cap:c=>c.ac&&c.ac.rapidCool,       confirm:false},
   {k:'coolOff', lbl:'Quick cool off',   op:'742000', cap:c=>c.ac&&c.ac.rapidCool,       confirm:false},
@@ -1564,7 +1591,7 @@ function renderControls(){
   CTRL_ACTIONS.filter(a=>{ try{return a.cap(caps);}catch(e){return false;} }).forEach(a=>{
     const op=map[a.k]||a.op||'';                    // localStorage override wins, else the decoded default
     const b=document.createElement('button'); b.className='ctrlbtn'+(op?'':' unset');
-    b.innerHTML='<span>'+a.lbl+'</span><small>'+(op?op:'tap to set')+'</small>';
+    b.innerHTML='<span>'+T(a.lbl)+'</span><small>'+(op?op:'tap to set')+'</small>';
     b.addEventListener('click',async()=>{
       const code=ctrlMap()[a.k]||a.op;
       if(!code){ const nv=(prompt('Opcode (hex) for "'+a.lbl+'"','')||'').trim(); if(!nv) return; ctrlSetOp(a.k,nv); renderControls(); return; }
@@ -1883,7 +1910,8 @@ function setupTabs(){
 }
 function showTab(t){
   document.querySelectorAll('[data-tab]').forEach(el=>{ const on=el.dataset.tab===t; el.style.display=on?'':'none'; if(on) el.classList.add('in'); });
-  document.querySelectorAll('.tabbar .tb').forEach(b=>b.classList.toggle('on', b.dataset.t===t));
+  document.querySelectorAll('.tabbar .tb').forEach(b=>{ const on=b.dataset.t===t; b.classList.toggle('on',on);
+    if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   window.scrollTo(0,0); $('appbar').classList.remove('show');
 }
 document.querySelectorAll('.tabbar .tb').forEach(b=>b.addEventListener('click',()=>{ showTab(b.dataset.t); buzz(8); }));
