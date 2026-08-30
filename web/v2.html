@@ -199,6 +199,51 @@
     opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--eo);z-index:80;max-width:86%}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   [hidden]{display:none!important}
+
+  /* calendar (distance page) */
+  .calhead{display:flex;align-items:center;justify-content:space-between;margin:14px 2px 10px}
+  .calhead b{font-size:16px;font-weight:800}
+  .calnav{width:32px;height:32px;border-radius:50%;background:var(--card);color:var(--ink);
+    font-size:18px;line-height:1;box-shadow:0 2px 8px oklch(0.3 0.03 250 / .08);transition:transform .12s var(--eo)}
+  .calnav:active{transform:scale(.9)}
+  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .caldow{text-align:center;font-size:9.5px;color:var(--fnt);text-transform:uppercase;letter-spacing:.4px}
+  .calday{background:var(--card);border-radius:12px;padding:7px 2px 6px;text-align:center;min-height:52px;
+    position:relative;transition:transform .12s var(--eo);border:0;font:inherit;color:var(--ink)}
+  .calday.on:active{transform:scale(.92)}
+  .calday.off{opacity:.35;pointer-events:none}
+  .calday .cd{font-size:10.5px;font-weight:650;color:var(--mut);display:block}
+  .calday .ck{font-size:12px;font-weight:800;display:block;margin-top:2px}
+  .calday .cdot{position:absolute;top:5px;right:6px;width:5px;height:5px;border-radius:50%;background:var(--acc)}
+  .caltot{display:flex;gap:20px;justify-content:center;margin-top:14px;font-size:12.5px;color:var(--mut)}
+  .caltot b{color:var(--ink)}
+
+  /* battery page */
+  .socbar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:14px}
+  .socbar i{display:block;height:100%;border-radius:99px;background:var(--acc);
+    transition:width .8s var(--eo)}
+
+  /* charging history */
+  .hrow2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    padding:12px 0;border-top:1px solid var(--line);font-size:13px;color:var(--mut)}
+  .hrow2:first-child{border-top:0}
+  .hrow2 b{color:var(--ink);font-weight:700}
+
+  /* small inline seg (account toggles) */
+  .seg2{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}
+  .seg2 button{padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--mut);
+    transition:background .15s,color .15s}
+  .seg2 button.on{background:var(--dark);color:#fff}
+
+  /* flex card */
+  .flexc{background:linear-gradient(158deg,oklch(0.85 0.04 245),oklch(0.95 0.01 240));
+    border-radius:20px;padding:22px;box-shadow:0 6px 22px oklch(0.3 0.03 250 / .12)}
+  .flexc .fm{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+  .flexc .fbig{font-size:52px;font-weight:800;letter-spacing:-.02em;margin:10px 0 2px}
+  .flexc .fbig u{font-size:16px;font-weight:600;color:var(--mut);text-decoration:none}
+  .fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+  .fgrid2 b{display:block;font-size:19px;font-weight:800}
+  .fgrid2 span{font-size:11px;color:var(--mut)}
   .fadein{animation:fadein .3s var(--eo)}
   @keyframes fadein{from{opacity:0;transform:translateY(8px)}}
 </style>
@@ -253,6 +298,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <div class="pbody" id="pgTyresBody"></div></div>
 <div class="page" id="pgEnergy"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Energy consumption</h2></div>
   <div class="pbody" id="pgEnergyBody"></div></div>
+<div class="page" id="pgBatt"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Battery</h2></div>
+  <div class="pbody" id="pgBattBody"></div></div>
+<div class="page" id="pgChg"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Charging</h2></div>
+  <div class="pbody" id="pgChgBody"></div></div>
+<div class="page" id="pgDist"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Distance</h2></div>
+  <div class="pbody" id="pgDistBody"></div></div>
+<div class="page" id="pgFlex"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Share</h2></div>
+  <div class="pbody" id="pgFlexBody"></div></div>
 
 <div class="toast" id="toast"></div>
 
@@ -402,6 +455,12 @@ function renderCards(){
   const acSub = S.ac_on ? 'On' + (S.ac_temp_c && S.ac_temp_c < 60 ? ' \u00b7 cabin ' + S.ac_temp_c + '\u00b0' : '') : 'Off';
   const seatsKnown = (S.seat_heat && (S.seat_heat[0] || S.seat_heat[1])) ||
                      (S.seat_vent && (S.seat_vent[0] || S.seat_vent[1]));
+  const chgSub = (S.charging && S.charging.active)
+    ? 'Charging' + (S.charging.rate_kw != null ? ' \u00b7 ' + S.charging.rate_kw + ' kW' : '')
+    : (S.charging && S.charging.month_kwh ? S.charging.month_kwh + ' kWh this month' : 'No sessions yet');
+  const battSub = (S.battery != null ? S.battery + '%' : '\u2014') +
+    (S.volt12_status ? ' \u00b7 12V ' + S.volt12_status : '');
+  const distSub = (S.km && S.km.today != null ? S.km.today + ' km today' : 'No driving yet');
   g.innerHTML =
     '<div class="card clim" data-page="ac" role="button" tabindex="0">' +
       '<div class="row"><button class="step" data-step="-1" aria-label="Cooler">\u2212</button>' +
@@ -412,9 +471,10 @@ function renderCards(){
     card('door', 'Doors and windows', ds.t, ds.cls, 'doors') +
     card('tyre', 'Tire pressure', tyreSub, S.tyre_status === 'Normal' ? 'ok' : 'warn', 'tyres') +
     card('chart', 'Energy', cons, '', 'energy') +
-    card('seat', 'Seats', seatsKnown ? 'Active' : 'Not available', '', 'none') +
-    card('car', 'Vehicle', (S.odometer != null ? Math.round(S.odometer) + ' km' : '') +
-      (S.volt12 ? ' \u00b7 ' + S.volt12.toFixed(1) + ' V' : ''), '', 'none');
+    card('bolt', 'Battery', battSub, S.volt12_status === 'critical' ? 'bad' : '', 'batt') +
+    card('gauge', 'Charging', chgSub, (S.charging && S.charging.active) ? 'ok' : '', 'chg') +
+    card('car', 'Distance', distSub, '', 'dist') +
+    card('seat', 'Seats', seatsKnown ? 'Active' : 'Not available', '', 'none');
   g.querySelectorAll('[data-page]').forEach(b => {
     if(b.dataset.page !== 'none') b.onclick = () => openPage(b.dataset.page);
   });
@@ -589,6 +649,145 @@ function renderEnergy(){
       'stroke-linecap="round"/>' + dots + wl + days;
 }
 
+// ---- battery page: SoC + range + 12V watch + health + care ----
+function renderBatt(){
+  const el = $('pgBattBody');
+  const h = S.health || {}, bc = S.battery_care || {}, lf = S.lifetime || {};
+  const soc = S.battery != null ? S.battery : null;
+  const v12ok = S.volt12_status === 'ok';
+  const rows = [];
+  if(S.wltc_range_km != null) rows.push(['Rated (WLTC) range', Math.round(S.wltc_range_km) + ' km']);
+  if(S.odometer != null) rows.push(['Odometer', Math.round(S.odometer).toLocaleString() + ' km']);
+  if(h.usable_kwh != null) rows.push(['Usable capacity', h.usable_kwh + ' kWh']);
+  if(h.cycles != null) rows.push(['Charge cycles', h.cycles]);
+  if(h.avg_eff != null) rows.push(['Charge efficiency', h.avg_eff + '%']);
+  if(lf.km != null) rows.push(['Lifetime driven', Math.round(lf.km).toLocaleString() + ' km']);
+  if(lf.co2_saved != null) rows.push(['CO2 not emitted', lf.co2_saved.toLocaleString() + ' kg']);
+  el.innerHTML =
+    '<div class="ebig"><div class="lbl">State of charge</div>' +
+    '<div class="v num">' + (soc != null ? soc : '\u2014') + '<u>%</u></div>' +
+    '<div class="socbar"><i style="width:' + (soc || 0) + '%"></i></div></div>' +
+    '<div class="secttl">12V battery</div>' +
+    '<div class="ebig"><div class="lbl">Auxiliary battery</div>' +
+    '<div class="v num">' + (S.volt12 != null ? S.volt12.toFixed(1) : '\u2014') + '<u>V</u></div>' +
+    '<div class="etot"><div><b class="num">' + (S.volt12_min7d != null ? S.volt12_min7d.toFixed(1) + ' V' : '\u2014') +
+      '</b><span>7-day low</span></div>' +
+    '<div><b style="color:' + (v12ok ? 'var(--acc)' : 'var(--bad)') + '">' +
+      (S.volt12_status || '\u2014') + '</b><span>status</span></div></div></div>' +
+    (bc.state ? '<div class="secttl">Battery care</div><div class="ebig"><div class="lbl">' +
+      'LFP balancing: full charge weekly' + '</div>' +
+      '<div class="etot"><div><b>' + (bc.last_full_dt || '\u2014') + '</b><span>last 100%</span></div>' +
+      '<div><b>' + (bc.next_due_dt || '\u2014') + '</b><span>next due</span></div></div></div>' : '') +
+    '<div class="secttl">Detail</div>' +
+    '<div class="rowlist">' + rows.map(r =>
+      '<div class="ri">' + r[0] + '<span class="st">' + r[1] + '</span></div>').join('') + '</div>';
+}
+
+// ---- charging page: live state + stats + history ----
+function renderChg(){
+  const el = $('pgChgBody');
+  const c = S.charging || {};
+  const cur = S.currency ? S.currency.symbol : '';
+  let top;
+  if(c.active){
+    top = '<div class="ebig"><div class="lbl">Charging now' + (c.mode ? ' \u00b7 ' + c.mode.toUpperCase() : '') +
+      '</div><div class="v num">' + (c.rate_kw != null ? c.rate_kw : '\u2014') + '<u>kW</u></div>' +
+      '<div class="etot"><div><b class="num">' +
+        (c.remaining_min != null ? c.remaining_min + ' min' : '\u2014') + '</b><span>time left</span></div>' +
+      '<div><b class="num">' + (c.soc != null ? c.soc + '%' : '\u2014') + '</b><span>started at</span></div></div></div>';
+  } else {
+    const last = (c.history || [])[0];
+    top = '<div class="ebig"><div class="lbl">Not charging</div>' +
+      (last ? '<div class="v num">' + last.kwh + '<u>kWh last session</u></div>' +
+        '<div class="etot"><div><b>' + last.dt + '</b><span>finished</span></div>' +
+        '<div><b class="num">' + last.soc0 + '\u2192' + last.soc1 + '%</b><span>SoC</span></div>' +
+        '<div><b class="num">' + last.avg_kw + ' kW</b><span>avg</span></div></div>'
+      : '<div class="v num">\u2014</div>') + '</div>';
+  }
+  const hist = (c.history || []).map(x =>
+    '<div class="hrow2"><span>' + x.dt + '</span><span><b class="num">' + x.kwh + ' kWh</b> \u00b7 ' +
+    x.dur_min + ' min \u00b7 ' + cur + Number(x.cost).toLocaleString() + '</span></div>').join('');
+  el.innerHTML = top +
+    '<div class="secttl">This month</div>' +
+    '<div class="ebig"><div class="etot" style="border-top:0;padding-top:0;margin-top:0">' +
+      '<div><b class="num">' + (c.month_kwh || 0) + '</b><span>kWh in</span></div>' +
+      '<div><b class="num">' + (c.month || 0) + '</b><span>sessions</span></div>' +
+      '<div><b class="num">' + cur + Number(c.month_cost || 0).toLocaleString() + '</b><span>cost</span></div>' +
+      '</div></div>' +
+    '<div class="secttl">History</div>' +
+    '<div class="ebig">' + (hist || '<div class="lbl">No sessions logged yet.</div>') + '</div>';
+}
+
+// ---- distance page: monthly calendar (same /api/history as v1's calendar view) ----
+let calMonth = null;   // 'YYYY-MM'
+async function renderDist(){
+  const el = $('pgDistBody');
+  if(!calMonth){
+    const n = new Date();
+    calMonth = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+  }
+  el.innerHTML = '<div class="calhead"><button class="calnav" id="calP" aria-label="Previous month">\u2039</button>' +
+    '<b>' + calMonth + '</b>' +
+    '<button class="calnav" id="calN" aria-label="Next month">\u203a</button></div>' +
+    '<div class="calgrid" id="calG"><div class="note">Loading\u2026</div></div>';
+  $('calP').onclick = () => { shiftMonth(-1); };
+  $('calN').onclick = () => { shiftMonth(1); };
+  const d = await api('/api/history?month=' + calMonth);
+  const g = $('calG');
+  const [y, m] = calMonth.split('-').map(Number);
+  const lead = (new Date(y, m - 1, 1).getDay() + 6) % 7;   // Monday-first
+  const maxKm = Math.max(1, ...d.days.map(x => x.km));
+  let cells = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(x =>
+    '<div class="caldow">' + x + '</div>').join('');
+  for(let i = 0; i < lead; i++) cells += '<div></div>';
+  d.days.forEach(x => {
+    const has = x.km > 0;
+    const op = has ? (0.35 + 0.65 * x.km / maxKm) : 0;
+    cells += '<button class="calday ' + (has ? 'on' : 'off') + '" data-d="' + x.d + '">' +
+      '<span class="cd">' + x.d + '</span>' +
+      '<span class="ck" style="opacity:' + (has ? 1 : 0.4) + '">' + (has ? x.km : '\u00b7') + '</span>' +
+      (x.chg_kwh > 0 ? '<i class="cdot"></i>' : '') +
+      (op ? '<span style="position:absolute;inset:0;border-radius:12px;background:var(--acc);opacity:' +
+        (op * 0.14).toFixed(2) + ';pointer-events:none"></span>' : '') +
+      '</button>';
+  });
+  g.innerHTML = cells;
+  g.querySelectorAll('.calday.on').forEach(b => b.onclick = () => {
+    const x = d.days.find(v => v.d == b.dataset.d);
+    if(x) toast(x.d + ' ' + calMonth + ': ' + x.km + ' km \u00b7 ' + x.kwh + ' kWh' +
+      (x.chg_kwh ? ' \u00b7 +' + x.chg_kwh + ' kWh charged' : ''));
+  });
+  const t = d.totals || {};
+  el.insertAdjacentHTML('beforeend',
+    '<div class="caltot"><span><b class="num">' + (t.km || 0) + '</b> km</span>' +
+    '<span><b class="num">' + (t.kwh || 0) + '</b> kWh used</span>' +
+    '<span><b class="num">' + (t.chg_kwh || 0) + '</b> kWh charged</span></div>');
+}
+function shiftMonth(dir){
+  const [y, m] = calMonth.split('-').map(Number);
+  const n = new Date(y, m - 1 + dir, 1);
+  calMonth = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+  renderDist();
+}
+
+// ---- flex / share card ----
+function renderFlex(){
+  const el = $('pgFlexBody');
+  const lf = S.lifetime || {}, e = S.energy || {};
+  el.innerHTML =
+    '<div class="flexc"><div class="fm">' + ((S.vehicle && S.vehicle.model) || 'My EV') + '</div>' +
+    '<div class="fbig num">' + (S.km && S.km.month != null ? S.km.month : '\u2014') + '<u>km this month</u></div>' +
+    '<div class="fgrid2">' +
+    '<div><b class="num">' + (S.battery != null ? S.battery + '%' : '\u2014') + '</b><span>battery now</span></div>' +
+    '<div><b class="num">' + (e.consumption != null ? e.consumption : '\u2014') + '</b><span>kWh/100km</span></div>' +
+    '<div><b class="num">' + (lf.saved != null ? (S.currency ? S.currency.symbol : '') +
+      (lf.saved / 1000000).toFixed(1) + 'jt' : '\u2014') + '</b><span>saved vs petrol</span></div>' +
+    '<div><b class="num">' + (lf.co2_saved != null ? lf.co2_saved.toLocaleString() + ' kg' : '\u2014') +
+      '</b><span>CO2 avoided</span></div>' +
+    '</div></div>' +
+    '<div class="note">Screenshot to share. Generated locally from your own logged data.</div>';
+}
+
 // ---- account tab ----
 let vinShown = false;
 function renderAcct(){
@@ -598,7 +797,8 @@ function renderAcct(){
   $('aOdo').textContent = S.odometer != null ? Math.round(S.odometer).toLocaleString() : '\u2014';
   $('aCar').src = $('hCar').src;
   const rows = [
-    {ic: 'gauge',  t: 'Classic dashboard',  s: 'Full stats, trips, planner', fn: () => location.href = '/'},
+    {ic: 'gauge',  t: 'Classic dashboard',  s: 'Trips, SPKLU planner, full stats', fn: () => location.href = '/index.html'},
+    {ic: 'chart',  t: 'Share flex card',    s: 'Month stats as a shareable card', fn: () => openPage('flex')},
     {ic: 'camera', t: 'Update car photo',   s: 'Re-fetch the render from CarLinko', fn: async ev => {
         const d = await api('/api/photorefresh', {method: 'POST'});
         toast(d.ok ? 'Photo updated' : (d.error || 'failed')); if(d.ok) load(); }},
@@ -610,12 +810,26 @@ function renderAcct(){
     icon(r.ic) + '</span><span>' + r.t + (r.s ? '<br><span style="font-size:12px;color:var(--fnt);font-weight:500">' +
     r.s + '</span>' : '') + '</span><span class="chev">\u203a</span></div>').join('');
   rows.forEach((r, i) => $('acctRows').querySelector('[data-r="' + i + '"]').onclick = r.fn);
+  // default-view toggle lives above the rows: which front end "/" serves on this device
+  const ui = (document.cookie.match(/(?:^|;\s*)ui=(\w+)/) || [])[1] || 'v1';
+  $('acctRows').insertAdjacentHTML('afterbegin',
+    '<div class="ri"><span class="ic" style="width:24px;height:24px;color:var(--mut);display:inline-flex">' +
+    icon('car') + '</span><span>Default view</span>' +
+    '<span class="seg2" style="margin-left:auto"><button data-ui="v1"' + (ui === 'v1' ? ' class="on"' : '') +
+    '>Classic</button><button data-ui="v2"' + (ui === 'v2' ? ' class="on"' : '') + '>V2</button></span></div>');
+  $('acctRows').querySelectorAll('[data-ui]').forEach(b => b.onclick = () => {
+    document.cookie = 'ui=' + b.dataset.ui + ';path=/;max-age=31536000';
+    renderAcct();
+    if(b.dataset.ui === 'v1') toast('Classic will open from the app icon');
+  });
   $('aNote').textContent = 'Data source: your own CarLinko account, self-hosted. Nothing leaves this server.';
 }
 
 // ---- navigation ----
 const PAGES = {ac: ['pgAc', renderAc], doors: ['pgDoors', renderDoors],
-               tyres: ['pgTyres', renderTyres], energy: ['pgEnergy', renderEnergy]};
+               tyres: ['pgTyres', renderTyres], energy: ['pgEnergy', renderEnergy],
+               batt: ['pgBatt', renderBatt], chg: ['pgChg', renderChg],
+               dist: ['pgDist', renderDist], flex: ['pgFlex', renderFlex]};
 function openPage(k){
   const p = PAGES[k]; if(!p) return;
   if(k === 'ac' && CAPS && CAPS.ac && CAPS.ac.min != null)

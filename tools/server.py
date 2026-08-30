@@ -1523,7 +1523,16 @@ class H(BaseHTTPRequestHandler):
                            "application/json")
             return
         if path == "/":
-            path = "/index.html" if is_configured() else "/login.html"   # first run -> login page
+            if not is_configured():
+                path = "/login.html"                          # first run -> login page
+            else:
+                # default UI choice lives in a plain cookie set from either front end's settings
+                ui = ""
+                for part in (self.headers.get("Cookie") or "").split(";"):
+                    part = part.strip()
+                    if part.startswith("ui="):
+                        ui = part[3:]
+                path = "/v2.html" if ui == "v2" else "/index.html"
         fp = os.path.normpath(os.path.join(WEB, path.lstrip("/")))
         if not fp.startswith(os.path.abspath(WEB)) or not os.path.isfile(fp):
             self._send(404, b"not found", "text/plain")

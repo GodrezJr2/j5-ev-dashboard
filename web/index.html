@@ -659,6 +659,8 @@
       <span class="seg" id="themeSeg"><button data-v="light">Light</button><button data-v="dark">Dark</button></span></div>
     <div class="setrow"><span class="sl">Language</span>
       <span class="seg" id="langSeg"><button data-v="en">EN</button><button data-v="id">ID</button></span></div>
+    <div class="setrow"><span class="sl">Default view</span>
+      <span class="seg" id="uiSeg"><button data-v="v1">Classic</button><button data-v="v2">V2</button></span></div>
     <div class="setrow"><span class="sl">Petrol compare</span>
       <select class="fuelsel" id="fuelSel">
         <option value="Pertalite">Pertalite</option>
@@ -885,6 +887,7 @@ const MAP_ID={
   "Tap any card, bar or stat for the detail behind it.":"Ketuk kartu, bar, atau statistik mana pun untuk detailnya.",
   "SPKLU DC ≈ Rp 2.467/kWh + 3% tax (≈2.540 all-in) · admin Rp 0 · home AC cheaper":"SPKLU DC ≈ Rp 2.467/kWh + pajak 3% (≈2.540 total) · admin Rp 0 · AC rumah lebih murah",
   "Settings":"Pengaturan","Theme":"Tema","Light":"Terang","Dark":"Gelap","Language":"Bahasa",
+  "Default view":"Tampilan awal","Classic":"Klasik",
   "Km sync":"Sinkron km","Count all":"Hitung semua",
   "Car photo":"Foto mobil","Update":"Perbarui",
   "Charged":"Diisi",
@@ -931,7 +934,7 @@ function T(s){ return (lang==='id'&&s!=null)?(MAP_ID[s]||s):s; }
 function tn(en, id, vars){ let s = lang==='id' ? id : en;
   if(vars) for(const k in vars) s = s.split('{'+k+'}').join(vars[k]);
   return s; }
-const I18N_SEL='.over:not([id]),.ins .t,.sub:not([id]),.tile span,.speclist span,.lbl,.hint,.tabbar .tb span,.chgstats span,.sl,#themeSeg button,#resyncSeg button,#planref,.svc .expander span:first-child';
+const I18N_SEL='.over:not([id]),.ins .t,.sub:not([id]),.tile span,.speclist span,.lbl,.hint,.tabbar .tb span,.chgstats span,.sl,#themeSeg button,#resyncSeg button,#uiSeg button,#planref,.svc .expander span:first-child';
 function applyLang(){ document.documentElement.lang=lang;
   document.querySelectorAll(I18N_SEL).forEach(el=>{ if(el.dataset.en===undefined) el.dataset.en=el.textContent.trim(); el.textContent=T(el.dataset.en); });
   const tf=$('tripFrom'),tt=$('tripTo'),tg=$('tripGo'),th=$('tpHwyLbl'),tr=$('tpResLbl'),ts=$('tpStartLbl');
@@ -1020,6 +1023,12 @@ function bCalDay(x,month){ const [y,m]=month.split('-').map(Number);
 }
 $('themeSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; theme=b.dataset.v; try{localStorage.setItem('theme',theme)}catch(e){} applyTheme(); syncSeg(); buzz(8); });
 $('langSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; lang=b.dataset.v; try{localStorage.setItem('lang',lang)}catch(e){} applyLang(); syncSeg(); buzz(8); load(false); });
+// default view: which front end "/" serves on this device (cookie read by the server)
+$('uiSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  document.cookie='ui='+b.dataset.v+';path=/;max-age=31536000'; syncSeg(); buzz(8);
+  if(b.dataset.v==='v2') location.href='/v2.html'; });
+(function(){ const m=(document.cookie.match(/(?:^|;\s*)ui=(\w+)/)||[])[1]||'v1';
+  document.querySelectorAll('#uiSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===m)); })();
 const ARC=2*Math.PI*46, POS=['fl','fr','rl','rr'];
 function fmt(n){return n==null?'—':Number(n).toLocaleString('en-US')}
 function tyreClass(p){ if(p==null)return 'idle'; const u=tyreUnit();
