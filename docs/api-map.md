@@ -222,6 +222,14 @@ rules out "a constant". Surfaced as `fuel.range_km`, PHEV only.
   different metric. Left as-is rather than shipped as a two-point fit — needs a third paired sample.
 - **byte 54** — 20 on the PHEV in all three frames, `0` on every BEV frame. Meaning unknown.
 
+**Negative results worth keeping** (so nobody re-runs the experiment):
+- **b56 = 2 ("connected, not charging")** — hypothesized in #5, but never observed: AC left
+  plugged past the charge limit, scheduled-session completion, and DC all transition
+  `1 → 0` directly, on both the E5 and the J5. Treat the enum as `0`/`1`/`16` only until a
+  real frame shows otherwise.
+- **V2L (vehicle-to-load)** — tested live on the Omoda E5 (#5): no flag, byte, or state change
+  in the telemetry blob (or in the CarLinko app itself) when V2L is active.
+
 So the whole product can run off the WebSocket + token, no REST signing needed for reads.
 
 **Caveats:**

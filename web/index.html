@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="J5 EV">
@@ -18,15 +18,23 @@
     --canvas: oklch(0.972 0.006 95);
     --surface: oklch(0.992 0.004 95);
     --ink:    oklch(0.27 0.012 95);
-    --muted:  oklch(0.55 0.012 95);
-    --faint:  oklch(0.70 0.010 95);
+    --muted:  oklch(0.50 0.012 95);
+    --faint:  oklch(0.55 0.010 95);
     --line:   oklch(0.90 0.008 95);
     --hair:   oklch(0.93 0.007 95);
     --accent: oklch(0.52 0.10 158);
     --accent-soft: oklch(0.52 0.10 158 / .12);
     --warn:   oklch(0.74 0.13 70);
     --bad:    oklch(0.58 0.16 27);
+    --inset:  oklch(0.955 0.006 95);
+    /* motion: one confident deceleration curve everywhere; feedback 120ms, state 200ms, view 260ms */
+    --e-out:  cubic-bezier(.16,1,.3,1);
+    --e-io:   cubic-bezier(.2,.8,.2,1);
   }
+  html{scroll-behavior:smooth}
+  /* tab switch = the app's one recurring view transition: soft rise + fade of the incoming pane */
+  [data-tab].tabin{animation:tabin .26s var(--e-out)}
+  @keyframes tabin{from{opacity:0;transform:translateY(10px)}}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0}
   html{background:var(--canvas)}
   body{
@@ -38,6 +46,24 @@
   .wrap{max-width:440px;margin:0 auto}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
   .over{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+
+  /* a11y: visible keyboard focus (slider's outline:none above is overridden back here) */
+  :focus{outline:none}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+  /* a11y: keep small icons visually small but grow their hit area to ~44px */
+  .viewtoggle button,.calnav,.chipbtn,.refresh,.appbar .ab-rf{position:relative}
+  .viewtoggle button:before,.calnav:before,.chipbtn:before,.refresh:before,.appbar .ab-rf:before{
+    content:"";position:absolute;inset:-8px}
+  .seg button{position:relative}
+  .seg button:before{content:"";position:absolute;inset:-6px 0}
+
+  /* a11y: honor reduced motion — instant state change, no rolling/reveal choreography */
+  @media (prefers-reduced-motion:reduce){
+    *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+      transition-duration:.01ms!important;scroll-behavior:auto!important}
+    .reveal{opacity:1;transform:none}
+  }
 
   /* header */
   header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;border-bottom:1px solid var(--line)}
@@ -60,7 +86,7 @@
   .batt{display:flex;align-items:center;gap:24px}
   .gauge{position:relative;width:104px;height:104px;flex:none}
   .gauge svg{display:block}
-  .gauge svg circle{transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1)}
+  .gauge svg circle{transition:stroke-dashoffset .6s var(--e-out)}
   .gauge .c{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
   .gauge .grp{display:inline-flex;align-items:baseline}
   .gauge .c b{font-size:30px;font-weight:700;line-height:1}
@@ -121,7 +147,9 @@
   .caltot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:7px}
   .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:13px}
   .caldow{text-align:center;font-size:9.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.3px}
-  .calday{border:1px solid var(--line);border-radius:10px;padding:5px 2px 6px;text-align:center;cursor:pointer;position:relative;min-height:46px}
+  .calday{border:1px solid var(--line);border-radius:10px;padding:5px 2px 6px;text-align:center;cursor:pointer;position:relative;min-height:46px;
+    transition:transform .12s var(--e-out),border-color .18s}
+  .calday.tappable:active{transform:scale(.93);border-color:var(--accent)}
   .calday.z{cursor:default;color:var(--faint)}
   .calday .cd{font-size:10.5px;font-weight:650;color:var(--muted)}
   .calday .ck{display:block;font-size:11.5px;font-weight:750;margin-top:2px}
@@ -129,7 +157,8 @@
   .calday.empty{visibility:hidden}
   .calcap{text-align:center;font-size:11.5px;color:var(--faint);margin-top:11px}
   .setbtn{border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit;font-size:12.5px;
-    background:none;color:var(--accent);cursor:pointer;font-weight:600}
+    background:none;color:var(--accent);cursor:pointer;font-weight:600;transition:transform .12s var(--e-out),border-color .18s}
+  .setbtn:active{transform:scale(.94);border-color:var(--accent)}
   .setbtn:disabled{opacity:.5;cursor:default}
 
   /* footer stats */
@@ -152,7 +181,7 @@
   .badge.warn{color:var(--warn);background:oklch(0.74 0.13 70 / .14)}
   .badge.idle{color:var(--faint);background:oklch(0.70 0.010 95 / .14)}
   .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .tile{background:oklch(0.955 0.006 95);border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center}
+  .tile{background:var(--inset);border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center}
   .tile b{font-size:22px;font-weight:700;display:block;margin-bottom:4px;line-height:1}
   .tile span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 
@@ -178,7 +207,9 @@
   /* charge curve expander + chart */
   .expander{display:flex;justify-content:space-between;align-items:center;margin-top:16px;
     padding:11px 15px;border:1px solid var(--line);border-radius:12px;background:var(--surface);
-    font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none}
+    font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none;
+    transition:transform .12s var(--e-out),color .18s,border-color .18s}
+  .expander:active{transform:scale(.985);color:var(--ink);border-color:var(--accent)}
   .expander .chev{transition:transform .25s;font-size:20px;color:var(--faint);line-height:1}
   .expander.open .chev{transform:rotate(90deg)}
   #chgChart{margin-top:14px}
@@ -216,7 +247,7 @@
   .meta{text-align:center;font-size:11px;color:var(--faint);margin-top:26px;line-height:1.6}
 
   /* tappable affordance */
-  .tappable{cursor:pointer;user-select:none;transition:transform .12s ease}
+  .tappable{cursor:pointer;user-select:none;transition:transform .12s var(--e-out)}
   .tappable:active{transform:scale(.985)}
   .hint{font-size:12px;color:var(--faint);padding:12px 0 0;display:flex;align-items:center;gap:6px;transition:opacity .3s}
   .hint:before{content:"›";font-weight:700;color:var(--accent)}
@@ -235,7 +266,7 @@
   .sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-width:440px;margin:0 auto;
     background:var(--surface);border-radius:22px 22px 0 0;box-shadow:0 -10px 44px rgba(0,0,0,.20);
     padding:8px 22px calc(28px + env(safe-area-inset-bottom));max-height:84vh;overflow-y:auto;
-    transform:translateY(102%);transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+    transform:translateY(102%);transition:transform .32s var(--e-io)}
   .sheet.open{transform:translateY(0)}
   .sheet .grip{width:38px;height:4px;border-radius:99px;background:var(--line);margin:8px auto 16px}
   .sheet h3{font-size:21px;font-weight:750;letter-spacing:-.01em;margin-bottom:4px}
@@ -246,7 +277,7 @@
   .sheet .row span{color:var(--muted)}
   .sheet .row b{font-weight:700;font-size:16px;text-align:right}
   .sheet .note{font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:16px;
-    background:oklch(0.955 0.006 95);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+    background:var(--inset);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
   .sheet .note b{color:var(--ink);font-weight:700}
 
   /* slot-text (vendored) — rolling-digit animation for live numbers */
@@ -268,9 +299,9 @@
   /* iOS collapsing large-title -> frosted sticky app bar */
   .appbar{position:fixed;top:0;left:0;right:0;z-index:45;display:flex;align-items:center;gap:10px;
     padding:max(8px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-left)) 9px;
-    background:oklch(0.972 0.006 95 / .72);-webkit-backdrop-filter:saturate(1.7) blur(18px);
+    background:color-mix(in oklch,var(--canvas) 72%,transparent);-webkit-backdrop-filter:saturate(1.7) blur(18px);
     backdrop-filter:saturate(1.7) blur(18px);border-bottom:1px solid var(--line);
-    transform:translateY(-101%);opacity:0;transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .2s;
+    transform:translateY(-101%);opacity:0;transition:transform .28s var(--e-io),opacity .2s;
     pointer-events:none}
   .appbar.show{transform:none;opacity:1;pointer-events:auto}
   .appbar .ttl{font-size:15px;font-weight:700;letter-spacing:.01em}
@@ -284,7 +315,7 @@
   .appbar .ab-rf.spin{animation:spin .7s linear}
 
   /* scroll-reveal */
-  .reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s cubic-bezier(.2,.7,.2,1)}
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s var(--e-out)}
   .reveal.in{opacity:1;transform:none}
 
   .tiles.two{grid-template-columns:repeat(2,1fr)}
@@ -305,8 +336,10 @@
   .ctrlgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:6px 0 4px}
   .ctrlbtn{display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding:14px;border-radius:14px;
     border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;
-    font-weight:700;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
+    font-weight:700;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;
+    transition:transform .14s var(--e-out),border-color .2s,opacity .2s}
   .ctrlbtn small{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
+  .ctrlbtn svg{width:22px;height:22px;flex:none;margin-bottom:5px;color:var(--ink)}
   .ctrlbtn.unset{border-style:dashed;opacity:.72}
   .ctrlbtn.busy{opacity:.45;pointer-events:none}
   .ctrlbtn:active{transform:scale(.97)}
@@ -315,11 +348,12 @@
   .acrow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
   .ctrlknown{margin:12px 0 4px;font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .chipbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;
-    padding:5px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
-  .chipbtn:active{border-color:var(--accent);color:var(--accent)}
+    padding:5px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;
+    transition:transform .12s var(--e-out),color .18s,border-color .18s}
+  .chipbtn:active{border-color:var(--accent);color:var(--accent);transform:scale(.95)}
   .ctrllog{margin-top:10px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;max-height:170px;overflow:auto}
   .ctrllog div{padding:3px 0;border-top:1px solid var(--hair)}
-  :root[data-theme="dark"] .ctrlbtn{background:oklch(0.285 0.012 95)}
+  :root[data-theme="dark"] .ctrlbtn{background:var(--inset)}
 
   /* car hero (official render, self-hosted) */
   .hero{position:relative;margin:-6px 0 14px;text-align:center;isolation:isolate}
@@ -334,21 +368,22 @@
 
   /* bottom tab bar (frosted, fixed) */
   .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:46;display:flex;max-width:440px;margin:0 auto;
-    background:oklch(0.972 0.006 95 / .82);-webkit-backdrop-filter:saturate(1.7) blur(20px);
+    background:color-mix(in oklch,var(--canvas) 82%,transparent);-webkit-backdrop-filter:saturate(1.7) blur(20px);
     backdrop-filter:saturate(1.7) blur(20px);border-top:1px solid var(--line);
     padding-bottom:env(safe-area-inset-bottom)}
   .tabbar .tb{flex:1;background:none;border:0;padding:9px 0 7px;display:flex;flex-direction:column;
     align-items:center;gap:3px;color:var(--faint);font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;
-    transition:color .18s}
+    transition:color .18s,transform .14s var(--e-out)}
   .tabbar .tb.on{color:var(--accent)}
+  .tabbar .tb svg{width:23px;height:23px;transition:transform .22s var(--e-out)}
+  .tabbar .tb.on svg{transform:translateY(-1.5px) scale(1.06)}
   .tabbar .tb:active{transform:scale(.94)}
-  .tabbar .tb svg{width:23px;height:23px}
   .tabbar .tb span{font-size:10px;font-weight:600;letter-spacing:.02em}
 
   /* flex / share card */
   .flexbtn{display:block;width:100%;margin-top:24px;padding:14px;border-radius:14px;border:1px solid var(--accent);
     background:var(--accent-soft);color:var(--accent);font:inherit;font-weight:700;font-size:15px;cursor:pointer;
-    transition:transform .12s}
+    transition:transform .12s var(--e-out)}
   .flexbtn:active{transform:scale(.99)}
   .flexcard{background:linear-gradient(158deg,var(--accent-soft),transparent 60%),var(--surface);
     border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:4px}
@@ -367,18 +402,17 @@
     --surface:oklch(0.252 0.012 95);
     --ink:    oklch(0.95 0.008 95);
     --muted:  oklch(0.70 0.012 95);
-    --faint:  oklch(0.55 0.012 95);
+    --faint:  oklch(0.61 0.012 95);
     --line:   oklch(0.34 0.012 95);
     --hair:   oklch(0.30 0.010 95);
     --accent: oklch(0.74 0.13 158);
     --accent-soft: oklch(0.74 0.13 158 / .17);
     --warn:   oklch(0.80 0.13 70);
     --bad:    oklch(0.67 0.17 27);
+    --inset:  oklch(0.285 0.012 95);
   }
-  :root[data-theme="dark"] .tile{background:oklch(0.285 0.012 95)}
-  :root[data-theme="dark"] .sheet .note{background:oklch(0.285 0.012 95)}
-  :root[data-theme="dark"] .appbar{background:oklch(0.205 0.012 95 / .72)}
-  :root[data-theme="dark"] .tabbar{background:oklch(0.205 0.012 95 / .82)}
+  :root[data-theme="dark"] .appbar{background:color-mix(in oklch,var(--canvas) 72%,transparent)}
+  :root[data-theme="dark"] .tabbar{background:color-mix(in oklch,var(--canvas) 82%,transparent)}
   :root[data-theme="dark"] .badge.bad{background:oklch(0.67 0.17 27 / .18)}
   :root[data-theme="dark"] .badge.warn{background:oklch(0.80 0.13 70 / .18)}
   :root[data-theme="dark"] .vd.warn{background:oklch(0.80 0.13 70 / .18)}
@@ -389,7 +423,9 @@
   .setrow .sl{font-size:14px;font-weight:600}
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
   .seg button{background:none;border:0;padding:8px 17px;font:inherit;font-size:13px;font-weight:600;
-    color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s,color .15s}
+    color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;
+    transition:background .15s,color .15s,transform .12s var(--e-out)}
+  .seg button:active{transform:scale(.94)}
   .seg button.on{background:var(--accent);color:var(--surface)}
   .fuelsel{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);
     border:1px solid var(--line);border-radius:10px;padding:8px 12px;-webkit-appearance:none;appearance:none;max-width:180px}
@@ -431,7 +467,7 @@
   .spksub{font-size:12px;color:var(--muted);margin-top:1px}
   .spkdist{flex:none;font-size:12px;font-weight:700;color:var(--muted)}
   .tpbtn{margin-left:auto;background:var(--accent);color:var(--surface);border:0;border-radius:11px;
-    padding:11px 24px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:transform .12s}
+    padding:11px 24px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:transform .12s var(--e-out),opacity .18s}
   .tpbtn:active{transform:scale(.98)}
   .tpbtn.busy{opacity:.6;pointer-events:none}
   .tpsum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 6px;text-align:center}
@@ -458,7 +494,7 @@
   .tptot{font-size:13px;font-weight:700;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
   .tpnote{font-size:11px;color:var(--faint);line-height:1.55;margin-top:12px}
   .gmapbtn{display:block;text-align:center;margin-top:14px;padding:13px;border-radius:12px;
-    background:var(--accent);color:var(--surface);font-weight:700;font-size:14px;text-decoration:none;transition:transform .12s}
+    background:var(--accent);color:var(--surface);font-weight:700;font-size:14px;text-decoration:none;transition:transform .12s var(--e-out)}
   .gmapbtn:active{transform:scale(.99)}
 </style>
 </head>
@@ -544,9 +580,9 @@
     <div class="bars" id="bars"></div>
     <div id="calWrap" hidden>
       <div class="calhead">
-        <button class="calnav" id="calPrev">&#8249;</button>
+        <button class="calnav" id="calPrev" aria-label="Previous month">&#8249;</button>
         <div class="caltitle" id="calTitle">&mdash;</div>
-        <button class="calnav" id="calNext">&#8250;</button>
+        <button class="calnav" id="calNext" aria-label="Next month">&#8250;</button>
       </div>
       <div class="caltot" id="calTot"></div>
       <div class="calgrid" id="calGrid"></div>
@@ -623,6 +659,8 @@
       <span class="seg" id="themeSeg"><button data-v="light">Light</button><button data-v="dark">Dark</button></span></div>
     <div class="setrow"><span class="sl">Language</span>
       <span class="seg" id="langSeg"><button data-v="en">EN</button><button data-v="id">ID</button></span></div>
+    <div class="setrow"><span class="sl">Default view</span>
+      <span class="seg" id="uiSeg"><button data-v="v1">Classic</button><button data-v="v2">V2</button></span></div>
     <div class="setrow"><span class="sl">Petrol compare</span>
       <select class="fuelsel" id="fuelSel">
         <option value="Pertalite">Pertalite</option>
@@ -741,7 +779,7 @@
 
   <section id="ctrlSec">
     <div class="head2"><div class="over">Control <span class="badge warn">BETA</span></div><span class="badge" id="ctrlBadge">&mdash;</span></div>
-    <div class="ctrlnote" id="ctrlNote"><b>Beta.</b> Labels use best-effort opcodes decoded from the app (only <b>Stop charging</b> = confirmed). Each tap inits then fires. <b>Long-press a button</b> to fix a wrong opcode. Car must be awake or it fails (<b>50043</b>). Tap = real actuation — watch the car. <b>Cloud only — no Bluetooth</b>, so the car needs cellular signal; the app's Bluetooth-proximity control isn't implemented.</div>
+    <div class="ctrlnote" id="ctrlNote"><b>Beta.</b> Labels come from the app's own jump-table decode — lock/unlock, windows open/close, tailgate and stop charging are runtime-confirmed on a J5; the rest pending one-tap verification (report mismatches). Each tap inits then fires. <b>Long-press a button</b> to fix a wrong opcode. Car must be awake or it fails (<b>50043</b>). Tap = real actuation — watch the car. <b>Cloud only — no Bluetooth</b>, so the car needs cellular signal; the app's Bluetooth-proximity control isn't implemented.</div>
     <div id="ctrlGrid" class="ctrlgrid"></div>
     <div class="ctrlac" id="ctrlAc" style="display:none">
       <div class="acrow"><span class="over">A/C temperature</span><b class="num"><span id="ctrlAcTemp">22.0</span><u>&deg;C</u></b></div>
@@ -839,9 +877,17 @@ const MAP_ID={
   "duration":"durasi","kWh in":"kWh masuk","avg kW":"rata kW","peak kW":"puncak kW","kW charging now":"kW mengisi kini",
   "Front L":"Depan Ki","Front R":"Depan Ka","Rear L":"Belakang Ki","Rear R":"Belakang Ka",
   "Home":"Beranda","Charge":"Isi","Trips":"Jalan","More":"Lainnya",
+  "Control":"Kontrol","Lock":"Kunci","Unlock":"Buka kunci","A/C on":"AC nyala","A/C off":"AC mati",
+  "Windows open":"Buka jendela","Windows close":"Tutup jendela","Windows vent":"Ventilasi jendela",
+  "Sunroof open":"Buka sunroof","Sunroof close":"Tutup sunroof","Sunroof tilt":"Angkat sunroof",
+  "Tailgate open":"Buka bagasi","Tailgate close":"Tutup bagasi","Find car":"Cari mobil",
+  "Quick cool on":"Pendingin cepat nyala","Quick cool off":"Pendingin cepat mati",
+  "Quick heat on":"Pemanas cepat nyala","Quick heat off":"Pemanas cepat mati",
+  "Defog on":"Defog nyala","Defog off":"Defog mati","Stop charging":"Stop isi",
   "Tap any card, bar or stat for the detail behind it.":"Ketuk kartu, bar, atau statistik mana pun untuk detailnya.",
   "SPKLU DC ≈ Rp 2.467/kWh + 3% tax (≈2.540 all-in) · admin Rp 0 · home AC cheaper":"SPKLU DC ≈ Rp 2.467/kWh + pajak 3% (≈2.540 total) · admin Rp 0 · AC rumah lebih murah",
   "Settings":"Pengaturan","Theme":"Tema","Light":"Terang","Dark":"Gelap","Language":"Bahasa",
+  "Default view":"Tampilan awal","Classic":"Klasik",
   "Km sync":"Sinkron km","Count all":"Hitung semua",
   "Car photo":"Foto mobil","Update":"Perbarui",
   "Charged":"Diisi",
@@ -888,7 +934,7 @@ function T(s){ return (lang==='id'&&s!=null)?(MAP_ID[s]||s):s; }
 function tn(en, id, vars){ let s = lang==='id' ? id : en;
   if(vars) for(const k in vars) s = s.split('{'+k+'}').join(vars[k]);
   return s; }
-const I18N_SEL='.over:not([id]),.ins .t,.sub:not([id]),.tile span,.speclist span,.lbl,.hint,.tabbar .tb span,.chgstats span,.sl,#themeSeg button,#resyncSeg button,#planref,.svc .expander span:first-child';
+const I18N_SEL='.over:not([id]),.ins .t,.sub:not([id]),.tile span,.speclist span,.lbl,.hint,.tabbar .tb span,.chgstats span,.sl,#themeSeg button,#resyncSeg button,#uiSeg button,#planref,.svc .expander span:first-child';
 function applyLang(){ document.documentElement.lang=lang;
   document.querySelectorAll(I18N_SEL).forEach(el=>{ if(el.dataset.en===undefined) el.dataset.en=el.textContent.trim(); el.textContent=T(el.dataset.en); });
   const tf=$('tripFrom'),tt=$('tripTo'),tg=$('tripGo'),th=$('tpHwyLbl'),tr=$('tpResLbl'),ts=$('tpStartLbl');
@@ -900,9 +946,11 @@ function applyLang(){ document.documentElement.lang=lang;
   const ss=$('spkluSearch'); if(ss) ss.textContent=T('Search this area');
   const sm=$('tpModeSeg'); if(sm){ const bs=sm.querySelectorAll('button'); if(bs[0]) bs[0].textContent=T('Planner'); if(bs[1]) bs[1].textContent=T('SPKLU Map'); }
   const to=$('tpOver'); if(to) to.textContent=T(to.dataset.en||'Trip planner');
-  applyCurrency(); }
+  applyCurrency(); if(typeof renderControls==='function') renderControls(); }
 function syncSeg(){ document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===theme));
-  document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===lang)); }
+  document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===lang));
+  ['themeSeg','langSeg','resyncSeg'].forEach(id=>{ const seg=$(id); if(!seg) return;
+    seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('on')?'true':'false')); }); }
 function syncResyncSeg(){ const v=(DATA&&DATA.resync_km)||'skip';
   document.querySelectorAll('#resyncSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); }
 $('resyncSeg').addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b)return;
@@ -975,6 +1023,12 @@ function bCalDay(x,month){ const [y,m]=month.split('-').map(Number);
 }
 $('themeSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; theme=b.dataset.v; try{localStorage.setItem('theme',theme)}catch(e){} applyTheme(); syncSeg(); buzz(8); });
 $('langSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; lang=b.dataset.v; try{localStorage.setItem('lang',lang)}catch(e){} applyLang(); syncSeg(); buzz(8); load(false); });
+// default view: which front end "/" serves on this device (cookie read by the server)
+$('uiSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  document.cookie='ui='+b.dataset.v+';path=/;max-age=31536000'; syncSeg(); buzz(8);
+  if(b.dataset.v==='v2') location.href='/v2.html'; });
+(function(){ const m=(document.cookie.match(/(?:^|;\s*)ui=(\w+)/)||[])[1]||'v1';
+  document.querySelectorAll('#uiSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===m)); })();
 const ARC=2*Math.PI*46, POS=['fl','fr','rl','rr'];
 function fmt(n){return n==null?'—':Number(n).toLocaleString('en-US')}
 function tyreClass(p){ if(p==null)return 'idle'; const u=tyreUnit();
@@ -1502,30 +1556,69 @@ function applySpecs(){
 // ---- Control tab: fire remote-control opcodes at the car (replaces the CarLinko app) ----
 // Opcodes aren't hardcoded: labels below map to a hex opcode you assign (tap to set / long-press
 // to edit), stored in this browser. Discover each opcode with the tester, then assign it here.
-// op = best-effort opcode from the static decode (74<cmd><state>). 742701 (stop charge) is confirmed;
-// the rest are educated from structure -- long-press any button to correct its opcode, then tell me.
+// op = label map from the assembledSendData jump table + vcLoadingMessage labels (Omoda 9, #11,
+// credited in docs/control-opcodes.md). Runtime-confirmed: 742701 (app log), lock/unlock, trunk
+// open/close, windows open/close (J5, 2026-08-30); the rest pending one-tap verification --
+// long-press any button to correct its opcode, then tell me.
+// CTRL_MAP_VER: bump when the decoded defaults change, so stale localStorage overrides are dropped.
+const CTRL_MAP_VER='2';
 const CTRL_ACTIONS=[
-  {k:'lock',    lbl:'Lock',             op:'741000', cap:c=>c.lock,                    confirm:false},
-  {k:'unlock',  lbl:'Unlock',           op:'741001', cap:c=>c.lock,                    confirm:true},
-  {k:'acOn',    lbl:'A/C on',           op:'742401', cap:c=>c.ac&&c.ac.switch,         confirm:false},
-  {k:'acOff',   lbl:'A/C off',          op:'742400', cap:c=>c.ac&&c.ac.switch,         confirm:false},
-  {k:'winOpen', lbl:'Windows open',     op:'741501', cap:c=>c.windows&&c.windows.open, confirm:true},
-  {k:'winClose',lbl:'Windows close',    op:'741500', cap:c=>c.windows&&c.windows.close,confirm:false},
-  {k:'winVent', lbl:'Windows vent',     op:'741502', cap:c=>c.windows&&c.windows.vent, confirm:false},
-  {k:'roofOpen',lbl:'Sunroof open',     op:'741A01', cap:c=>c.sunroof&&c.sunroof.open,  confirm:true},
-  {k:'roofClose',lbl:'Sunroof close',   op:'741A00', cap:c=>c.sunroof&&c.sunroof.open,  confirm:false},
-  {k:'roofTilt',lbl:'Sunroof tilt',     op:'741A02', cap:c=>c.sunroof&&c.sunroof.tilt,  confirm:false},
-  {k:'liftOpen',lbl:'Tailgate (bagasi)',op:'741201', cap:c=>c.liftgate,                 confirm:true},
-  {k:'find',    lbl:'Find car',         op:'740100', cap:c=>c.find,                     confirm:false},
+  {k:'lock',    lbl:'Lock',             op:'740100', cap:c=>c.lock,                    confirm:false},
+  {k:'unlock',  lbl:'Unlock',           op:'740200', cap:c=>c.lock,                    confirm:true},
+  {k:'acOn',    lbl:'A/C on',           op:'741001', cap:c=>c.ac&&c.ac.switch,         confirm:false},
+  {k:'acOff',   lbl:'A/C off',          op:'741000', cap:c=>c.ac&&c.ac.switch,         confirm:false},
+  {k:'winOpen', lbl:'Windows open',     op:'740600', cap:c=>c.windows&&c.windows.open, confirm:true},
+  {k:'winClose',lbl:'Windows close',    op:'740500', cap:c=>c.windows&&c.windows.close,confirm:false},
+  {k:'winVent', lbl:'Windows vent',     op:'740E00', cap:c=>c.windows&&c.windows.vent, confirm:false},
+  {k:'roofOpen',lbl:'Sunroof open',     op:'740F01', cap:c=>c.sunroof&&c.sunroof.open,  confirm:true},
+  {k:'roofClose',lbl:'Sunroof close',   op:'740F00', cap:c=>c.sunroof&&c.sunroof.open,  confirm:false},
+  {k:'roofTilt',lbl:'Sunroof tilt',     op:'740F02', cap:c=>c.sunroof&&c.sunroof.tilt,  confirm:false},
+  {k:'liftOpen',lbl:'Tailgate open',    op:'740300', cap:c=>c.liftgate,                 confirm:true},
+  {k:'liftClose',lbl:'Tailgate close',  op:'740A00', cap:c=>c.liftgate,                 confirm:false},
+  {k:'find',    lbl:'Find car',         op:'740400', cap:c=>c.find,                     confirm:false},
+  {k:'coolOn',  lbl:'Quick cool on',    op:'742001', cap:c=>c.ac&&c.ac.rapidCool,       confirm:false},
+  {k:'coolOff', lbl:'Quick cool off',   op:'742000', cap:c=>c.ac&&c.ac.rapidCool,       confirm:false},
+  {k:'heatOn',  lbl:'Quick heat on',    op:'741F01', cap:c=>c.ac&&c.ac.rapidHeat,       confirm:false},
+  {k:'heatOff', lbl:'Quick heat off',   op:'741F00', cap:c=>c.ac&&c.ac.rapidHeat,       confirm:false},
+  {k:'defogOn', lbl:'Defog on',         op:'741201', cap:c=>c.ac&&c.ac.defog,           confirm:false},
+  {k:'defogOff',lbl:'Defog off',        op:'741200', cap:c=>c.ac&&c.ac.defog,           confirm:false},
   {k:'chgStop', lbl:'Stop charging',    op:'742701', cap:c=>c.charging,                 confirm:true},
 ];
 // REAL control opcodes decoded from send_vehicle_control_data_utils.dart (Blutter). Format
 // 74<CMD><STATE>: STATE 00=off/close 01=on/open 02/03=mode. 742701 confirmed = stop charging.
-// These are the "on/open" variants (visible action) — tap each at the car to identify, then report.
-// The car may need init (2301/24/77) first. UNKNOWN mapping — watch the car; any may actuate.
+// Labels now come from the #11 jump-table decode (see CTRL_ACTIONS); these chips stay as the raw
+// tester for verifying them. The car may need init (2301/24/77) first — watch the car; any may actuate.
 const CTRL_CANDIDATES=["740100","740200","740300","740400","740500","740600","740700","740800","740A00","740E00","740F01","741001","741201","741501","741601","741701","741901","741A01","741B01","741C01","741E01","741F01","742001","742301","742401","742501","742701"];
+// control-button icons: hand-authored 24px stroke glyphs, same language as the tab bar
+// (1.9px round stroke). On/off pairs share a glyph -- the label carries the direction.
+const CTRL_ICONS={
+  lock:    '<rect x="6" y="11" width="12" height="8.5" rx="2"/><path d="M9 11V7.5a3 3 0 016 0V11"/><circle cx="12" cy="15.2" r="1.1" fill="currentColor" stroke="none"/>',
+  unlock:  '<rect x="6" y="11" width="12" height="8.5" rx="2"/><path d="M9 11V7.5a3 3 0 015.9-.7"/><circle cx="12" cy="15.2" r="1.1" fill="currentColor" stroke="none"/>',
+  acOn:    '<path d="M12 3.5v17M4.2 7.8l15.6 8.4M4.2 16.2l15.6-8.4"/>',
+  acOff:   '<path d="M12 3.5v17M4.2 7.8l15.6 8.4M4.2 16.2l15.6-8.4"/>',
+  winOpen: '<rect x="5.5" y="4.5" width="13" height="15" rx="2"/><path d="M12 8.5v5.5M9.8 11.8l2.2 2 2.2-2"/>',
+  winClose:'<rect x="5.5" y="4.5" width="13" height="15" rx="2"/><path d="M12 14V8.5M9.8 10.7l2.2-2 2.2 2"/>',
+  winVent: '<rect x="5.5" y="4.5" width="13" height="15" rx="2"/><path d="M12 6.8v3.4M10.2 8.4l1.8 1.7 1.8-1.7"/>',
+  roofOpen:'<path d="M4.5 15.5c1.8-4.6 4.3-6.8 7.5-6.8s5.7 2.2 7.5 6.8"/><path d="M14.8 12.6h4.4M17.2 10.5l2.1 2.1-2.1 2.1"/>',
+  roofClose:'<path d="M4.5 15.5c1.8-4.6 4.3-6.8 7.5-6.8s5.7 2.2 7.5 6.8"/><path d="M9.2 12.6H4.8M6.8 10.5l-2.1 2.1 2.1 2.1"/>',
+  roofTilt:'<path d="M4.5 15.5c1.8-4.6 4.3-6.8 7.5-6.8s5.7 2.2 7.5 6.8"/><path d="M16.8 14V9.5M14.9 11.4l1.9-1.9 1.9 1.9"/>',
+  liftOpen:'<path d="M6.5 19v-6.5a2 2 0 012-2h7a2 2 0 012 2V19"/><path d="M12 14.5v-9M9.2 8.3L12 5.5l2.8 2.8"/>',
+  liftClose:'<path d="M6.5 19v-6.5a2 2 0 012-2h7a2 2 0 012 2V19"/><path d="M12 5.5v9M9.2 11.7l2.8 2.8 2.8-2.8"/>',
+  find:    '<path d="M4 10.5v3h3l4.5 3.8V6.7L7 10.5H4z"/><path d="M14.8 9.8a3.4 3.4 0 010 4.4M17.4 7.6a6.6 6.6 0 010 8.8"/>',
+  coolOn:  '<path d="M12 2.5v11M4.7 7l14.6 8.4M4.7 15.4L19.3 7"/><path d="M8.5 17.8L12 21.2l3.5-3.4"/>',
+  coolOff: '<path d="M12 2.5v11M4.7 7l14.6 8.4M4.7 15.4L19.3 7"/><path d="M8.5 17.8L12 21.2l3.5-3.4"/>',
+  heatOn:  '<path d="M8.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M13.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M18.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4"/><path d="M8.5 20.5L12 17l3.5 3.5"/>',
+  heatOff: '<path d="M8.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M13.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M18.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4"/><path d="M8.5 20.5L12 17l3.5 3.5"/>',
+  defogOn: '<path d="M4.5 18.5l2.6-9.5h9.8l2.6 9.5"/><path d="M9.3 12.3c0 1.3-1.1 1.6-1.1 2.9M13 12.3c0 1.3-1.1 1.6-1.1 2.9M16.7 12.3c0 1.3-1.1 1.6-1.1 2.9"/>',
+  defogOff:'<path d="M4.5 18.5l2.6-9.5h9.8l2.6 9.5"/><path d="M9.3 12.3c0 1.3-1.1 1.6-1.1 2.9M13 12.3c0 1.3-1.1 1.6-1.1 2.9M16.7 12.3c0 1.3-1.1 1.6-1.1 2.9"/>',
+  chgStop: '<path d="M9.5 6.5V4M14.5 6.5V4M7.5 6.5h9V11a4.5 4.5 0 01-9 0V6.5z"/><path d="M12 15.5V18"/><rect x="15" y="14.5" width="6" height="6" rx="1.2" fill="currentColor" stroke="none"/>',
+};
+function ctrlIcon(k){ const p=CTRL_ICONS[k]; return p?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>':''; }
 let CTRL_CAPS=null, CTRL_KNOWN=[];
-function ctrlMap(){ try{return JSON.parse(localStorage.getItem('ctrlMap')||'{}');}catch(e){return {};} }
+function ctrlMap(){ try{
+  if(localStorage.getItem('ctrlMapV')!==CTRL_MAP_VER){ localStorage.removeItem('ctrlMap'); localStorage.setItem('ctrlMapV',CTRL_MAP_VER); }
+  return JSON.parse(localStorage.getItem('ctrlMap')||'{}');
+}catch(e){return {};} }
 function ctrlSetOp(k,op){ const m=ctrlMap(); if(op) m[k]=op.trim(); else delete m[k]; localStorage.setItem('ctrlMap',JSON.stringify(m)); }
 function ctrlLog(msg){ const el=$('ctrlLog'); if(!el)return; const t=new Date().toLocaleTimeString();
   el.insertAdjacentHTML('afterbegin','<div>'+t+' &mdash; '+msg+'</div>'); }
@@ -1550,7 +1643,7 @@ function renderControls(){
   CTRL_ACTIONS.filter(a=>{ try{return a.cap(caps);}catch(e){return false;} }).forEach(a=>{
     const op=map[a.k]||a.op||'';                    // localStorage override wins, else the decoded default
     const b=document.createElement('button'); b.className='ctrlbtn'+(op?'':' unset');
-    b.innerHTML='<span>'+a.lbl+'</span><small>'+(op?op:'tap to set')+'</small>';
+    b.innerHTML=ctrlIcon(a.k)+'<span>'+T(a.lbl)+'</span><small>'+(op?op:'tap to set')+'</small>';
     b.addEventListener('click',async()=>{
       const code=ctrlMap()[a.k]||a.op;
       if(!code){ const nv=(prompt('Opcode (hex) for "'+a.lbl+'"','')||'').trim(); if(!nv) return; ctrlSetOp(a.k,nv); renderControls(); return; }
@@ -1868,8 +1961,10 @@ function setupTabs(){
   $('flex').dataset.tab='more';
 }
 function showTab(t){
-  document.querySelectorAll('[data-tab]').forEach(el=>{ const on=el.dataset.tab===t; el.style.display=on?'':'none'; if(on) el.classList.add('in'); });
-  document.querySelectorAll('.tabbar .tb').forEach(b=>b.classList.toggle('on', b.dataset.t===t));
+  document.querySelectorAll('[data-tab]').forEach(el=>{ const on=el.dataset.tab===t; el.style.display=on?'':'none';
+    if(on){ el.classList.add('in'); el.classList.remove('tabin'); void el.offsetWidth; el.classList.add('tabin'); } });
+  document.querySelectorAll('.tabbar .tb').forEach(b=>{ const on=b.dataset.t===t; b.classList.toggle('on',on);
+    if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   window.scrollTo(0,0); $('appbar').classList.remove('show');
 }
 document.querySelectorAll('.tabbar .tb').forEach(b=>b.addEventListener('click',()=>{ showTab(b.dataset.t); buzz(8); }));
