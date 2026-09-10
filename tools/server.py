@@ -583,16 +583,13 @@ def build_sessions(fr, now):
         left = prev[-1] if prev else fr[0][0]
         if (right - left) < CHARGE_PARK_MIN or (soc1 - soc0) < MIN_GAIN_PCT:
             continue                                                 # regen / noise, not a charge
-        # SoC re-sync guard: if any single frame step implies an impossible charge rate, the car
-        # dark-synced its SoC in one jump -- the session's timing (and so avg/peak kW) is fiction.
-        resync = any(
-            (pts[k][1] - pts[k-1][1]) > 0 and pts[k][0] > pts[k-1][0] and
-            (pts[k][1] - pts[k-1][1]) / 100.0 * CAP_KWH / ((pts[k][0] - pts[k-1][0]) / 3600.0) > MAX_CHG_KW
-            for k in range(1, len(pts)))
-        if resync:
-            continue
         kwh = max(0.0, (soc1 - soc0) / 100.0 * CAP_KWH)
         dur_h = max((s["last_rise"] - s["start"]) / 3600.0, 1e-6)
+        # SoC re-sync guard: the session's own average rate can't beat MAX_CHG_KW. When it does,
+        # the car dark-synced its whole SoC gain into one frame on reconnect -- the timespan (and
+        # so avg/peak kW, and the flat "curve") is a measurement artifact, not a chargeable event.
+        if kwh / dur_h > MAX_CHG_KW:
+            continue
         peak, j = 0.0, 0                               # peak kW over >=3 min windows (1% steps are coarse)
         for k in range(1, len(pts)):
             dtp, dsc = pts[k][0] - pts[j][0], pts[k][1] - pts[j][1]
