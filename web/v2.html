@@ -223,6 +223,13 @@
   .socbar i{display:block;height:100%;border-radius:99px;background:var(--acc);
     transition:width .8s var(--eo)}
 
+  /* charge curve (ported from v1: SoC% vs elapsed minutes, inline SVG) */
+  #cchart{display:block;width:100%}
+  .cstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;text-align:center}
+  .cstats b{display:block;font-size:17px;font-weight:800;line-height:1;margin-bottom:4px}
+  .cstats span{font-size:9.5px;color:var(--fnt);text-transform:uppercase;letter-spacing:.4px}
+  .crange{text-align:center;font-size:12.5px;color:var(--mut);margin-top:12px;line-height:1.5}
+
   /* charging history */
   .hrow2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
     padding:12px 0;border-top:1px solid var(--line);font-size:13px;color:var(--mut)}
@@ -263,7 +270,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <div class="range"><b class="num" id="hRange">&mdash;</b><u>km</u></div>
     <div class="soc" id="hSoc"></div>
     <div class="status"><span class="dot" id="hDot"></span><span id="hState">&mdash;</span>
-      <button class="rf" id="hRefresh" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 11a8 8 0 10.6 5"/><path d="M20 4v7h-7"/></svg></button></div>
+      <button class="rf" id="hRefresh" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 9.5a8 8 0 0113.3-2.7L20.5 9.5"/><path d="M20.5 4.5v5h-5"/><path d="M19.5 14.5a8 8 0 01-13.3 2.7L3.5 14.5"/><path d="M3.5 19.5v-5h5"/></svg></button></div>
     <img class="car" id="hCar" src="car-generic.svg" alt="Your car" width="340" height="218">
   </div>
   <div class="qa" id="qaRow"></div>
@@ -277,7 +284,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       <div class="vm" id="aModel">&mdash;</div>
       <div class="vv" id="aVin">&mdash;</div>
       <div class="vo"><span class="num" id="aOdo">&mdash;</span> <u>km</u></div>
-      <button class="ve" id="aEye" aria-label="Show or hide VIN"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg></button>
+      <button class="ve" id="aEye" aria-label="Show or hide VIN"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6.5 5.5 12 5.5 21.5 12 21.5 12 17.5 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <img id="aCar" src="car-generic.svg" alt="">
     </div>
     <div class="rowlist" id="acctRows"></div>
@@ -286,8 +293,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 </div>
 
 <div class="tabbar">
-  <button class="on" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l2-6a3 3 0 013-2h6a3 3 0 013 2l2 6"/><rect x="3" y="16" width="18" height="4" rx="1.6"/><circle cx="7.5" cy="18" r="0.4"/><circle cx="16.5" cy="18" r="0.4"/></svg><span>My Vehicle</span></button>
-  <button data-v="acct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0115 0"/></svg><span>My Account</span></button>
+  <button class="on" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5l1.8-5.3A3 3 0 018.6 8.2h6.8a3 3 0 012.8 2L20 15.5"/><rect x="3" y="15.5" width="18" height="4" rx="1.6"/><circle cx="7.5" cy="17.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="16.5" cy="17.5" r="1.3" fill="currentColor" stroke="none"/></svg><span>My Vehicle</span></button>
+  <button data-v="acct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0115 0z"/></svg><span>My Account</span></button>
 </div>
 
 <div class="page" id="pgAc"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>A/C</h2></div>
@@ -317,27 +324,27 @@ let toastT = null;
 function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show');
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
 
-// stroke icon glyphs (24px, same family  as v1's control icons)
+// stroke icon glyphs — fresh 24px round-stroke set, consistent 1.8 weight, no fills except accents
 const IC = {
-  lock:    '<rect x="6" y="11" width="12" height="8.5" rx="2"/><path d="M9 11V7.5a3 3 0 016 0V11"/><circle cx="12" cy="15.2" r="1.1" fill="currentColor" stroke="none"/>',
-  unlock:  '<rect x="6" y="11" width="12" height="8.5" rx="2"/><path d="M9 11V7.5a3 3 0 015.9-.7"/><circle cx="12" cy="15.2" r="1.1" fill="currentColor" stroke="none"/>',
-  find:    '<path d="M4 10.5v3h3l4.5 3.8V6.7L7 10.5H4z"/><path d="M14.8 9.8a3.4 3.4 0 010 4.4M17.4 7.6a6.6 6.6 0 010 8.8"/>',
-  ac:      '<path d="M12 3.5v17M4.2 7.8l15.6 8.4M4.2 16.2l15.6-8.4"/>',
-  cool:    '<path d="M12 2.5v11M4.7 7l14.6 8.4M4.7 15.4L19.3 7"/><path d="M8.5 17.8L12 21.2l3.5-3.4"/>',
-  heat:    '<path d="M8.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M13.2  3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4M18.2 3.5c0 1.8-1.7 2.3-1.7 4s1.7 2.2 1.7 4"/>',
-  power:   '<path d="M12 4v8"/><path d="M6.3 6.8a8 8 0 1011.4 0"/>',
-  bolt:    '<path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13z"/>',
-  door:    '<rect x="5" y="4" width="14" height="16" rx="2"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/>',
-  tyre:    '<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="3"/><path d="M12 4.5v3M12 16.5v3M4.5 12h3M16.5 12h3"/>',
-  chart:   '<path d="M4.5 19.5L9 13l4 3 6.5-8"/><path d="M15.5 8h4v4"/>',
-  seat:    '<path d="M7 4v8a3 3 0 003 3h6"/><path d="M7 12H5M17 15l2 5M9 15l-2 5"/><path d="M6 4a2 2 0 014 0v3H6z"/>',
-  car:     '<path d="M4 16l2-6a3 3 0 013-2h6a3 3 0 013 2l2 6"/><rect x="3" y="16" width="18" height="4" rx="1.6"/>',
-  globe:   '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c-5.5 5-5.5 12 0 17 5.5-5 5.5-12 0-17z"/>',
-  gauge:   '<path d="M5 19a9 9 0 1114 0"/><path d="M12 14l3.5-5"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/>',
-  camera:  '<rect x="3.5" y="7" width="17" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8.5 7l1.2-2h4.6l1.2 2"/>',
-  link:    '<path d="M10 14a5 5 0 007 0l2.5-2.5a5 5 0 00-7-7L11 6"/><path d="M14 10a5 5 0 00-7 0l-2.5 2.5a5 5 0 007 7L13 18"/>',
+  lock:    '<rect x="5" y="10.5" width="14" height="9.5" rx="2.6"/><path d="M8 10.5V7a4 4 0 018 0v3.5"/><circle cx="12" cy="15" r="1.4"/>',
+  unlock:  '<rect x="5" y="10.5" width="14" height="9.5" rx="2.6"/><path d="M8 10.5V7a4 4 0 017.6-2"/><circle cx="12" cy="15" r="1.4"/>',
+  find:    '<circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/><path d="M7.9 7.9a5.8 5.8 0 000 8.2M16.1 16.1a5.8 5.8 0 000-8.2M5 5a9.5 9.5 0 000 14M19 19a9.5 9.5 0 000-14"/>',
+  ac:      '<circle cx="12" cy="12" r="2"/><path d="M12 10c0-3.2.4-6 2-6s3 2.2 1.8 4.2S12 10 12 10M14 12c3.2 0 6 .4 6 2s-2.2 3-4.2 1.8S14 12 14 12M12 14c0 3.2-.4 6-2 6s-3-2.2-1.8-4.2S12 14 12 14M10 12c-3.2 0-6-.4-6-2s2.2-3 4.2-1.8S10 12 10 12"/>',
+  cool:    '<path d="M12 2.5v19M4.2 7l15.6 10M19.8 7L4.2 17"/><path d="M9.2 4l2.8 2.6L14.8 4M9.2 20l2.8-2.6L14.8 20M3.4 9.6L6.2 12l-2.8 2.4M20.6 9.6L17.8 12l2.8 2.4"/>',
+  heat:    '<circle cx="12" cy="12" r="3.6"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19"/>',
+  power:   '<path d="M12 3v9"/><path d="M6.6 6.6a8 8 0 1010.8 0"/>',
+  bolt:    '<path d="M13 2L4 14h6l-1 8 9-12h-6z" fill="currentColor" stroke="none"/>',
+  door:    '<path d="M3 19.5h18"/><path d="M5 19.5v-6.8l2.8-5.2h6.4l2.3 5.2v6.8"/><path d="M7.8 12.7h6.9"/><circle cx="9" cy="15.8" r="0.9" fill="currentColor" stroke="none"/>',
+  tyre:    '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.1"/><path d="M12 3.5v4.4M12 16.1v4.4M3.5 12h4.4M16.1 12h4.4M6 6l3.1 3.1M14.9 14.9L18 18M18 6l-3.1 3.1M9.1 14.9L6 18"/>',
+  chart:   '<path d="M4 19.5h16"/><path d="M4 15l4-5 4 3 5-7"/><circle cx="8" cy="10" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="1.1" fill="currentColor" stroke="none"/><circle cx="17" cy="6" r="1.1" fill="currentColor" stroke="none"/>',
+  seat:    '<path d="M7 3.2a2 2 0 014 0V10h4.5a2 2 0 012 2v5.5"/><path d="M7 10v3a3 3 0 003 3h8.5"/><path d="M5 21l1.2-4M18.5 21v-3.5"/>',
+  car:     '<path d="M4 16l1.8-5.3A3 3 0 018.6 8.7h6.8a3 3 0 012.8 2L20 16"/><rect x="3" y="16" width="18" height="4" rx="1.6"/><circle cx="7.5" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="16.5" cy="18" r="1.4" fill="currentColor" stroke="none"/>',
+  globe:   '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/>',
+  gauge:   '<path d="M4 18a8 8 0 0116 0"/><path d="M12 18l4.5-6.5"/><circle cx="12" cy="18" r="1.5" fill="currentColor" stroke="none"/><path d="M4 18h1.5M18.5 18H20"/>',
+  camera:  '<path d="M3 9.5A2.5 2.5 0 015.5 7h1.2l1.1-2h6.4l1.1 2h1.2A2.5 2.5 0 0120 9.5v8A2.5 2.5 0 0117.5 20h-11A2.5 2.5 0 014 17.5z"/><circle cx="12" cy="13" r="3.4"/>',
+  link:    '<path d="M9 15l6-6"/><path d="M11.5 6.5l1.4-1.4a4 4 0 015.6 5.6L17 12"/><path d="M12.5 17.5l-1.4 1.4a4 4 0 01-5.6-5.6L7 12"/>',
 };
-function icon(k, w){ return '<svg viewBox="0 OWER 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.9) +
+function icon(k, w){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) +
   '" stroke-linecap="round" stroke-linejoin="round">' + (IC[k] || '') + '</svg>'; }
 
 const CK_OK  = '<span class="ckc ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>';
@@ -683,11 +690,25 @@ function renderBatt(){
       '<div class="ri">' + r[0] + '<span class="st">' + r[1] + '</span></div>').join('') + '</div>';
 }
 
-// ---- charging page: live state + stats + history ----
+// ---- charging page: live state + charge curve + stats + history ----
 function renderChg(){
   const el = $('pgChgBody');
   const c = S.charging || {};
+  const s = c.session;
   const cur = S.currency ? S.currency.symbol : '';
+  // charge-curve section between the live/last card and the month stats — same slot as v1
+  const curveHtml = s ?
+    '<div class="secttl">' + (s.ongoing ? 'Charge curve · live' : 'Last charge · ' + s.start_dt) + '</div>' +
+    '<div class="ebig"><svg id="cchart" viewBox="0 0 340 160"></svg>' +
+    '<div class="cstats">' +
+      '<div><b class="num">' + (s.dur_min != null ? s.dur_min + 'm' : '—') + '</b><span>duration</span></div>' +
+      '<div><b class="num">' + (s.kwh != null ? s.kwh : '—') + '</b><span>kWh in</span></div>' +
+      '<div><b class="num">' + (s.avg_kw != null ? s.avg_kw : '—') + '</b><span>avg kW</span></div>' +
+      '<div><b class="num">' + (s.peak_kw != null ? s.peak_kw : '—') + '</b><span>peak kW</span></div>' +
+    '</div>' +
+    '<div class="crange">' + s.soc0 + '% → ' + s.soc1 + '% · ' + s.kwh + ' kWh into battery' +
+      (s.kwh_billed != null ? ' (~' + s.kwh_billed + ' billed)' : '') +
+      (s.cost != null ? ' · ' + cur + Number(s.cost).toLocaleString() : '') + '</div></div>' : '';
   let top;
   if(c.active){
     top = '<div class="ebig"><div class="lbl">Charging now' + (c.mode ? ' \u00b7 ' + c.mode.toUpperCase() : '') +
@@ -707,7 +728,7 @@ function renderChg(){
   const hist = (c.history || []).map(x =>
     '<div class="hrow2"><span>' + x.dt + '</span><span><b class="num">' + x.kwh + ' kWh</b> \u00b7 ' +
     x.dur_min + ' min \u00b7 ' + cur + Number(x.cost).toLocaleString() + '</span></div>').join('');
-  el.innerHTML = top +
+  el.innerHTML = top + curveHtml +
     '<div class="secttl">This month</div>' +
     '<div class="ebig"><div class="etot" style="border-top:0;padding-top:0;margin-top:0">' +
       '<div><b class="num">' + (c.month_kwh || 0) + '</b><span>kWh in</span></div>' +
@@ -716,6 +737,35 @@ function renderChg(){
       '</div></div>' +
     '<div class="secttl">History</div>' +
     '<div class="ebig">' + (hist || '<div class="lbl">No sessions logged yet.</div>') + '</div>';
+  if(s) drawChgCurve(s);
+}
+
+// charge curve (SoC% vs elapsed minutes) — same math as v1's drawCharge, v2 tokens
+function drawChgCurve(s){
+  const svg = $('cchart'); if(!svg) return;
+  if(!s.series || s.series.length < 2){ svg.innerHTML = ''; return; }
+  const W = 340, H = 160, L = 30, R = 12, T = 12, B = 24;
+  const ys = s.series.map(p => p.soc), xmax = Math.max(...s.series.map(p => p.m), 1);
+  let ymin = Math.max(0, Math.min(...ys) - 3), ymax = Math.min(100, Math.max(...ys) + 3);
+  if(ymax - ymin < 6) ymax = Math.min(100, ymin + 6);
+  const X = m => L + (m / xmax) * (W - L - R), Y = v => T + (1 - (v - ymin) / (ymax - ymin)) * (H - T - B);
+  const pl = s.series.map(p => X(p.m).toFixed(1) + ',' + Y(p.soc).toFixed(1));
+  let g = '';
+  [ymin, (ymin + ymax) / 2, ymax].forEach(v => { const y = Y(v).toFixed(1);
+    g += '<line x1="' + L + '" y1="' + y + '" x2="' + (W - R) + '" y2="' + y +
+      '" stroke="var(--line)" stroke-width="1"/>' +
+      '<text x="' + (L - 6) + '" y="' + (+y + 3).toFixed(1) + '" text-anchor="end" font-size="9" fill="var(--fnt)">' +
+      Math.round(v) + '</text>'; });
+  g += '<text x="' + X(0).toFixed(1) + '" y="' + (H - 7) + '" font-size="9" fill="var(--fnt)">0m</text>';
+  g += '<text x="' + (W - R) + '" y="' + (H - 7) + '" text-anchor="end" font-size="9" fill="var(--fnt)">' +
+    Math.round(xmax) + 'm</text>';
+  g += '<path d="M ' + X(0).toFixed(1) + ',' + (H - B) + ' L ' + pl.join(' L ') + ' L ' +
+    X(xmax).toFixed(1) + ',' + (H - B) + ' Z" fill="var(--acc-soft)"/>';
+  g += '<polyline points="' + pl.join(' ') + '" fill="none" stroke="var(--acc)" stroke-width="2.5" ' +
+    'stroke-linejoin="round" stroke-linecap="round"/>';
+  const lp = s.series[s.series.length - 1];
+  g += '<circle cx="' + X(lp.m).toFixed(1) + '" cy="' + Y(lp.soc).toFixed(1) + '" r="3.5" fill="var(--acc)"/>';
+  svg.innerHTML = g;
 }
 
 // ---- distance page: monthly calendar (same /api/history as v1's calendar view) ----

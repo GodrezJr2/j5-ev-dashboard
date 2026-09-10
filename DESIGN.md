@@ -49,7 +49,12 @@ kept as the state accent so the two surfaces read as one product.
 4 round quick actions floating on the hero seam, charging pill when active. Below: 2-column
 status cards (Climate with inline stepper, Doors & windows, Tires, Energy, Seats, Vehicle).
 Two tabs only: My Vehicle / My Account. Detail pages are right-slide overlays
-(doors/tyres use a top-view car diagram; energy = BYD-style 7-day area chart vs dashed WLTP line).
+(doors/tyres use a top-view car diagram; energy = BYD-style 7-day area chart vs dashed WLTP line;
+charging shows the SoC-vs-minutes charge curve ported from v1, with duration/kWh/avg/peak stats).
+
+**Icons**: fresh 24px round-stroke set (1.8 weight, no fills except accent dots), redrawn from v1's
+control glyphs — lock, ac fan, snowflake, sun, locate-ping, wheel, seat, car, gauge, camera, link.
+Same family across quick actions, cards, tab bar, refresh and eye.
 
 **Honesty rules inherited**: windows row hidden on the J5 (byte 8 quirk, #5) rather than guessed;
 indirect-TPMS cars get status only; seats show "Not available" when the car reports none.
