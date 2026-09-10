@@ -431,6 +431,11 @@ BALANCE_DAYS = float(_CC.get("full_charge_days") or (7 if CHEMISTRY == "lfp" els
 IDLE_GAP = 1800         # parked + no SoC rise for 30 min => charge session ended
 CHARGE_PARK_MIN = 600   # a real charge sits odo-flat >=10 min; regen blips (odo coarse=1km) don't
 MIN_GAIN_PCT = 2        # net SoC gain floor; drops 1% regen/noise that survives the park gate
+MAX_CHG_KW = 150        # no charge on this platform exceeds ~68 kW DC. A single frame step implying
+                        # more than this isn't charging -- it's a SoC cloud re-sync: the car went
+                        # dark mid-charge and dumped the whole SoC gain in one frame on reconnect
+                        # (same failure as ODO_RESYNC_KM for driving). Its timespan is a measurement
+                        # artifact, so avg/peak kW from it are fiction -> drop the session.
 _TARIFF = float(TARIFF_IDR_CFG or 2540)   # all-in DC tariff/kWh, in CUR_CODE (IDR default: Rp2.467 + 3% tax; service Rp0)
 TARIFF_IDR = int(_TARIFF) if _TARIFF == int(_TARIFF) else _TARIFF  # keep cents for decimal currencies (e.g. ZAR 3.10)
 CHG_EFF_AVG = 0.89      # blended DC charge efficiency for the per-km cost insight
@@ -578,6 +583,14 @@ def build_sessions(fr, now):
         left = prev[-1] if prev else fr[0][0]
         if (right - left) < CHARGE_PARK_MIN or (soc1 - soc0) < MIN_GAIN_PCT:
             continue                                                 # regen / noise, not a charge
+        # SoC re-sync guard: if any single frame step implies an impossible charge rate, the car
+        # dark-synced its SoC in one jump -- the session's timing (and so avg/peak kW) is fiction.
+        resync = any(
+            (pts[k][1] - pts[k-1][1]) > 0 and pts[k][0] > pts[k-1][0] and
+            (pts[k][1] - pts[k-1][1]) / 100.0 * CAP_KWH / ((pts[k][0] - pts[k-1][0]) / 3600.0) > MAX_CHG_KW
+            for k in range(1, len(pts)))
+        if resync:
+            continue
         kwh = max(0.0, (soc1 - soc0) / 100.0 * CAP_KWH)
         dur_h = max((s["last_rise"] - s["start"]) / 3600.0, 1e-6)
         peak, j = 0.0, 0                               # peak kW over >=3 min windows (1% steps are coarse)
