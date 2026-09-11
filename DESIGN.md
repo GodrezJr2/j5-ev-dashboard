@@ -90,6 +90,11 @@ the front-left corner and is not visible on the three-quarter render. The photo'
 removed in an image tool by the owner, after removing it in code failed: the studio backdrop
 measures 196 mean luminance against the bonnet's 198, so no tone threshold separates them, and
 the backdrop carries a gradient, so a local-variance mask marked 67% of the frame as structure.
+It is gated on the model: the photo shows a J5, so a Tiggo or an Omoda running this same
+dashboard keeps its own render and relies on the charging pill instead — showing them a picture
+of someone else's car plugged in would state something false about their vehicle. The filename
+carries the model for the same reason.
+
 A green trace runs along the photograph's own cable — located by detecting its dark opaque pixels
 — from the nozzle holster, down the slack loop, along the ground and into the port, so the pulse
 reads as energy flowing into the car. `?cable=1` previews it without a live session.

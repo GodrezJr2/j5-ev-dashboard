@@ -163,10 +163,13 @@
      sat near the port and it looked like a glowing noose attached to nothing, and one stopped
      at the post's base, and a third stopped halfway up the post. The cable leaves the
      holster at (33,80) in this viewBox -- read off the pixel runs, not guessed.
+     Gated on the model: this is a photograph of a J5, so a Tiggo or an Omoda running the same
+     dashboard keeps its own render and gets the charging pill instead. The filename carries the
+     model for the same reason.
      Append ?cable=1 to preview without waiting for a real session. */
   .carwrap{position:relative;width:100%;max-width:330px;margin:var(--s2) auto 0}
   .chgshot{display:none;position:relative;width:100%;aspect-ratio:356/211;
-    background:url(car-charging.png) center/contain no-repeat}
+    background:url(car-charging-j5.png) center/contain no-repeat}
   .carwrap.charging .hcar{display:none}
   .carwrap.charging .chgshot{display:block;animation:fadein var(--t-slow) var(--eo)}
   .cable{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -758,8 +761,12 @@ function renderHero(){
   $('hWhen').textContent = '\u00b7  Updated ' + (ago(S.updated) || 'never');
   renderBars();
   // the cable is a charging state, so it lives with the rest of the hero state
-  $('carWrap').classList.toggle('charging',
-    !!(S.charging && S.charging.active) || /[?&]cable=1/.test(location.search));
+  // The charging photo is a photograph of a Jaecoo J5, so it is only ever shown on a J5.
+  // Other cars run this same dashboard (see the compat issues), and showing them a picture of
+  // someone else's car plugged in would be stating something false about their vehicle. They
+  // keep their own render, and the charging pill below still reports the live session.
+  const charging = !!(S.charging && S.charging.active) || /[?&]cable=1/.test(location.search);
+  $('carWrap').classList.toggle('charging', charging && isJ5());
   const img = $('hCar');
   img.onerror = () => { img.onerror = null; img.src = 'car-generic.svg'; };
   img.src = '/car-photo';
@@ -809,10 +816,17 @@ function renderQA(){
 
 // windows byte: 0 = all closed (E5-verified). On the J5 it reads 16 while parked for unknown
 // reasons (model-specific, #5), so on a J5 we refuse to guess and report null.
+// The charging photo below and the windows quirk are both J5-specific, so the model test
+// lives in one place. Anything that is true of this car and not of the others in the compat
+// issues (#1 Tiggo 8, #3 Tiggo 7 PHEV, #5 Omoda E5) has to be gated on this.
+function isJ5(){
+  const m = ((S && S.vehicle && S.vehicle.model) || '').toLowerCase();
+  return m.indexOf('j5') >= 0 || m.indexOf('jaecoo') >= 0;
+}
+
 function windowsOpen(){
   if(S.windows == null) return null;
-  const m = ((S.vehicle && S.vehicle.model) || '').toLowerCase();
-  if(m.indexOf('j5') >= 0 || m.indexOf('jaecoo') >= 0) return null;
+  if(isJ5()) return null;
   return S.windows !== 0;
 }
 
