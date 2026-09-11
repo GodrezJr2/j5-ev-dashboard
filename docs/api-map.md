@@ -107,6 +107,35 @@ So the dashboard shows tyre **status** (Normal / Check tyres), **not** PSI. The 
 are kept so that a car which *does* report real values would display them, but on this vehicle
 the only honest output is status. An abnormal tyre would surface via CarLinko alerts, not telemetry.
 
+## This server's own contract — `/api/summary` versioning
+
+Everything above describes CarLinko's API. This section describes **ours**: the JSON this repo's
+`tools/server.py` serves to its own front ends and to any third-party client.
+
+Every `/api/summary` response carries an integer `api_version`. It is stamped in one place, the
+`summary()` wrapper, so none of the four return paths inside `_summary()` can ship a payload
+without it.
+
+| Version | Since | Change |
+|---|---|---|
+| *(absent)* | — | Any build before 2026-09-11. Treat a missing `api_version` as version 0. |
+| `1` | 2026-09-11 | First versioned payload. No field changes; the existing shape is what v1 means. |
+
+**Rules for bumping:**
+
+- **Adding** a field is backwards compatible. **Do not bump** — clients must ignore keys they do
+  not know.
+- **Removing** a field, **renaming** one, or changing its **units, type or meaning** is breaking.
+  Bump the number and add a row above saying what changed.
+
+**For clients:** treat an `api_version` higher than the one you were written against as "newer
+than me" and degrade gracefully rather than guessing at the new shape.
+
+This exists because there are now clients this repo does not control — see issue #12 — so a
+careless field rename becomes somebody else's outage rather than just ours.
+
+---
+
 ## Standalone access — VALIDATED ✅
 
 `tools/ws_client.py`: a host-side Python client connects to the WS with **only the token**

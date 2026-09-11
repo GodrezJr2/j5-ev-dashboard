@@ -7,6 +7,17 @@ import hmac, hashlib, base64, secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import known_cars          # per-model constants the telemetry never carries (pack size, tyre scale)
 
+# Version of the /api/summary contract, stamped onto every payload as "api_version".
+#
+# There are now clients out there that this repo does not control (see issue #12), so a field
+# rename or a change in meaning is somebody else's outage, not just ours. The rule:
+#   * ADDING a field is backwards compatible. Do not bump.
+#   * REMOVING a field, renaming one, or changing its units, type or meaning is breaking. Bump,
+#     and say what changed in docs/api-map.md.
+# Clients should treat an api_version they do not recognise as "newer than me" and degrade rather
+# than guess, and should treat a missing api_version as version 0 (any build before 2026-09-11).
+API_VERSION = 1
+
 _poll_lock = threading.Lock()
 
 def live_poll():
@@ -847,6 +858,18 @@ def demo_summary():
     return out
 
 def summary():
+    """Public /api/summary payload.
+
+    The version is stamped here rather than inside _summary(), which has four separate return
+    paths (demo, two early-outs and the full build). Doing it in one wrapper means a new branch
+    added later cannot ship a payload without it.
+    """
+    out = _summary()
+    out["api_version"] = API_VERSION
+    return out
+
+
+def _summary():
     if DEMO:
         return demo_summary()
     out = {"vehicle": VEHICLE, "online": False, "battery": None, "range_km": None,
