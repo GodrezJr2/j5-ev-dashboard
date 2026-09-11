@@ -248,13 +248,21 @@
   .pbody .rows{margin:0 calc(var(--pad) * -1)}
 
   /* top-view diagram for doors / tyres */
-  .topwrap{position:relative;width:210px;margin:var(--s2) auto var(--s5)}
-  .topwrap svg{width:100%;display:block}
-  .twv{position:absolute;font-size:16px;font-weight:600;letter-spacing:-.02em;
-    font-variant-numeric:tabular-nums}
-  .twv u{font-size:9.5px;font-weight:600;color:var(--fnt);text-decoration:none;margin-left:2px;
-    letter-spacing:.06em;text-transform:uppercase}
-  .twv.ok{color:var(--acc-ink)} .twv.warn{color:var(--warn)} .twv.bad{color:var(--bad)}
+  .topwrap{position:relative;width:232px;margin:var(--s2) auto var(--s3)}
+  .topwrap svg{width:100%;display:block;overflow:visible}
+  /* tyres carry the only colour on the diagram, so state reads at a glance */
+  .wh{fill:var(--bg-3);stroke:var(--line);stroke-width:1.4}
+  .wh.ok{fill:var(--acc-sf);stroke:var(--acc);stroke-width:1.8}
+  .wh.warn{fill:oklch(0.7 0.14 70 / .16);stroke:var(--warn);stroke-width:1.8}
+  .wh.bad{fill:oklch(0.6 0.18 27 / .16);stroke:var(--bad);stroke-width:1.8}
+  .whc{fill:var(--fnt);font-size:7.5px;font-weight:600;letter-spacing:.12em}
+  .whv{font-size:11px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;
+    fill:var(--mut)}
+  .whv.ok{fill:var(--acc-ink)} .whv.warn{fill:var(--warn)} .whv.bad{fill:var(--bad)}
+  /* caption directly under the diagram, explaining what the four shapes mean */
+  .topcap{text-align:center;font-size:11.5px;line-height:1.5;color:var(--fnt);
+    margin:0 auto var(--s5);max-width:290px}
+  .topcap b{color:var(--mut);font-weight:600}
 
   .ckc{display:inline-flex;align-items:center;gap:6px}
   .ckc svg{width:13px;height:13px;flex:none}
@@ -850,14 +858,32 @@ function renderAc(){
   el.querySelector('[data-ac="pwr"]').classList.toggle('on', !!S.ac_on);
 }
 
-function topCarSvg(){
-  return '<svg viewBox="0 0 120 190">' +
+// Top view of the car. `wheels` is optional: either one class applied to all four (a car that
+// reports a single overall status, like this one) or an array of four in FL, FR, RL, RR order
+// (a car with real per-wheel sensors). `vals` is the matching per-wheel label, if any.
+const WHEEL_XY = [[11, 38], [97, 38], [11, 124], [97, 124]];   // FL, FR, RL, RR
+const WHEEL_POS = ['FL', 'FR', 'RL', 'RR'];
+function topCarSvg(wheels, vals){
+  const cls = i => 'wh' + (wheels ? ' ' + (Array.isArray(wheels) ? (wheels[i] || '') : wheels) : '');
+  let w = '';
+  WHEEL_XY.forEach((p, i) => {
+    const left = p[0] < 60;
+    const tx = left ? p[0] - 4 : p[0] + 16;      // labels sit outside the wheel
+    const anc = left ? 'end' : 'start';
+    w += '<rect class="' + cls(i) + '" x="' + p[0] + '" y="' + p[1] + '" width="12" height="30" rx="4.5"/>' +
+      '<text class="whc" x="' + tx + '" y="' + (p[1] + 12) + '" text-anchor="' + anc + '">' +
+        WHEEL_POS[i] + '</text>';
+    if(vals && vals[i])
+      w += '<text class="whv ' + (Array.isArray(wheels) ? (wheels[i] || '') : (wheels || '')) +
+        '" x="' + tx + '" y="' + (p[1] + 25) + '" text-anchor="' + anc + '">' + vals[i] + '</text>';
+  });
+  return '<svg viewBox="-16 4 152 182">' + w +
     '<path d="M38 12C31 12 27 22 26 36L24 148C24 166 29 178 39 178h42c10 0 15-12 15-30l-2-112C94 22 89 12 82 12Z" ' +
       'fill="var(--bg-2)" stroke="var(--line)" stroke-width="1.5"/>' +
     '<path d="M31 52C33 40 37 33 43 31h34c6 2 10 9 12 21-8-4-18-6-29-6s-21 2-29 6Z" fill="var(--bg-3)" ' +
       'stroke="var(--line)" stroke-width="1"/>' +
     '<rect x="37" y="70" width="46" height="58" rx="7" fill="var(--bg-3)" stroke="var(--line)" stroke-width="1"/>' +
-    '<path d="M26 60h-6v10h6M94 60h6v10h-6" fill="var(--line)"/></svg>';
+    '<path d="M26 76h-6v10h6M94 76h6v10h-6" fill="var(--line)"/></svg>';
 }
 
 function renderDoors(){
@@ -897,22 +923,37 @@ function renderTyres(){
   const el = $('pgTyresBody');
   const t = S.tpms || [];
   const unit = S.tyre_unit || 'psi';
-  const pos = [{x: '2%', y: '13%'}, {x: '76%', y: '13%'}, {x: '2%', y: '72%'}, {x: '76%', y: '72%'}];
-  let vals = '';
-  t.forEach((w, i) => {
-    if(w.psi == null) return;
-    const cls = (w.psi < 28 || w.psi > 40) ? 'bad' : 'ok';
-    vals += '<div class="twv ' + cls + '" style="left:' + pos[i].x + ';top:' + pos[i].y + '">' +
-      Math.round(w.psi) + '<u>' + unit + '</u></div>';
-  });
   const indirect = S.tyre_indirect !== false;
-  el.innerHTML = '<div class="topwrap">' + topCarSvg() + vals + '</div>' +
+  const ok = S.tyre_status === 'Normal';
+
+  // Two honest cases. With real per-wheel sensors each tyre is coloured and labelled from its own
+  // reading. With indirect TPMS the car reports ONE status for the whole vehicle, so all four are
+  // drawn in the same state and the caption says so — four different colours here would be a lie.
+  let wheels, vals = null, cap;
+  if(indirect){
+    wheels = ok ? 'ok' : 'bad';
+    cap = ok
+      ? 'All four reading <b>normal</b>. This car reports one status for the whole vehicle, not four pressures.'
+      : 'The car is reporting <b>a problem</b> but cannot say which wheel. Check all four by hand.';
+  } else {
+    wheels = t.map(w => w.psi == null ? '' : ((w.psi < 28 || w.psi > 40) ? 'bad' : 'ok'));
+    vals = t.map(w => w.psi == null ? '' : Math.round(w.psi) + ' ' + unit);
+    const known = t.filter(w => w.psi != null).length;
+    cap = known ? 'Live pressure from each wheel sensor.' : 'No wheel sensor has reported yet.';
+  }
+
+  el.innerHTML = '<div class="topwrap">' + topCarSvg(wheels, vals) + '</div>' +
+    '<div class="topcap">' + cap + '</div>' +
     '<div class="rows"><div class="row"><span class="rl">Status</span><span class="rv ' +
-      (S.tyre_status === 'Normal' ? 'ok' : 'bad') + '">' +
-      (S.tyre_status === 'Normal' ? CK_OK : CK_BAD) + (S.tyre_status || '—') + '</span></span></div></div>' +
+      (ok ? 'ok' : 'bad') + '">' +
+      (ok ? CK_OK : CK_BAD) + (S.tyre_status || '—') + '</span></span></div>' +
+      (S.tpms_age_min != null ? '<div class="row"><span class="rl">Last wheel frame</span>' +
+        '<span class="rv">' + S.tpms_age_min + ' min ago</span></div>' : '') +
+    '</div>' +
     '<div class="note">' + (indirect
-      ? 'This car uses indirect TPMS: it infers a soft tyre from wheel speed and reports normal or not. ' +
-        'Live pressures appear here on cars with real sensors.'
+      ? 'This car uses indirect TPMS: it infers a soft tyre from wheel speed rather than from pressure ' +
+        'sensors, so it can only report normal or not. Per-wheel pressures appear here on cars with real ' +
+        'sensors.'
       : 'Pressures from the last frame that carried live sensors.') + '</div>';
 }
 
