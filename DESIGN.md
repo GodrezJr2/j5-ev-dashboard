@@ -36,28 +36,68 @@ template, no neon, no em dashes.
 
 ---
 
-# V2 surface (`web/v2.html`, experimental, pinned by owner 2026-08-31)
+# V2 surface (`web/v2.html`) — "Instrument", adaptive light and dark
 
-A second, BYD-Auto-app-inspired front end on the same backend. v1 stays the default at `/`;
-V2 lives at `/v2.html` and shares manifest, auth gate, `/api/summary`, `/api/control`.
+A second front end on the same backend. v1 stays the default at `/`; V2 lives at `/v2.html`
+and shares the manifest, auth gate, `/api/summary`, `/api/control`, `/api/history`.
 
-**Theme**: cool porcelain (light only). Steel-blue gradient hero owning the top half, white
-elevated cards on a porcelain ground, charcoal primary buttons. Product green (oklch 0.55/0.11/165)
-kept as the state accent so the two surfaces read as one product.
+**Register**: a well-made gauge, not an app screen. The range numeral *is* the first viewport;
+everything else is a hairline list beneath it. Refuses both the stat-tile dashboard and the
+card-grid car app. (The previous v2 was a pinned BYD Auto clone; it is kept at
+`web/v2.byd.bak.html` for reference and is not deployed.)
 
-**Layout**: car-first. Hero = model, 46px range, SoC, freshness line, the car's own render,
-4 round quick actions floating on the hero seam, charging pill when active. Below: 2-column
-status cards (Climate with inline stepper, Doors & windows, Tires, Energy, Seats, Vehicle).
-Two tabs only: My Vehicle / My Account. Detail pages are right-slide overlays
-(doors/tyres use a top-view car diagram; energy = BYD-style 7-day area chart vs dashed WLTP line;
-charging shows the SoC-vs-minutes charge curve ported from v1, with duration/kWh/avg/peak stats).
+**Theme**: adaptive. Light is cool paper, dark is graphite. The system preference decides by
+default; `Account > Appearance` writes an Auto/Light/Dark override to `localStorage`, and
+`<meta name="theme-color">` follows. Every colour is defined on bare `:root` first, redefined
+under `@media (prefers-color-scheme: dark)` guarded as `:root:not([data-theme="light"])`, and
+again under `:root[data-theme="dark"]` so the manual toggle wins in both directions.
 
-**Icons**: fresh 24px round-stroke set (1.8 weight, no fills except accent dots), redrawn from v1's
-control glyphs — lock, ac fan, snowflake, sun, locate-ping, wheel, seat, car, gauge, camera, link.
-Same family across quick actions, cards, tab bar, refresh and eye.
+OKLCH tokens (light / dark):
+- `--bg` 0.975 / 0.165 · `--bg-2` 1.0 / 0.205 · `--bg-3` 0.955 / 0.235
+- `--ink` 0.22 / 0.955 · `--mut` 0.44 / 0.745 · `--fnt` 0.48 / 0.615
+- `--line` 0.895 / 0.305 · `--hair` 0.93 / 0.255
+- `--acc` 0.53 0.13 162 / 0.755 0.145 162 — product green, state only
+- `--acc-ink` accent as text (darker in light mode so body-size accent text still passes)
+- `--warn`, `--bad` for tyre and 12V alerts only
 
-**Honesty rules inherited**: windows row hidden on the J5 (byte 8 quirk, #5) rather than guessed;
-indirect-TPMS cars get status only; seats show "Not available" when the car reports none.
+Contrast: `--mut` ~5.6:1 and `--fnt` ~4.8:1 on light; both comfortably above 4.5:1 on dark.
+The previous v2's `--fnt` sat at ~3.2:1 and was used for every card subtitle.
 
-**Motion**: same contract as v1 — one ease token (cubic-bezier(.16,1,.3,1)), 120-340ms,
-transform/opacity only, prefers-reduced-motion honored.
+**Scales** (all tokens, no ad-hoc values): radius 6/10/14/20/full; space 4/8/12/16/24/32/48;
+one ease `cubic-bezier(.2,.8,.25,1)`; durations 140/220/320ms.
+
+**Typography**: one system family. Weights are **400 / 500 / 600 only** — the 800-everywhere
+wall of the previous v2 is gone. Display numerals at 72px / -0.04em with tabular figures;
+labels are 10px uppercase at 0.18em tracking. Numbers are the loudest thing on every screen.
+
+**Structure**: hairlines and whitespace, not cards. `.rows` groups of full-width `.row`
+(icon, label, value, chevron) replace the 2-column tile grid. `.panel` exists only where a
+chart or figure needs containment. No shadow is used as decoration; the only drop-shadows are
+on the two car renders.
+
+**Layout**: hero = model overline, 72px range, "estimated range", a rule, then a status strip
+(live dot, SoC, state, freshness). The car's own render sits below it, then four hairline
+quick-action circles with labels. A live charging strip appears only while charging. Below:
+two groups — Vehicle (Climate with an inline stepper, Doors and windows, Tyres, Seats) and
+Energy (Battery, Charging, Consumption, Distance).
+
+**Navigation** (unchanged from the previous v2, by request): two tabs, right-slide detail
+pages, deep links at `#doors` `#tyres` `#energy` `#ac` `#batt` `#chg` `#dist` `#flex`.
+Added: `history.pushState` so hardware and browser back close a page, an edge-swipe-back
+gesture from the left 30px, Escape, and a bottom confirm sheet in place of `window.confirm`
+(which blocks the whole PWA).
+
+**Motion**: state-bearing only, transform and opacity, one ease. A first-paint rise with a
+26-40ms stagger; a needle-style count-up on the range numeral when a new reading arrives; a
+brief accent warm on any row value the poll actually changed; chart strokes that draw
+themselves with `stroke-dasharray`; a single expanding ring on the live dot and a breathing
+charging bolt, both of which only run while the car is actually online or charging.
+`prefers-reduced-motion` flattens the CSS animations, and the JS count-up and stagger check
+the same query before running.
+
+**Honesty rules inherited**: windows row hidden on the J5 (byte 8 quirk, #5) rather than
+guessed; indirect-TPMS cars get status only; seats show "Not available" when the car reports
+none; the A/C temperature opcode is labelled as pending on-car verification.
+
+**Bans honored**: no gradient text, no glass, no glossy hero ring, no neon, no gradient
+backgrounds, no decorative shadow, no em dashes.

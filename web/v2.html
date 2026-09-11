@@ -3,318 +3,524 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#b8c6d6" id="themeColor">
+<meta name="theme-color" content="#0e1012" id="themeColor">
 <title>My Vehicle</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <style>
+  /* ================= INSTRUMENT =================
+     Adaptive light/dark. Graphite and paper, hairlines instead of cards,
+     one accent, editorial numerals. No gradients, no glass, no tiles. */
   :root{
-    /* V2: cool porcelain, car-first. Pinned world: BYD Auto app grammar, this product's facts. */
-    --bg:    oklch(0.957  0.006 240);
-    --card:  oklch(1.0 0 0);
-    --ink:   oklch(0.27 0.020 260);
-    --mut:   oklch(0.50 0.018 260);
-    --fnt:   oklch(0.60 0.015 260);
-    --line:  oklch(0.925 0.006 240);
-    --acc:   oklch(0.55 0.11 165);   /* product green: charging, good states, chart */
-    --acc-soft: oklch(0.55 0.11 165 / .12);
-    --warn:  oklch(0.66 0.14 70);
-    --bad:   oklch(0.55 0.17 27);
-    --heroA: oklch(0.80 0.035 245);  /* steel-blue top of the hero */
-    --heroB: oklch(0.93 0.012 240);
-    --dark:  oklch(0.30 0.02 260);   /* primary button charcoal */
-    --eo:    cubic-bezier(.16,1,.3,1);
+    /* --- light: cool paper --- */
+    --bg:      oklch(0.975 0.003 250);
+    --bg-2:    oklch(1 0 0);
+    --bg-3:    oklch(0.955 0.004 250);
+    --ink:     oklch(0.22 0.012 255);
+    --mut:     oklch(0.44 0.010 255);   /* ~5.6:1 on bg */
+    --fnt:     oklch(0.48 0.008 255);   /* ~4.8:1 on bg */
+    --line:    oklch(0.895 0.004 250);
+    --hair:    oklch(0.93 0.003 250);
+    --acc:     oklch(0.53 0.13 162);    /* graph / fill */
+    --acc-ink: oklch(0.46 0.12 162);    /* accent as text */
+    --acc-sf:  oklch(0.53 0.13 162 / .12);
+    --warn:    oklch(0.58 0.13 68);
+    --bad:     oklch(0.52 0.18 27);
+    --btn:     oklch(0.22 0.012 255);
+    --btn-ink: oklch(0.99 0 0);
+    --shade:   oklch(0.22 0.012 255 / .04);
+    --scrim:   oklch(0.22 0.012 255 / .34);
+
+    /* --- scales --- */
+    --r1:6px; --r2:10px; --r3:14px; --r4:20px; --rf:999px;
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+    --eo: cubic-bezier(.2,.8,.25,1);
+    --t-fast:140ms; --t-mid:220ms; --t-slow:320ms;
+    --pad:20px;
   }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:      oklch(0.165 0.008 252);  /* graphite */
+      --bg-2:    oklch(0.205 0.009 252);
+      --bg-3:    oklch(0.235 0.010 252);
+      --ink:     oklch(0.955 0.004 250);
+      --mut:     oklch(0.745 0.008 252);
+      --fnt:     oklch(0.615 0.009 252);
+      --line:    oklch(0.305 0.009 252);
+      --hair:    oklch(0.255 0.009 252);
+      --acc:     oklch(0.755 0.145 162);
+      --acc-ink: oklch(0.79 0.14 162);
+      --acc-sf:  oklch(0.755 0.145 162 / .14);
+      --warn:    oklch(0.80 0.13 72);
+      --bad:     oklch(0.68 0.17 25);
+      --btn:     oklch(0.955 0.004 250);
+      --btn-ink: oklch(0.165 0.008 252);
+      --shade:   oklch(0 0 0 / .3);
+      --scrim:   oklch(0 0 0 / .5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:      oklch(0.165 0.008 252);
+    --bg-2:    oklch(0.205 0.009 252);
+    --bg-3:    oklch(0.235 0.010 252);
+    --ink:     oklch(0.955 0.004 250);
+    --mut:     oklch(0.745 0.008 252);
+    --fnt:     oklch(0.615 0.009 252);
+    --line:    oklch(0.305 0.009 252);
+    --hair:    oklch(0.255 0.009 252);
+    --acc:     oklch(0.755 0.145 162);
+    --acc-ink: oklch(0.79 0.14 162);
+    --acc-sf:  oklch(0.755 0.145 162 / .14);
+    --warn:    oklch(0.80 0.13 72);
+    --bad:     oklch(0.68 0.17 25);
+    --btn:     oklch(0.955 0.004 250);
+    --btn-ink: oklch(0.165 0.008 252);
+    --shade:   oklch(0 0 0 / .3);
+    --scrim:   oklch(0 0 0 / .5);
+  }
+
   *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
-  html{background:var(--bg);scroll-behavior:smooth}
-  body{font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;
+  html{background:var(--bg);color-scheme:light dark}
+  body{
+    font:400 15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text",Inter,system-ui,sans-serif;
     color:var(--ink);background:var(--bg);max-width:430px;margin:0 auto;
-    -webkit-font-smoothing:antialiased;overscroll-behavior-y:none;
-    -webkit-touch-callout:none;user-select:none;-webkit-user-select:none;
-    padding-bottom:calc(76px + env(safe-area-inset-bottom))}
-  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
-  .num{font-variant-numeric:tabular-nums}
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    overscroll-behavior-y:none;-webkit-touch-callout:none;
+    padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;
+    user-select:none;-webkit-user-select:none}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
   :focus{outline:none}
-  :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:8px}
+  :focus-visible{outline:2px solid var(--acc-ink);outline-offset:3px;border-radius:var(--r1)}
+  [hidden]{display:none!important}
   @media (prefers-reduced-motion:reduce){
     *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;
-      transition-duration:.01ms!important;scroll-behavior:auto!important}
+      transition-duration:.01ms!important}
   }
 
+  /* ---------- primitives ---------- */
+  .ov{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--fnt);line-height:1.4}
+  .disp{font-size:72px;font-weight:600;letter-spacing:-.04em;line-height:.92;
+    font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text}
+  .disp .u{font-size:19px;font-weight:600;letter-spacing:0;color:var(--mut);margin-left:6px;
+    vertical-align:baseline}
+  .rule{height:1px;background:var(--line);border:0}
+  .sec{padding:0 var(--pad)}
+  .sech{display:flex;align-items:baseline;gap:var(--s2);padding:var(--s6) var(--pad) var(--s3)}
+  .sech .ov{flex:1}
+
+  /* hairline row list — the core structure, replaces cards */
+  .rows{border-top:1px solid var(--line)}
+  .row{display:flex;align-items:center;gap:var(--s3);width:100%;text-align:left;
+    min-height:58px;padding:var(--s3) var(--pad);border-bottom:1px solid var(--hair);
+    color:inherit;transition:background var(--t-fast) linear}
+  .row:last-child{border-bottom:1px solid var(--line)}
+  button.row:active,.row.tap:active{background:var(--bg-3)}
+  .row .ri{width:21px;height:21px;flex:none;color:var(--fnt)}
+  .row .ri svg{width:100%;height:100%;display:block}
+  .row .rl{flex:1;min-width:0;font-size:15px;font-weight:500;letter-spacing:-.005em}
+  .row .rl small{display:block;font-size:12px;font-weight:400;color:var(--fnt);margin-top:2px;
+    letter-spacing:0}
+  .row .rv{font-size:14px;font-weight:600;color:var(--mut);text-align:right;
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .row .rv.ok{color:var(--acc-ink)} .row .rv.warn{color:var(--warn)} .row .rv.bad{color:var(--bad)}
+  .row .ch{flex:none;width:7px;height:12px;color:var(--fnt);opacity:.65}
+
+  /* panel — used only where a chart or figure needs containment */
+  .panel{background:var(--bg-2);border:1px solid var(--hair);border-radius:var(--r3);
+    padding:var(--s4)}
+  .panel+.panel{margin-top:var(--s3)}
+  .plbl{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--fnt)}
+  .pval{font-size:40px;font-weight:600;letter-spacing:-.03em;line-height:1;margin-top:10px;
+    font-variant-numeric:tabular-nums}
+  .pval .u{font-size:14px;font-weight:600;color:var(--mut);letter-spacing:0;margin-left:5px}
+  .stats{display:flex;gap:var(--s5);margin-top:var(--s4);padding-top:var(--s3);
+    border-top:1px solid var(--hair)}
+  .stats>div{min-width:0}
+  .stats b{display:block;font-size:16px;font-weight:600;letter-spacing:-.015em;
+    font-variant-numeric:tabular-nums}
+  .stats span{display:block;font-size:10px;font-weight:500;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--fnt);margin-top:4px}
+  .note{font-size:12.5px;line-height:1.6;color:var(--fnt);margin-top:var(--s4);
+    user-select:text;-webkit-user-select:text}
+
   /* ---------- hero ---------- */
-  .hero{position:relative;padding:max(18px,env(safe-area-inset-top)) 22px 0;
-    background:linear-gradient(180deg,var(--heroA),var(--heroB) 62%,var(--bg));
-    overflow:hidden}
-  .hero .model{font-size:22px;font-weight:800;letter-spacing:.01em;margin-top:2px}
-  .hero .range{display:flex;align-items:baseline;gap:6px;margin-top:14px}
-  .hero .range b{font-size:46px;font-weight:800;letter-spacing:-.02em;line-height:1}
-  .hero .range u{font-size:16px;font-weight:600;color:var(--mut);text-decoration:none}
-  .hero .soc{display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-size:15px;font-weight:700;color:var(--mut)}
-  .hero .soc svg{width:14px;height:14px}
-  .hero .status{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:13px;color:var(--mut)}
-  .hero .status .dot{width:7px;height:7px;border-radius:50%;background:var(--fnt)}
-  .hero .status .dot.on{background:var(--acc)}
-  .hero .status .rf{margin-left:auto;width:30px;height:30px;border-radius:50%;display:flex;
-    align-items:center;justify-content:center;color:var(--mut);transition:transform .14s var(--eo)}
-  .hero .status .rf:active{transform:scale(.9)}
-  .hero .status .rf.spin svg{animation:spin .7s linear}
+  .hero{padding:max(var(--s5),calc(env(safe-area-inset-top) + var(--s2))) var(--pad) 0}
+  .hbar{display:flex;align-items:center;gap:var(--s3);min-height:26px}
+  .hbar .hm{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--mut);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rf{width:30px;height:30px;margin-right:-6px;flex:none;display:flex;align-items:center;
+    justify-content:center;color:var(--fnt);transition:transform var(--t-fast) var(--eo)}
+  .rf:active{transform:scale(.86)}
+  .rf svg{width:17px;height:17px}
+  .rf.spin svg{animation:spin .8s var(--eo)}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .hero .car{display:block;width:100%;max-width:340px;margin:6px auto 0;
-    filter:drop-shadow(0 18px 18px oklch(0.3 0.03 250 / .18))}
 
-  /* quick actions floating over the hero seam */
-  .qa{position:relative;display:flex;justify-content:center;gap:26px;margin:-30px 0 6px;z-index:2}
-  .qa button{width:58px;height:58px;border-radius:50%;background:var(--card);color:var(--ink);
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 6px 18px oklch(0.3 0.03 250 / .14);
-    transition:transform .14s var(--eo),opacity .2s,box-shadow .2s}
-  .qa button:active{transform:scale(.9)}
-  .qa button.busy{opacity:.45;pointer-events:none}
-  .qa button.on{color:var(--acc);box-shadow:0 6px 18px oklch(0.55 0.11 165 / .30)}
-  .qa svg{width:24px;height:24px}
+  .hdisp{margin-top:var(--s5)}
+  .hlbl{margin-top:var(--s3)}
+  .hmeta{display:flex;align-items:center;gap:var(--s2);margin-top:var(--s4);
+    padding-top:var(--s3);border-top:1px solid var(--line);
+    font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--mut)}
+  .hmeta .dot{width:6px;height:6px;border-radius:50%;background:var(--fnt);flex:none}
+  .hmeta .dot.on{background:var(--acc);box-shadow:0 0 0 3px var(--acc-sf)}
+  .hmeta .sep{color:var(--line)}
+  .hmeta .soc{font-variant-numeric:tabular-nums}
+  .hmeta .when{margin-left:auto;color:var(--fnt);letter-spacing:.08em;text-transform:none;
+    font-weight:500;font-size:11.5px}
 
-  /* charging pill */
-  .chg{margin:12px 18px 0;background:var(--card);border-radius:14px;padding:12px 16px;
-    display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600;
-    box-shadow:0 2px 10px oklch(0.3 0.03 250 / .07)}
-  .chg svg{width:15px;height:15px;color:var(--acc);flex:none}
-  .chg .dim{color:var(--mut);font-weight:600;margin-left:auto}
+  .hcar{display:block;width:100%;max-width:330px;margin:var(--s4) auto var(--s2);
+    filter:drop-shadow(0 14px 22px var(--shade))}
 
-  /* ---------- card grid ---------- */
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 18px 8px}
-  .card{background:var(--card);border-radius:18px;padding:16px;min-height:96px;position:relative;
-    box-shadow:0 2px 10px oklch(0.3 0.03 250 / .06);text-align:left;
-    transition:transform .14s var(--eo)}
-  button.card:active{transform:scale(.97)}
-  .card .ic{width:30px;height:30px;color:var(--mut);margin-bottom:8px;display:block}
-  .card .ic svg{width:100%;height:100%}
-  .card .t{font-size:15px;font-weight:700;line-height:1.25;display:block}
-  .card .s{font-size:12.5px;color:var(--fnt);margin-top:3px;display:block}
-  .card .s.ok{color:var(--acc)} .card .s.warn{color:var(--warn)} .card .s.bad{color:var(--bad)}
-  .card.wide{grid-column:1/-1}
+  /* quick actions — hairline circles, labelled */
+  .qa{display:flex;justify-content:center;gap:var(--s7);padding:var(--s2) var(--pad) var(--s5)}
+  .qa button{display:flex;flex-direction:column;align-items:center;gap:9px;
+    font-size:9.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--fnt);
+    transition:color var(--t-mid) linear,opacity var(--t-mid) linear}
+  .qa .qc{width:54px;height:54px;border-radius:50%;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;color:var(--ink);
+    background:var(--bg-2);
+    transition:transform var(--t-fast) var(--eo),border-color var(--t-mid) linear,
+      color var(--t-mid) linear,background var(--t-mid) linear}
+  .qa button:active .qc{transform:scale(.9)}
+  .qa button.busy{opacity:.4;pointer-events:none}
+  .qa button.on{color:var(--acc-ink)}
+  .qa button.on .qc{border-color:var(--acc);color:var(--acc-ink);background:var(--acc-sf)}
+  .qa svg{width:23px;height:23px}
 
-  /* climate card stepper */
-  .clim{display:flex;flex-direction:column;justify-content:space-between}
-  .clim .row{display:flex;align-items:center;justify-content:space-between}
-  .clim .temp{font-size:26px;font-weight:800}
-  .step{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);color:var(--ink);
-    font-size:20px;font-weight:600;display:flex;align-items:center;justify-content:center;
+  /* live charging strip */
+  .chg{display:flex;align-items:center;gap:var(--s2);padding:13px var(--pad);
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    background:var(--acc-sf);color:var(--acc-ink);
+    font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase}
+  .chg svg{width:13px;height:13px;flex:none}
+  .chg .dim{margin-left:auto;color:var(--mut);letter-spacing:.06em;text-transform:none;
+    font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
 
-    transition:transform .12s var(--eo),border-color .2s}
-  .step:active{transform:scale(.9);border-color:var(--acc)}
-  .step:disabled{opacity:.35}
+  /* inline stepper on the climate row */
+  .step{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--line);
+    color:var(--ink);font-size:17px;font-weight:500;line-height:1;
+    display:flex;align-items:center;justify-content:center;background:var(--bg-2);
+    transition:transform var(--t-fast) var(--eo),border-color var(--t-mid) linear}
+  .step:active{transform:scale(.88);border-color:var(--acc)}
+  .step:disabled{opacity:.3}
+  .stepset{display:flex;align-items:center;gap:var(--s3);flex:none}
+  .stepset .tv{font-size:19px;font-weight:600;letter-spacing:-.02em;min-width:44px;text-align:center;
+    font-variant-numeric:tabular-nums}
 
-  /* ---------- bottom tab ---------- */
+  /* ---------- tab bar ---------- */
   .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;max-width:430px;margin:0 auto;
-    background:oklch(1 0 0 / .86);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);
-    border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-  .tabbar button{flex:1;padding:10px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;
-    color:var(--fnt);transition:color .18s,transform .14s var(--eo)}
-  .tabbar button:active{transform:scale(.94)}
+    background:var(--bg);border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom)}
+  @supports (backdrop-filter:blur(1px)){
+    .tabbar{background:color-mix(in oklab,var(--bg) 82%,transparent);
+      -webkit-backdrop-filter:saturate(1.4) blur(20px);backdrop-filter:saturate(1.4) blur(20px)}
+  }
+  .tabbar button{flex:1;padding:11px 0 9px;display:flex;flex-direction:column;align-items:center;gap:5px;
+    color:var(--fnt);transition:color var(--t-mid) linear}
   .tabbar button.on{color:var(--ink)}
-  .tabbar svg{width:23px;height:23px;transition:transform .22s var(--eo)}
-  .tabbar button.on svg{transform:translateY(-1.5px)}
-  .tabbar span{font-size:10.5px;font-weight:600}
+  .tabbar svg{width:21px;height:21px}
+  .tabbar span{font-size:9.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase}
 
-  /* ---------- subpage overlay ---------- */
+  /* ---------- detail page (slide-over, nav model preserved) ---------- */
   .page{position:fixed;inset:0;z-index:60;background:var(--bg);max-width:430px;margin:0 auto;
-    transform:translateX(103%);transition:transform .34s var(--eo);overflow-y:auto;
-    padding-bottom:calc(30px + env(safe-area-inset-bottom))}
-  .page.open{transform:none}
-  .page .phead{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;
-    padding:max(14px,env(safe-area-inset-top)) 14px 12px;
-    background:oklch(0.957 0.006 240 / .86);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
-  .page .phead h2{flex:1;text-align:center;font-size:16.5px;font-weight:700;margin-right:42px}
-  .page .pback{width:34px;height:34px;display:flex;align-items:center;justify-content:center;
-    font-size:22px;color:var(--ink);border-radius:50%;transition:transform .12s var(--eo)}
-  .page .pback:active{transform:scale(.88)}
-  .page .pbody{padding:6px 18px}
+    transform:translate3d(100%,0,0);visibility:hidden;
+    transition:transform var(--t-slow) var(--eo),visibility 0s linear var(--t-slow);
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding-bottom:calc(var(--s7) + env(safe-area-inset-bottom))}
+  .page.open{transform:none;visibility:visible;transition:transform var(--t-slow) var(--eo),visibility 0s}
+  .page.drag{transition:none}
+  .phead{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:var(--s3);
+    padding:max(var(--s4),calc(env(safe-area-inset-top) + var(--s2))) var(--pad) var(--s3);
+    border-bottom:1px solid var(--line);background:var(--bg)}
+  @supports (backdrop-filter:blur(1px)){
+    .phead{background:color-mix(in oklab,var(--bg) 84%,transparent);
+      -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+  }
+  .phead h2{flex:1;font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--mut)}
+  .pback{width:30px;height:30px;margin-left:-7px;flex:none;display:flex;align-items:center;
+    justify-content:center;color:var(--ink);transition:transform var(--t-fast) var(--eo)}
+  .pback:active{transform:translateX(-2px)}
+  .pback svg{width:9px;height:16px}
+  .pbody{padding:var(--s5) var(--pad) 0}
+  .pbody .rows{margin:0 calc(var(--pad) * -1)}
 
-  /* doors/tyres top-view */
-  .topwrap{position:relative;width:230px;margin:8px auto 4px}
+  /* top-view diagram for doors / tyres */
+  .topwrap{position:relative;width:210px;margin:var(--s2) auto var(--s5)}
   .topwrap svg{width:100%;display:block}
-  .twv{position:absolute;font-size:17px;font-weight:800}
-  .twv u{font-size:11px;font-weight:600;color:var(--mut);text-decoration:none;margin-left:2px}
-  .twv.ok{color:var(--acc)} .twv.warn{color:var(--warn)} .twv.bad{color:var(--bad)}
+  .twv{position:absolute;font-size:16px;font-weight:600;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums}
+  .twv u{font-size:9.5px;font-weight:600;color:var(--fnt);text-decoration:none;margin-left:2px;
+    letter-spacing:.06em;text-transform:uppercase}
+  .twv.ok{color:var(--acc-ink)} .twv.warn{color:var(--warn)} .twv.bad{color:var(--bad)}
 
-  .rowlist{background:var(--card);border-radius:16px;overflow:hidden;margin-top:14px;
-    box-shadow:0 2px 10px oklch(0.3 0.03 250 / .06)}
-  .rowlist .ri{display:flex;align-items:center;gap:10px;padding:14px 16px;font-size:14.5px;font-weight:600}
-  .rowlist .ri+.ri{border-top:1px solid var(--line)}
-  .rowlist .ri .st{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:13px;color:var(--fnt);font-weight:600}
-  .rowlist .ri .st.ok{color:var(--acc)} .rowlist .ri .st.bad{color:var(--bad)}
-  .ckc{width:19px;height:19px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none}
-  .ckc.ok{background:var(--acc);color:#fff} .ckc.bad{background:var(--bad);color:#fff}
-  .ckc svg{width:11px;height:11px}
+  .ckc{display:inline-flex;align-items:center;gap:6px}
+  .ckc svg{width:13px;height:13px;flex:none}
 
-  .bigbtn{display:block;width:100%;margin-top:18px;background:var(--dark);color:#fff;
-    border-radius:16px;padding:16px;font-size:15px;font-weight:700;transition:transform .14s var(--eo),opacity .2s}
-  .bigbtn:active{transform:scale(.98)}
-  .bigbtn:disabled{opacity:.4}
-  .note{font-size:12px;color:var(--fnt);line-height:1.55;margin-top:14px}
+  /* primary action */
+  .bigbtn{display:block;width:100%;margin-top:var(--s5);background:var(--btn);color:var(--btn-ink);
+    border-radius:var(--r2);padding:16px;font-size:11px;font-weight:600;letter-spacing:.16em;
+    text-transform:uppercase;transition:transform var(--t-fast) var(--eo),opacity var(--t-mid) linear}
+  .bigbtn:active{transform:scale(.985)}
+  .bigbtn:disabled{opacity:.35}
 
   /* A/C page */
-  .acbig{display:flex;align-items:center;justify-content:center;gap:30px;margin:36px 0 6px}
-  .acbig .cur{font-size:64px;font-weight:800;letter-spacing:-.03em;line-height:1}
-  .acbig .cur u{font-size:24px;font-weight:700;color:var(--mut);text-decoration:none}
-  .acbig .side{font-size:26px;font-weight:700;color:var(--fnt)}
-  .acsub{text-align:center;font-size:13px;color:var(--mut);margin-bottom:26px}
-  .acacts{display:flex;justify-content:center;gap:40px;margin-top:10px}
-  .acacts button{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12.5px;
-    font-weight:600;color:var(--mut);transition:transform .12s var(--eo),color .18s}
-  .acacts button:active{transform:scale(.92)}
-  .acacts button.on{color:var(--acc)}
-  .acacts .cic{width:56px;height:56px;border-radius:50%;background:var(--card);display:flex;
-    align-items:center;justify-content:center;box-shadow:0 2px 10px oklch(0.3 0.03 250 / .08);color:var(--ink)}
-  .acacts button.on .cic{color:var(--acc)}
-  .acacts .cic svg{width:24px;height:24px}
+  .acbig{display:flex;align-items:center;justify-content:center;gap:var(--s5);margin:var(--s7) 0 var(--s3)}
+  .acbig .cur{font-size:76px;font-weight:600;letter-spacing:-.045em;line-height:.9;
+    font-variant-numeric:tabular-nums}
+  .acbig .cur u{font-size:20px;font-weight:600;color:var(--mut);text-decoration:none;letter-spacing:0}
+  .acbig .side{font-size:22px;font-weight:500;color:var(--line);font-variant-numeric:tabular-nums}
+  .acsub{text-align:center;margin-bottom:var(--s2)}
+  .acrow{display:flex;justify-content:center;gap:var(--s5);margin-bottom:var(--s7)}
+  .acacts{display:flex;justify-content:center;gap:var(--s7);padding-top:var(--s5);
+    border-top:1px solid var(--line)}
+  .acacts button{display:flex;flex-direction:column;align-items:center;gap:9px;
+    font-size:9.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--fnt);
+    transition:color var(--t-mid) linear}
+  .acacts .cic{width:54px;height:54px;border-radius:50%;border:1px solid var(--line);
+    background:var(--bg-2);display:flex;align-items:center;justify-content:center;color:var(--ink);
+    transition:transform var(--t-fast) var(--eo),border-color var(--t-mid) linear,
+      color var(--t-mid) linear,background var(--t-mid) linear}
+  .acacts button:active .cic{transform:scale(.9)}
+  .acacts button.on{color:var(--acc-ink)}
+  .acacts button.on .cic{border-color:var(--acc);color:var(--acc-ink);background:var(--acc-sf)}
+  .acacts .cic svg{width:23px;height:23px}
 
-  /* energy page */
-  .ebig{background:var(--card);border-radius:18px;padding:20px;box-shadow:0 2px 10px oklch(0.3 0.03 250 / .06)}
-  .ebig .lbl{font-size:13px;color:var(--mut)}
-  .ebig .v{font-size:40px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
-  .ebig .v u{font-size:15px;font-weight:600;color:var(--mut);text-decoration:none;margin-left:4px}
-  .etot{display:flex;gap:22px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-  .etot b{display:block;font-size:17px;font-weight:800}
-  .etot span{font-size:11px;color:var(--fnt)}
-  #echart{display:block;width:100%;margin-top:16px}
-  .secttl{font-size:17px;font-weight:800;margin:22px 2px 12px}
+  /* charts */
+  #echart,#cchart{display:block;width:100%;margin-top:var(--s3);overflow:visible}
+  .cstats{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s2);margin-top:var(--s4);
+    padding-top:var(--s3);border-top:1px solid var(--hair)}
+  .cstats b{display:block;font-size:16px;font-weight:600;letter-spacing:-.015em;
+    font-variant-numeric:tabular-nums}
+  .cstats span{display:block;font-size:9px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--fnt);margin-top:4px}
+  .crange{font-size:12px;color:var(--fnt);margin-top:var(--s3);line-height:1.6;
+    font-variant-numeric:tabular-nums}
 
-  /* account */
-  .vveh{background:linear-gradient(120deg,oklch(0.88 0.03 245),oklch(0.80 0.04 250));
-    border-radius:18px;padding:18px;margin-top:10px;position:relative;overflow:hidden;
-    box-shadow:0 2px 12px oklch(0.3 0.03 250 / .10)}
-  .vveh .vm{font-size:19px;font-weight:800}
-  .vveh .vv{font-size:12.5px;color:var(--mut);margin-top:6px;letter-spacing:.02em}
-  .vveh .vo{font-size:24px;font-weight:800;margin-top:8px}
-  .vveh .vo u{font-size:13px;font-weight:600;color:var(--mut);text-decoration:none;margin-left:3px}
-  .vveh img{position:absolute;right:-8px;bottom:-6px;width:170px;filter:drop-shadow(0 8px 8px oklch(0.3 0.03 250 / .25))}
-  .vveh .ve{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;
-    background:oklch(1 0 0 / .5);display:flex;align-items:center;justify-content:center;color:var(--mut)}
-  .rowlist .ri .chev{margin-left:auto;color:var(--fnt);font-size:19px;line-height:1}
+  .socbar{height:4px;border-radius:var(--rf);background:var(--line);overflow:hidden;margin-top:var(--s4)}
+  .socbar i{display:block;height:100%;border-radius:var(--rf);background:var(--acc);
+    transition:width .9s var(--eo)}
 
-  .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(8px);
-    background:var(--dark);color:#fff;font-size:13px;font-weight:600;padding:10px 18px;border-radius:12px;
-    opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--eo);z-index:80;max-width:86%}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  [hidden]{display:none!important}
-
-  /* calendar (distance page) */
-  .calhead{display:flex;align-items:center;justify-content:space-between;margin:14px 2px 10px}
-  .calhead b{font-size:16px;font-weight:800}
-  .calnav{width:32px;height:32px;border-radius:50%;background:var(--card);color:var(--ink);
-    font-size:18px;line-height:1;box-shadow:0 2px 8px oklch(0.3 0.03 250 / .08);transition:transform .12s var(--eo)}
-  .calnav:active{transform:scale(.9)}
-  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-  .caldow{text-align:center;font-size:9.5px;color:var(--fnt);text-transform:uppercase;letter-spacing:.4px}
-  .calday{background:var(--card);border-radius:12px;padding:7px 2px 6px;text-align:center;min-height:52px;
-    position:relative;transition:transform .12s var(--eo);border:0;font:inherit;color:var(--ink)}
-  .calday.on:active{transform:scale(.92)}
-  .calday.off{opacity:.35;pointer-events:none}
-  .calday .cd{font-size:10.5px;font-weight:650;color:var(--mut);display:block}
-  .calday .ck{font-size:12px;font-weight:800;display:block;margin-top:2px}
-  .calday .cdot{position:absolute;top:5px;right:6px;width:5px;height:5px;border-radius:50%;background:var(--acc)}
-  .caltot{display:flex;gap:20px;justify-content:center;margin-top:14px;font-size:12.5px;color:var(--mut)}
-  .caltot b{color:var(--ink)}
-
-  /* battery page */
-  .socbar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:14px}
-  .socbar i{display:block;height:100%;border-radius:99px;background:var(--acc);
-    transition:width .8s var(--eo)}
-
-  /* charge curve (ported from v1: SoC% vs elapsed minutes, inline SVG) */
-  #cchart{display:block;width:100%}
-  .cstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;text-align:center}
-  .cstats b{display:block;font-size:17px;font-weight:800;line-height:1;margin-bottom:4px}
-  .cstats span{font-size:9.5px;color:var(--fnt);text-transform:uppercase;letter-spacing:.4px}
-  .crange{text-align:center;font-size:12.5px;color:var(--mut);margin-top:12px;line-height:1.5}
-
-  /* charging history */
-  .hrow2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
-    padding:12px 0;border-top:1px solid var(--line);font-size:13px;color:var(--mut)}
+  .hrow2{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s3);
+    padding:13px 0;border-top:1px solid var(--hair);font-size:12.5px;color:var(--fnt);
+    font-variant-numeric:tabular-nums}
   .hrow2:first-child{border-top:0}
-  .hrow2 b{color:var(--ink);font-weight:700}
+  .hrow2 b{color:var(--ink);font-weight:600}
 
-  /* small inline seg (account toggles) */
-  .seg2{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}
-  .seg2 button{padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--mut);
-    transition:background .15s,color .15s}
-  .seg2 button.on{background:var(--dark);color:#fff}
+  /* calendar */
+  .calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s4)}
+  .calhead b{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
+  .calnav{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;background:var(--bg-2);
+    transition:transform var(--t-fast) var(--eo)}
+  .calnav:active{transform:scale(.88)}
+  .calnav svg{width:8px;height:13px}
+  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .caldow{text-align:center;font-size:9.5px;font-weight:600;color:var(--fnt);letter-spacing:.11em;
+    text-transform:uppercase;padding-bottom:var(--s1)}
+  .calday{background:var(--bg-2);border:1px solid var(--hair);border-radius:var(--r1);
+    padding:6px 2px;text-align:center;min-height:50px;position:relative;overflow:hidden;
+    font:inherit;color:var(--ink);transition:transform var(--t-fast) var(--eo)}
+  .calday.on:active{transform:scale(.92)}
+  .calday.off{opacity:.4;pointer-events:none;background:transparent}
+  .calday .cd{position:relative;z-index:1;font-size:10px;font-weight:500;color:var(--fnt);display:block;
+    font-variant-numeric:tabular-nums}
+  .calday .ck{position:relative;z-index:1;font-size:12px;font-weight:600;display:block;margin-top:3px;
+    letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .calday .cdot{position:absolute;z-index:1;top:5px;right:5px;width:4px;height:4px;border-radius:50%;
+    background:var(--acc)}
+  .calwash{position:absolute;inset:0;background:var(--acc);pointer-events:none}
+  .caltot{display:flex;gap:var(--s5);margin-top:var(--s5);padding-top:var(--s4);
+    border-top:1px solid var(--line)}
+  .caltot>div{min-width:0}
+  .caltot b{display:block;font-size:16px;font-weight:600;letter-spacing:-.015em;
+    font-variant-numeric:tabular-nums}
+  .caltot span{display:block;font-size:9.5px;font-weight:500;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--fnt);margin-top:4px}
 
-  /* flex card */
-  .flexc{background:linear-gradient(158deg,oklch(0.85 0.04 245),oklch(0.95 0.01 240));
-    border-radius:20px;padding:22px;box-shadow:0 6px 22px oklch(0.3 0.03 250 / .12)}
-  .flexc .fm{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
-  .flexc .fbig{font-size:52px;font-weight:800;letter-spacing:-.02em;margin:10px 0 2px}
-  .flexc .fbig u{font-size:16px;font-weight:600;color:var(--mut);text-decoration:none}
-  .fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
-  .fgrid2 b{display:block;font-size:19px;font-weight:800}
-  .fgrid2 span{font-size:11px;color:var(--mut)}
-  .fadein{animation:fadein .3s var(--eo)}
-  @keyframes fadein{from{opacity:0;transform:translateY(8px)}}
+  /* account header + share card */
+  .vveh{padding:0 0 var(--s5);border-bottom:1px solid var(--line);position:relative}
+  .vveh .vm{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+  .vveh .vo{font-size:46px;font-weight:600;letter-spacing:-.04em;line-height:1;margin-top:var(--s4);
+    font-variant-numeric:tabular-nums}
+  .vveh .vo u{font-size:14px;font-weight:600;color:var(--mut);text-decoration:none;letter-spacing:0;
+    margin-left:5px}
+  .vveh .vv{font-size:11.5px;color:var(--fnt);margin-top:10px;letter-spacing:.06em;
+    font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text}
+  .vveh .ve{position:absolute;top:0;right:-6px;width:30px;height:30px;display:flex;
+    align-items:center;justify-content:center;color:var(--fnt)}
+  .vveh .ve svg{width:17px;height:17px}
+  .vveh img{display:block;width:100%;max-width:250px;margin:var(--s3) auto 0;
+    filter:drop-shadow(0 10px 16px var(--shade))}
+
+  .flexc{border:1px solid var(--line);border-radius:var(--r3);padding:var(--s5);background:var(--bg-2)}
+  .flexc .fm{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--fnt)}
+  .flexc .fbig{font-size:56px;font-weight:600;letter-spacing:-.04em;line-height:.95;margin:var(--s4) 0 0;
+    font-variant-numeric:tabular-nums}
+  .flexc .fbig u{display:block;font-size:10px;font-weight:600;color:var(--fnt);text-decoration:none;
+    letter-spacing:.18em;text-transform:uppercase;margin-top:10px}
+  .fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4);margin-top:var(--s5);
+    padding-top:var(--s4);border-top:1px solid var(--hair)}
+  .fgrid2 b{display:block;font-size:18px;font-weight:600;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums}
+  .fgrid2 span{display:block;font-size:9.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--fnt);margin-top:4px}
+
+  /* segmented control */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r1);overflow:hidden;
+    flex:none;background:var(--bg)}
+  .seg button{padding:6px 11px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--fnt);transition:background var(--t-mid) linear,color var(--t-mid) linear}
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button.on{background:var(--btn);color:var(--btn-ink)}
+
+  /* confirm sheet — replaces native confirm() */
+  .scrim{position:fixed;inset:0;z-index:88;background:var(--scrim);opacity:0;pointer-events:none;
+    transition:opacity var(--t-mid) linear}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:90;max-width:430px;margin:0 auto;
+    background:var(--bg-2);border-top:1px solid var(--line);
+    border-radius:var(--r4) var(--r4) 0 0;
+    padding:var(--s5) var(--pad) calc(var(--s5) + env(safe-area-inset-bottom));
+    transform:translate3d(0,110%,0);transition:transform var(--t-slow) var(--eo)}
+  .sheet.show{transform:none}
+  .sheet .sq{font-size:17px;font-weight:600;letter-spacing:-.015em;text-align:center}
+  .sheet .ss{font-size:12.5px;color:var(--fnt);text-align:center;margin-top:var(--s2);line-height:1.5}
+  .sheet .sb{display:flex;gap:var(--s3);margin-top:var(--s5)}
+  .sheet .sb button{flex:1;padding:15px;border-radius:var(--r2);font-size:11px;font-weight:600;
+    letter-spacing:.16em;text-transform:uppercase;transition:transform var(--t-fast) var(--eo)}
+  .sheet .sb button:active{transform:scale(.985)}
+  .sheet .no{border:1px solid var(--line);color:var(--ink)}
+  .sheet .yes{background:var(--btn);color:var(--btn-ink)}
+
+  .toast{position:fixed;left:var(--pad);right:var(--pad);bottom:calc(88px + env(safe-area-inset-bottom));
+    max-width:390px;margin:0 auto;
+    background:var(--btn);color:var(--btn-ink);font-size:12.5px;font-weight:500;line-height:1.45;
+    padding:13px 16px;border-radius:var(--r2);text-align:center;
+    opacity:0;transform:translate3d(0,10px,0);pointer-events:none;
+    transition:opacity var(--t-mid) linear,transform var(--t-slow) var(--eo);z-index:80}
+  .toast.show{opacity:1;transform:none}
+
+  .fadein{animation:fadein var(--t-slow) var(--eo)}
+  @keyframes fadein{from{opacity:0;transform:translate3d(0,6px,0)}}
+
+  /* ---------- motion detail ----------
+     Restrained, state-bearing only: a first-paint rise, a needle-style count on the
+     numerals, a drawn chart line, a live pulse. Nothing loops unless the car is
+     actually doing something. All transform/opacity; the reduced-motion block above
+     flattens every one of these, and the JS count-up checks the same query. */
+  .rise{animation:rise 420ms var(--eo) both}
+  @keyframes rise{from{opacity:0;transform:translate3d(0,10px,0)}}
+
+  /* live dot: a single expanding ring, only while the car is online */
+  .hmeta .dot{position:relative}
+  .hmeta .dot.on:after{content:"";position:absolute;inset:0;border-radius:50%;
+    border:1px solid var(--acc);animation:ping 2.8s var(--eo) infinite}
+  @keyframes ping{0%{transform:scale(1);opacity:.7}70%,100%{transform:scale(3.4);opacity:0}}
+
+  /* charging bolt breathes while a session is live */
+  .chg svg{animation:breathe 2.6s ease-in-out infinite}
+  @keyframes breathe{50%{opacity:.42}}
+
+  /* chart line draws itself in */
+  .draw{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);
+    animation:draw 760ms var(--eo) 60ms forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .drawf{opacity:0;animation:drawf 520ms linear 420ms forwards}
+  @keyframes drawf{to{opacity:1}}
+
+  /* a value that changed on the last poll warms for a moment */
+  .rv,.hmeta .soc{transition:color 620ms linear}
+  .rv.flash,.hmeta .soc.flash{color:var(--acc-ink);transition:color 90ms linear}
 </style>
 </head>
 <body>
-<!-- DIRECTION CONTRACT (v2)
-THESIS: The car is the home screen. One glance answers "how far, how charged, is it safe"; everything else lives one tap below. Refuses the stat-tile dashboard default.
-OWN-WORLD: BYD Auto app grammar, pinned by the owner: cool steel-blue gradient hero with the real car render, white cards on porcelain, round quick-action buttons floating on the hero seam, top-view car diagrams for body status, charcoal primary buttons. Product green stays as the state accent.
-STORY: Owner opens from the iPhone home screen, checks range and charge in one second, fires lock or A/C without reading, walks one level down into doors, tyres, climate, or energy.
-FIRST VIEWPORT: gradient hero fills the top half (model name, 46px range, SoC, freshness line), car render centered, four round actions floating on the seam, charging pill when active, then the 2-col status card grid.
-FORM: pinned reference world (BYD Auto app), code-led build, no concept roll per the owner's explicit pin.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance. -->
+<!-- DIRECTION CONTRACT (v2, "Instrument", 2026-09-11)
+THESIS: A well-made gauge, not an app screen. The range numeral is the whole first viewport; everything
+else is a hairline list beneath it. Refuses both the stat-tile dashboard and the card-grid car app.
+OWN-WORLD: instrument register — graphite in dark, cool paper in light, adaptive by system with a manual
+override. Structure comes from hairlines and whitespace; there are no cards except where a chart needs
+containment. One accent (product green) carries state only. No gradients, no glass, no shadows as decoration.
+TYPE: one family, weight range 400/500/600 only (no 800). Display numerals at 72px / -0.04em with tabular
+figures; labels are 10px uppercase at 0.18em tracking. Numbers are the loudest thing on every screen.
+STORY: owner opens from the iPhone home screen, reads range in under a second, fires lock or A/C without
+reading, walks one level down into doors, tyres, climate or energy.
+NAV (unchanged from the previous v2): two tabs, right-slide detail pages, deep links at #doors #tyres etc.
+Added: edge-swipe back, hardware back via history, Esc, and a confirm sheet in place of window.confirm.
+HONESTY inherited: windows row hidden on the J5 (byte 8 quirk, #5), indirect-TPMS cars get status only,
+seats read "Not available" when the car reports none.
+A11Y: --mut ~5.6:1 and --fnt ~4.8:1 on light; both above 4.5:1 in dark. Text selection allowed on data.
+MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduced-motion honored. -->
 
 <div id="viewHome">
-  <div class="hero">
-    <div class="model" id="hModel">&mdash;</div>
-    <div class="range"><b class="num" id="hRange">&mdash;</b><u>km</u></div>
-    <div class="soc" id="hSoc"></div>
-    <div class="status"><span class="dot" id="hDot"></span><span id="hState">&mdash;</span>
-      <button class="rf" id="hRefresh" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 9.5a8 8 0 0113.3-2.7L20.5 9.5"/><path d="M20.5 4.5v5h-5"/><path d="M19.5 14.5a8 8 0 01-13.3 2.7L3.5 14.5"/><path d="M3.5 19.5v-5h5"/></svg></button></div>
-    <img class="car" id="hCar" src="car-generic.svg" alt="Your car" width="340" height="218">
-  </div>
-  <div class="qa" id="qaRow"></div>
+  <header class="hero">
+    <div class="hbar">
+      <span class="hm" id="hModel">&mdash;</span>
+      <button class="rf" id="hRefresh" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 9.5a8 8 0 0113.3-2.7L20.5 9.5"/><path d="M20.5 4.5v5h-5"/><path d="M19.5 14.5a8 8 0 01-13.3 2.7L3.5 14.5"/><path d="M3.5 19.5v-5h5"/></svg></button>
+    </div>
+    <div class="hdisp disp num"><span id="hRange">&mdash;</span><span class="u">km</span></div>
+    <div class="ov hlbl">Estimated range</div>
+    <div class="hmeta">
+      <span class="dot" id="hDot"></span>
+      <span class="soc num" id="hSoc">&mdash;</span>
+      <span class="sep">&#47;</span>
+      <span id="hState">&mdash;</span>
+      <span class="when" id="hWhen"></span>
+    </div>
+    <img class="hcar" id="hCar" src="car-generic.svg" alt="Your car" width="330" height="212">
+  </header>
+  <nav class="qa" id="qaRow" aria-label="Quick actions"></nav>
   <div class="chg" id="chgPill" hidden></div>
-  <div class="grid" id="cardGrid"></div>
+  <div id="groupsHost"></div>
 </div>
 
 <div id="viewAcct" hidden>
-  <div class="pbody" style="padding:calc(max(18px,env(safe-area-inset-top)) + 6px) 18px 0">
+  <div class="sec" style="padding-top:max(24px,calc(env(safe-area-inset-top) + 8px))">
     <div class="vveh">
       <div class="vm" id="aModel">&mdash;</div>
+      <button class="ve" id="aEye" aria-label="Show or hide VIN"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6.5 5.5 12 5.5 21.5 12 21.5 12 17.5 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <div class="vo"><span class="num" id="aOdo">&mdash;</span> <u>km total</u></div>
       <div class="vv" id="aVin">&mdash;</div>
-      <div class="vo"><span class="num" id="aOdo">&mdash;</span> <u>km</u></div>
-      <button class="ve" id="aEye" aria-label="Show or hide VIN"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6.5 5.5 12 5.5 21.5 12 21.5 12 17.5 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <img id="aCar" src="car-generic.svg" alt="">
     </div>
-    <div class="rowlist" id="acctRows"></div>
-    <div class="note" id="aNote"></div>
   </div>
+  <div class="sech"><span class="ov">Settings</span></div>
+  <div class="rows" id="acctRows"></div>
+  <div class="sec"><div class="note" id="aNote"></div></div>
 </div>
 
-<div class="tabbar">
-  <button class="on" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5l1.8-5.3A3 3 0 018.6 8.2h6.8a3 3 0 012.8 2L20 15.5"/><rect x="3" y="15.5" width="18" height="4" rx="1.6"/><circle cx="7.5" cy="17.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="16.5" cy="17.5" r="1.3" fill="currentColor" stroke="none"/></svg><span>My Vehicle</span></button>
-  <button data-v="acct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0115 0z"/></svg><span>My Account</span></button>
-</div>
+<nav class="tabbar" aria-label="Sections">
+  <button class="on" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l1.8-5.3A3 3 0 018.6 8.7h6.8a3 3 0 012.8 2L20 16"/><rect x="3" y="16" width="18" height="4" rx="1.6"/><circle cx="7.5" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="16.5" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg><span>Vehicle</span></button>
+  <button data-v="acct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0115 0z"/></svg><span>Account</span></button>
+</nav>
 
-<div class="page" id="pgAc"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>A/C</h2></div>
+<div class="page" id="pgAc" data-k="ac"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Climate</h2></div>
   <div class="pbody" id="pgAcBody"></div></div>
-<div class="page" id="pgDoors"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Doors and windows</h2></div>
+<div class="page" id="pgDoors" data-k="doors"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Doors and windows</h2></div>
   <div class="pbody" id="pgDoorsBody"></div></div>
-<div class="page" id="pgTyres"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Tire pressure</h2></div>
+<div class="page" id="pgTyres" data-k="tyres"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Tyres</h2></div>
   <div class="pbody" id="pgTyresBody"></div></div>
-<div class="page" id="pgEnergy"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Energy consumption</h2></div>
+<div class="page" id="pgEnergy" data-k="energy"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Energy</h2></div>
   <div class="pbody" id="pgEnergyBody"></div></div>
-<div class="page" id="pgBatt"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Battery</h2></div>
+<div class="page" id="pgBatt" data-k="batt"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Battery</h2></div>
   <div class="pbody" id="pgBattBody"></div></div>
-<div class="page" id="pgChg"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Charging</h2></div>
+<div class="page" id="pgChg" data-k="chg"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Charging</h2></div>
   <div class="pbody" id="pgChgBody"></div></div>
-<div class="page" id="pgDist"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Distance</h2></div>
+<div class="page" id="pgDist" data-k="dist"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Distance</h2></div>
   <div class="pbody" id="pgDistBody"></div></div>
-<div class="page" id="pgFlex"><div class="phead"><button class="pback" data-close>&lsaquo;</button><h2>Share</h2></div>
+<div class="page" id="pgFlex" data-k="flex"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Share card</h2></div>
   <div class="pbody" id="pgFlexBody"></div></div>
 
-<div class="toast" id="toast"></div>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="sq" id="shQ"></div>
+  <div class="ss" id="shS"></div>
+  <div class="sb"><button class="no" id="shNo">Cancel</button><button class="yes" id="shYes">Send</button></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -322,9 +528,40 @@ let S = null, CAPS = null;
 async function api(p, opt){ const r = await fetch(p, opt); if(r.status === 401){ location.href = '/'; throw 0; } return r.json(); }
 let toastT = null;
 function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show');
-  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
 
-// stroke icon glyphs — fresh 24px round-stroke set, consistent 1.8 weight, no fills except accents
+/* ---- theme: auto by default, manual override persisted per device ---- */
+const THEME_DARK = '#101214', THEME_LIGHT = '#f7f7f8';
+function readTheme(){ try{ return localStorage.getItem('theme') || 'auto'; }catch(e){ return 'auto'; } }
+function applyTheme(t){
+  const root = document.documentElement;
+  if(t === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', t);
+  const dark = t === 'dark' ||
+    (t === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  $('themeColor').setAttribute('content', dark ? THEME_DARK : THEME_LIGHT);
+}
+function setTheme(t){ try{ localStorage.setItem('theme', t); }catch(e){} applyTheme(t); }
+applyTheme(readTheme());
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)')
+  .addEventListener('change', () => { if(readTheme() === 'auto') applyTheme('auto'); });
+
+/* ---- confirm sheet: replaces window.confirm, which blocks the PWA ---- */
+let shResolve = null;
+function ask(q, s){
+  $('shQ').textContent = q; $('shS').textContent = s || '';
+  $('shS').hidden = !s;
+  $('scrim').classList.add('show'); $('sheet').classList.add('show');
+  return new Promise(res => { shResolve = res; });
+}
+function askClose(v){
+  $('scrim').classList.remove('show'); $('sheet').classList.remove('show');
+  if(shResolve){ shResolve(v); shResolve = null; }
+}
+$('shNo').onclick = () => askClose(false);
+$('scrim').onclick = () => askClose(false);
+$('shYes').onclick = () => askClose(true);
+
+// stroke icon glyphs — 24px round-stroke set, 1.8 weight, no fills except accents
 const IC = {
   lock:    '<rect x="5" y="10.5" width="14" height="9.5" rx="2.6"/><path d="M8 10.5V7a4 4 0 018 0v3.5"/><circle cx="12" cy="15" r="1.4"/>',
   unlock:  '<rect x="5" y="10.5" width="14" height="9.5" rx="2.6"/><path d="M8 10.5V7a4 4 0 017.6-2"/><circle cx="12" cy="15" r="1.4"/>',
@@ -335,20 +572,78 @@ const IC = {
   power:   '<path d="M12 3v9"/><path d="M6.6 6.6a8 8 0 1010.8 0"/>',
   bolt:    '<path d="M13 2L4 14h6l-1 8 9-12h-6z" fill="currentColor" stroke="none"/>',
   door:    '<path d="M3 19.5h18"/><path d="M5 19.5v-6.8l2.8-5.2h6.4l2.3 5.2v6.8"/><path d="M7.8 12.7h6.9"/><circle cx="9" cy="15.8" r="0.9" fill="currentColor" stroke="none"/>',
-  tyre:    '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.1"/><path d="M12 3.5v4.4M12 16.1v4.4M3.5 12h4.4M16.1 12h4.4M6 6l3.1 3.1M14.9 14.9L18 18M18 6l-3.1 3.1M9.1 14.9L6 18"/>',
-  chart:   '<path d="M4 19.5h16"/><path d="M4 15l4-5 4 3 5-7"/><circle cx="8" cy="10" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="1.1" fill="currentColor" stroke="none"/><circle cx="17" cy="6" r="1.1" fill="currentColor" stroke="none"/>',
+  tyre:    '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v5.3M12 15.2v5.3M3.5 12h5.3M15.2 12h5.3"/>',
+  chart:   '<path d="M4 19.5h16"/><path d="M4 15l4-5 4 3 5-7"/><circle cx="17" cy="6" r="1.2" fill="currentColor" stroke="none"/>',
   seat:    '<path d="M7 3.2a2 2 0 014 0V10h4.5a2 2 0 012 2v5.5"/><path d="M7 10v3a3 3 0 003 3h8.5"/><path d="M5 21l1.2-4M18.5 21v-3.5"/>',
   car:     '<path d="M4 16l1.8-5.3A3 3 0 018.6 8.7h6.8a3 3 0 012.8 2L20 16"/><rect x="3" y="16" width="18" height="4" rx="1.6"/><circle cx="7.5" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="16.5" cy="18" r="1.4" fill="currentColor" stroke="none"/>',
   globe:   '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/>',
   gauge:   '<path d="M4 18a8 8 0 0116 0"/><path d="M12 18l4.5-6.5"/><circle cx="12" cy="18" r="1.5" fill="currentColor" stroke="none"/><path d="M4 18h1.5M18.5 18H20"/>',
   camera:  '<path d="M3 9.5A2.5 2.5 0 015.5 7h1.2l1.1-2h6.4l1.1 2h1.2A2.5 2.5 0 0120 9.5v8A2.5 2.5 0 0117.5 20h-11A2.5 2.5 0 014 17.5z"/><circle cx="12" cy="13" r="3.4"/>',
   link:    '<path d="M9 15l6-6"/><path d="M11.5 6.5l1.4-1.4a4 4 0 015.6 5.6L17 12"/><path d="M12.5 17.5l-1.4 1.4a4 4 0 01-5.6-5.6L7 12"/>',
+  moon:    '<path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>',
 };
 function icon(k, w){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) +
   '" stroke-linecap="round" stroke-linejoin="round">' + (IC[k] || '') + '</svg>'; }
+const CHEV = '<svg class="ch" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6 6-6 6"/></svg>';
 
-const CK_OK  = '<span class="ckc ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>';
-const CK_BAD = '<span class="ckc bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M12 6v7.5"/><circle cx="12" cy="17.6" r="1.2" fill="currentColor" stroke="none"/></svg></span>';
+const CK_OK  = '<span class="ckc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 6"/></svg>';
+const CK_BAD = '<span class="ckc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5.5v8.5"/><circle cx="12" cy="18.4" r="1.3" fill="currentColor" stroke="none"/></svg>';
+
+/* ---- motion helpers ----
+   The design contract allows motion that carries state and nothing else, so each of
+   these is tied to a real event: a value arriving, a value changing, a page painting. */
+const REDUCED = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// needle-style count toward a new reading. Tabular figures keep the width steady.
+function countTo(el, to, dur){
+  const from = parseFloat(String(el.textContent).replace(/[^\d.-]/g, ''));
+  if(to == null || isNaN(to)){ el.textContent = '—'; return; }
+  if(isNaN(from) || from === to || REDUCED()){ el.textContent = to; return; }
+  const t0 = performance.now(), d = dur || 620, span = to - from;
+  cancelAnimationFrame(el._raf);
+  const tick = now => {
+    const p = Math.min(1, (now - t0) / d);
+    const e = 1 - Math.pow(1 - p, 3);                 // ease-out cubic
+    el.textContent = Math.round(from + span * e);
+    if(p < 1) el._raf = requestAnimationFrame(tick);
+  };
+  el._raf = requestAnimationFrame(tick);
+}
+
+// warm a value for a moment when the poll actually changed it. The rows are rebuilt
+// from innerHTML on every load, so the previous reading is kept here, not on the node.
+const PREV = {};
+function flash(el, key, next){
+  const v = String(next);
+  const changed = PREV[key] !== undefined && PREV[key] !== v;
+  PREV[key] = v;
+  if(!changed || REDUCED()) return;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 700);
+}
+
+// first-paint rise, one small stagger, never on a re-poll
+function stagger(nodes, step, base){
+  if(REDUCED()) return;
+  nodes.forEach((n, i) => {
+    n.style.animationDelay = ((base || 0) + i * (step || 34)) + 'ms';
+    n.classList.add('rise');
+  });
+}
+
+// let a chart stroke draw itself, then fade in its labels and dots
+function drawIn(svg){
+  if(!svg || REDUCED()) return;
+  svg.querySelectorAll('polyline,path').forEach(p => {
+    if(p.getAttribute('fill') !== 'none' && p.getAttribute('fill')){ p.classList.add('drawf'); return; }
+    let len = 0;
+    try{ len = p.getTotalLength(); }catch(e){ return; }
+    if(!len) return;
+    p.style.setProperty('--len', len.toFixed(1));
+    p.classList.add('draw');
+  });
+  svg.querySelectorAll('circle,text,line').forEach(n => n.classList.add('drawf'));
+}
 
 function ago(dt){ if(!dt) return ''; const s = (Date.now() - new Date(dt.replace(' ', 'T'))) / 1000;
   if(s < 90) return 'just now'; if(s < 3600) return Math.round(s / 60) + ' min ago';
@@ -370,16 +665,17 @@ async function fire(op, btn){
   if(btn) btn.classList.remove('busy');
 }
 
-// ---- renderers ----
+// ---- hero ----
 function renderHero(){
   $('hModel').textContent = (S.vehicle && S.vehicle.model) || 'My car';
-  $('hRange').textContent = S.range_km != null ? Math.round(S.range_km) : '\u2014';
-  $('hSoc').innerHTML = icon('bolt', 2.2) + '<span class="num">' +
-    (S.battery != null ? S.battery + '%' : '\u2014') + '</span>';
+  countTo($('hRange'), S.range_km != null ? Math.round(S.range_km) : null);
+  const soc = $('hSoc');
+  soc.textContent = S.battery != null ? S.battery + '%' : '—';
+  flash(soc, 'soc', S.battery);
   $('hDot').className = 'dot' + (S.online ? ' on' : '');
   $('hState').textContent =
-    (S.moving ? 'Driving' : (S.charging && S.charging.active) ? 'Charging' : 'Powered off') +
-    '  \u00b7  Updated ' + (ago(S.updated) || 'never');
+    S.moving ? 'Driving' : (S.charging && S.charging.active) ? 'Charging' : 'Parked';
+  $('hWhen').textContent = ago(S.updated) || 'never updated';
   const img = $('hCar');
   img.onerror = () => { img.onerror = null; img.src = 'car-generic.svg'; };
   img.src = '/car-photo';
@@ -393,17 +689,17 @@ function renderQA(){
     {k: locked ? 'unlock' : 'lock', label: locked ? 'Unlock' : 'Lock',
      op: locked ? '740200' : '740100', ask: locked, active: !locked},
     {k: 'ac',   label: acOn ? 'A/C off' : 'A/C on', op: acOn ? '741000' : '741001', active: acOn},
-    {k: 'find', label: 'Find car', op: '740400'},
+    {k: 'find', label: 'Find', op: '740400'},
   ];
   if(S.charging && S.charging.active)
-    defs.push({k: 'power', label: 'Stop charging', op: '742701', ask: true});
+    defs.push({k: 'power', label: 'Stop', op: '742701', ask: true, askNote: 'Ends the charging session on the car.'});
   defs.forEach(d => {
     const b = document.createElement('button');
     b.className = d.active ? 'on' : '';
-    b.title = d.label; b.setAttribute('aria-label', d.label);
-    b.innerHTML = icon(d.k);
-    b.onclick = () => {
-      if(d.ask && !confirm(d.label + ' \u2014 send now?')) return;
+    b.setAttribute('aria-label', d.label);
+    b.innerHTML = '<span class="qc">' + icon(d.k) + '</span>' + d.label;
+    b.onclick = async () => {
+      if(d.ask && !(await ask(d.label + '?', d.askNote || 'The command is sent to the car now.'))) return;
       fire(d.op, b);
     };
     qa.appendChild(b);
@@ -423,13 +719,13 @@ function doorSummary(){
   const parts = [];
   const openDoors = S.doors == null ? null : (S.doors & 15) !== 0;
   const winOpen = windowsOpen();
-  if(openDoors) parts.push('door open');
-  if(winOpen === true) parts.push('windows open');
-  if(S.trunk_open) parts.push('trunk open');
-  if(S.sunroof_open) parts.push('sunroof open');
-  if(!parts.length && openDoors === false && !S.unlocked) return {t: 'All closed and locked', cls: 'ok'};
-  if(!parts.length) return {t: S.unlocked ? 'Unlocked' : 'All closed', cls: S.unlocked ? 'warn' : 'ok'};
-  return {t: parts.join(' \u00b7 '), cls: 'bad'};
+  if(openDoors) parts.push('Door open');
+  if(winOpen === true) parts.push('Windows open');
+  if(S.trunk_open) parts.push('Trunk open');
+  if(S.sunroof_open) parts.push('Sunroof open');
+  if(!parts.length && openDoors === false && !S.unlocked) return {t: 'Closed, locked', cls: 'ok'};
+  if(!parts.length) return {t: S.unlocked ? 'Unlocked' : 'Closed', cls: S.unlocked ? 'warn' : 'ok'};
+  return {t: parts.join(' · '), cls: 'bad'};
 }
 
 function renderCharging(){
@@ -443,55 +739,76 @@ function renderCharging(){
     (Math.floor(c.remaining_min / 60) + ' h ' + (c.remaining_min % 60) + ' min left') :
     (c.remaining_min + ' min left'));
   el.innerHTML = icon('bolt', 2.2) + '<span>Charging</span><span class="dim">' +
-    (bits.join(' \u00b7 ') || '') + '</span>';
+    (bits.join(' · ') || '') + '</span>';
 }
 
-function card(ic, title, sub, cls  , page){
-  return '<button class="card" data-page="' + page + '"><span class="ic">' + icon(ic) + '</span>' +
-    '<span class="t">' + title + '</span><span class="s ' + (cls || '') + '">' + sub + '</span></button>';
+// ---- home row lists (hairline groups, not a tile grid) ----
+function row(ic, label, val, cls, page){
+  const tag = page ? 'button' : 'div';
+  return '<' + tag + ' class="row"' + (page ? ' data-page="' + page + '"' : '') + '>' +
+    '<span class="ri">' + icon(ic) + '</span>' +
+    '<span class="rl">' + label + '</span>' +
+    '<span class="rv ' + (cls || '') + '">' + val + '</span>' +
+    (page ? CHEV : '') + '</' + tag + '>';
+}
+function group(title, body){
+  return '<div class="sech"><span class="ov">' + title + '</span></div><div class="rows">' + body + '</div>';
 }
 
 function renderCards(){
-  const g = $('cardGrid');
   const ds = doorSummary();
   const e = S.energy || {};
   const cons = e.consumption != null ? e.consumption + ' kWh/100km' : 'No data yet';
   const tyreSub = S.tyre_indirect === false
     ? (S.tyre_status === 'Normal' ? 'Normal' : 'Check tyres')
     : (S.tyre_status || 'Status only');
-  const acSub = S.ac_on ? 'On' + (S.ac_temp_c && S.ac_temp_c < 60 ? ' \u00b7 cabin ' + S.ac_temp_c + '\u00b0' : '') : 'Off';
+  const acSub = S.ac_on ? 'On' + (S.ac_temp_c && S.ac_temp_c < 60 ? ' · cabin ' + S.ac_temp_c + '°' : '') : 'Off';
   const seatsKnown = (S.seat_heat && (S.seat_heat[0] || S.seat_heat[1])) ||
                      (S.seat_vent && (S.seat_vent[0] || S.seat_vent[1]));
   const chgSub = (S.charging && S.charging.active)
-    ? 'Charging' + (S.charging.rate_kw != null ? ' \u00b7 ' + S.charging.rate_kw + ' kW' : '')
+    ? 'Charging' + (S.charging.rate_kw != null ? ' · ' + S.charging.rate_kw + ' kW' : '')
     : (S.charging && S.charging.month_kwh ? S.charging.month_kwh + ' kWh this month' : 'No sessions yet');
-  const battSub = (S.battery != null ? S.battery + '%' : '\u2014') +
-    (S.volt12_status ? ' \u00b7 12V ' + S.volt12_status : '');
+  const battSub = (S.battery != null ? S.battery + '%' : '—') +
+    (S.volt12_status ? ' · 12V ' + S.volt12_status : '');
   const distSub = (S.km && S.km.today != null ? S.km.today + ' km today' : 'No driving yet');
-  g.innerHTML =
-    '<div class="card clim" data-page="ac" role="button" tabindex="0">' +
-      '<div class="row"><button class="step" data-step="-1" aria-label="Cooler">\u2212</button>' +
-      '<span class="temp num" id="climTemp">' + acTarget + '\u00b0</span>' +
-      '<button class="step" data-step="1" aria-label="Warmer">+</button></div>' +
-      '<div class="row" style="margin-top:10px"><span class="s ' + (S.ac_on ? 'ok' : '') + '" id="climState">' +
-      acSub + '</span><span class="ic" style="margin:0">' + icon('ac') + '</span></div></div>' +
-    card('door', 'Doors and windows', ds.t, ds.cls, 'doors') +
-    card('tyre', 'Tire pressure', tyreSub, S.tyre_status === 'Normal' ? 'ok' : 'warn', 'tyres') +
-    card('chart', 'Energy', cons, '', 'energy') +
-    card('bolt', 'Battery', battSub, S.volt12_status === 'critical' ? 'bad' : '', 'batt') +
-    card('gauge', 'Charging', chgSub, (S.charging && S.charging.active) ? 'ok' : '', 'chg') +
-    card('car', 'Distance', distSub, '', 'dist') +
-    card('seat', 'Seats', seatsKnown ? 'Active' : 'Not available', '', 'none');
-  g.querySelectorAll('[data-page]').forEach(b => {
-    if(b.dataset.page !== 'none') b.onclick = () => openPage(b.dataset.page);
+
+  // climate row carries its own stepper, so it is built by hand
+  const climRow =
+    '<div class="row"><span class="ri">' + icon('ac') + '</span>' +
+    '<button class="rl" data-page="ac" style="text-align:left">Climate' +
+      '<small id="climState">' + acSub + '</small></button>' +
+    '<span class="stepset">' +
+      '<button class="step" data-step="-1" aria-label="Cooler">&minus;</button>' +
+      '<span class="tv num" id="climTemp">' + acTarget + '°</span>' +
+      '<button class="step" data-step="1" aria-label="Warmer">+</button>' +
+    '</span></div>';
+
+  $('groupsHost').innerHTML =
+    group('Vehicle',
+      climRow +
+      row('door', 'Doors and windows', ds.t, ds.cls, 'doors') +
+      row('tyre', 'Tyres', tyreSub, S.tyre_status === 'Normal' ? 'ok' : 'warn', 'tyres') +
+      row('seat', 'Seats', seatsKnown ? 'Active' : 'Not available', '', null)) +
+    group('Energy',
+      row('bolt',  'Battery',  battSub, S.volt12_status === 'critical' ? 'bad' : '', 'batt') +
+      row('gauge', 'Charging', chgSub, (S.charging && S.charging.active) ? 'ok' : '', 'chg') +
+      row('chart', 'Consumption', cons, '', 'energy') +
+      row('car',   'Distance', distSub, '', 'dist'));
+
+  const host = $('groupsHost');
+  host.querySelectorAll('.row').forEach((r, i) => {
+    const v = r.querySelector('.rv');
+    if(v) flash(v, 'row' + i, v.textContent);
   });
-  g.querySelectorAll('[data-step]').forEach(b => b.onclick = ev => {
+  if(!S._painted){ stagger([...host.querySelectorAll('.sech,.row')], 26, 90); S._painted = true; }
+  host.querySelectorAll('[data-page]').forEach(b => b.onclick = () => openPage(b.dataset.page));
+  host.querySelectorAll('[data-step]').forEach(b => b.onclick = ev => {
     ev.stopPropagation();
     const caps = (CAPS && CAPS.ac) || {};
     const mn = caps.min != null ? Math.ceil(caps.min) : 16;
     const mx = caps.max != null ? Math.floor(caps.max) : 30;
     acTarget = Math.min(mx, Math.max(mn, acTarget + Number(b.dataset.step)));
-    $('climTemp').textContent = acTarget + '\u00b0';
+    $('climTemp').textContent = acTarget + '°';
     sendTemp();
   });
 }
@@ -509,15 +826,15 @@ function renderAc(){
   const caps = (CAPS && CAPS.ac) || {};
   const mn = caps.min != null ? Math.ceil(caps.min) : 16;
   const mx = caps.max != null ? Math.floor(caps.max) : 30;
-  const cabin = S.ac_temp_c && S.ac_temp_c < 60 ? S.ac_temp_c + '\u00b0C' : null;
+  const cabin = S.ac_temp_c && S.ac_temp_c < 60 ? S.ac_temp_c + '°C' : null;
   el.innerHTML =
-    '<div class="acsub">' + (cabin ? 'Interior temperature ' + cabin : 'Set a target, then power on') + '</div>' +
+    '<div class="acsub ov">' + (cabin ? 'Cabin now ' + cabin : 'Set a target, then power on') + '</div>' +
     '<div class="acbig"><span class="side">' + Math.max(mn, acTarget - 1) + '</span>' +
-    '<span class="cur num">' + acTarget + '<u>\u00b0C</u></span>' +
+    '<span class="cur num">' + acTarget + '<u>°C</u></span>' +
     '<span class="side">' + Math.min(mx, acTarget + 1) + '</span></div>' +
-    '<div class="row" style="display:flex;justify-content:center;gap:22px;margin-bottom:26px">' +
-    '<button class="step" id="acMinus" aria-label="Cooler">\u2212</button>' +
-    '<button class="step" id="acPlus" aria-label="Warmer">+</button></div>' +
+    '<div class="acrow">' +
+      '<button class="step" id="acMinus" aria-label="Cooler">&minus;</button>' +
+      '<button class="step" id="acPlus" aria-label="Warmer">+</button></div>' +
     '<div class="acacts">' +
     '<button data-ac="heat"><span class="cic">' + icon('heat') + '</span>Heat</button>' +
     '<button data-ac="cool"><span class="cic">' + icon('cool') + '</span>Cool</button>' +
@@ -525,21 +842,22 @@ function renderAc(){
       (S.ac_on ? 'Turn off' : 'Turn on') + '</span></button></div>' +
     '<div class="note">Temperature command (7411 + hex) comes from the jump-table decode and is pending ' +
     'on-car verification. Power and quick heat/cool use the verified map.</div>';
-  $('acMinus').onclick = () => { acTarget = Math.max(mn, acTarget -  1); renderAc(); sendTemp(); };
+  $('acMinus').onclick = () => { acTarget = Math.max(mn, acTarget - 1); renderAc(); sendTemp(); };
   $('acPlus').onclick  = () => { acTarget = Math.min(mx, acTarget + 1); renderAc(); sendTemp(); };
-  el.querySelector('[data-ac="heat"]').onclick = ev => fire(S.ac_on ? '741F00' : '741F01');
-  el.querySelector('[data-ac="cool"]').onclick = ev => fire(S.ac_on ? '742000' : '742001');
-  el.querySelector('[data-ac="pwr"]').onclick  = ev => fire(S.ac_on ? '741000' : '741001');
+  el.querySelector('[data-ac="heat"]').onclick = () => fire(S.ac_on ? '741F00' : '741F01');
+  el.querySelector('[data-ac="cool"]').onclick = () => fire(S.ac_on ? '742000' : '742001');
+  el.querySelector('[data-ac="pwr"]').onclick  = () => fire(S.ac_on ? '741000' : '741001');
   el.querySelector('[data-ac="pwr"]').classList.toggle('on', !!S.ac_on);
 }
 
 function topCarSvg(){
   return '<svg viewBox="0 0 120 190">' +
     '<path d="M38 12C31 12 27 22 26 36L24 148C24 166 29 178 39 178h42c10 0 15-12 15-30l-2-112C94 22 89 12 82 12Z" ' +
-      'fill="oklch(0.98 0.004 240)" stroke="oklch(0.80 0.02 250)" stroke-width="1.5"/>' +
-    '<path d="M31 52C33 40 37 33 43 31h34c6 2 10 9 12 21-8-4-18-6-29-6s-21 2-29 6Z" fill="oklch(0.35 0.03 255)"/>' +
-    '<rect x="37" y="70" width="46" height="58" rx="7" fill="oklch(0.35 0.03 255)"/>' +
-    '<path d="M26 60h-6v10h6M94 60h6v10h-6" fill="oklch(0.80 0.02 250)"/></svg>';
+      'fill="var(--bg-2)" stroke="var(--line)" stroke-width="1.5"/>' +
+    '<path d="M31 52C33 40 37 33 43 31h34c6 2 10 9 12 21-8-4-18-6-29-6s-21 2-29 6Z" fill="var(--bg-3)" ' +
+      'stroke="var(--line)" stroke-width="1"/>' +
+    '<rect x="37" y="70" width="46" height="58" rx="7" fill="var(--bg-3)" stroke="var(--line)" stroke-width="1"/>' +
+    '<path d="M26 60h-6v10h6M94 60h6v10h-6" fill="var(--line)"/></svg>';
 }
 
 function renderDoors(){
@@ -547,20 +865,20 @@ function renderDoors(){
   const winOpen = windowsOpen();
   const doorsOpen = S.doors != null && (S.doors & 15) !== 0;
   const rows = [];
-  function row(label, ok, okTxt, badTxt){
-    rows.push('<div class="ri">' + label +
-      '<span class="st ' + (ok ? 'ok' : 'bad') + '">' + (ok ? CK_OK : CK_BAD) +
-      (ok ? okTxt : badTxt) + '</span></div>');
+  function r(label, ok, okTxt, badTxt){
+    rows.push('<div class="row"><span class="rl">' + label + '</span>' +
+      '<span class="rv ' + (ok ? 'ok' : 'bad') + '">' + (ok ? CK_OK : CK_BAD) +
+      (ok ? okTxt : badTxt) + '</span></span></div>');
   }
-  row('Doors', !doorsOpen && !S.unlocked,
-      S.unlocked ? 'Closed' : 'Closed and locked',
-      doorsOpen ? 'Open' : 'Unlocked');
-  if(winOpen !== null) row('Windows', !winOpen, 'Closed', 'Open');
+  r('Doors', !doorsOpen && !S.unlocked,
+    S.unlocked ? 'Closed' : 'Closed and locked',
+    doorsOpen ? 'Open' : 'Unlocked');
+  if(winOpen !== null) r('Windows', !winOpen, 'Closed', 'Open');
   if(CAPS && CAPS.sunroof && (CAPS.sunroof.open || CAPS.sunroof.tilt))
-    row('Sunroof', !S.sunroof_open, 'Closed', 'Open');
-  row('Rear trunk', !S.trunk_open, 'Closed', 'Open');
+    r('Sunroof', !S.sunroof_open, 'Closed', 'Open');
+  r('Rear trunk', !S.trunk_open, 'Closed', 'Open');
   el.innerHTML = '<div class="topwrap">' + topCarSvg() + '</div>' +
-    '<div class="rowlist">' + rows.join('') + '</div>';
+    '<div class="rows">' + rows.join('') + '</div>';
   if(winOpen === true && CAPS && CAPS.windows && CAPS.windows.close){
     const b = document.createElement('button');
     b.className = 'bigbtn'; b.textContent = 'Close windows remotely';
@@ -579,7 +897,7 @@ function renderTyres(){
   const el = $('pgTyresBody');
   const t = S.tpms || [];
   const unit = S.tyre_unit || 'psi';
-  const pos = [{x: '4%', y: '13%'}, {x: '78%', y: '13%'}, {x: '4%', y: '72%'}, {x: '78%', y: '72%'}];
+  const pos = [{x: '2%', y: '13%'}, {x: '76%', y: '13%'}, {x: '2%', y: '72%'}, {x: '76%', y: '72%'}];
   let vals = '';
   t.forEach((w, i) => {
     if(w.psi == null) return;
@@ -589,9 +907,9 @@ function renderTyres(){
   });
   const indirect = S.tyre_indirect !== false;
   el.innerHTML = '<div class="topwrap">' + topCarSvg() + vals + '</div>' +
-    '<div class="rowlist"><div class="ri">Status<span class="st ' +
+    '<div class="rows"><div class="row"><span class="rl">Status</span><span class="rv ' +
       (S.tyre_status === 'Normal' ? 'ok' : 'bad') + '">' +
-      (S.tyre_status === 'Normal' ? CK_OK : CK_BAD) + (S.tyre_status || '\u2014') + '</span></div></div>' +
+      (S.tyre_status === 'Normal' ? CK_OK : CK_BAD) + (S.tyre_status || '—') + '</span></span></div></div>' +
     '<div class="note">' + (indirect
       ? 'This car uses indirect TPMS: it infers a soft tyre from wheel speed and reports normal or not. ' +
         'Live pressures appear here on cars with real sensors.'
@@ -604,16 +922,16 @@ function renderEnergy(){
   const hist = S.history || [];
   const wltp = S.wltp_kwh_100;
   el.innerHTML =
-    '<div class="ebig"><div class="lbl">Recent average consumption</div>' +
-    '<div class="v num">' + (e.consumption != null ? e.consumption : '\u2014') +
-      '<u>kWh/100km</u></div>' +
-    '<div class="etot">' +
-      '<div><b class="num">' + (S.km && S.km.today != null ? S.km.today : '\u2014') + '</b><span>km today</span></div>' +
-      '<div><b class="num">' + (e.today_kwh != null ? e.today_kwh : '\u2014') + '</b><span>kWh today</span></div>' +
-      '<div><b class="num">' + (S.km && S.km.week != null ? S.km.week : '\u2014') + '</b><span>km this week</span></div>' +
+    '<div class="panel"><div class="plbl">Recent average</div>' +
+    '<div class="pval num">' + (e.consumption != null ? e.consumption : '—') +
+      '<span class="u">kWh/100km</span></div>' +
+    '<div class="stats">' +
+      '<div><b class="num">' + (S.km && S.km.today != null ? S.km.today : '—') + '</b><span>km today</span></div>' +
+      '<div><b class="num">' + (e.today_kwh != null ? e.today_kwh : '—') + '</b><span>kWh today</span></div>' +
+      '<div><b class="num">' + (S.km && S.km.week != null ? S.km.week : '—') + '</b><span>km / week</span></div>' +
     '</div></div>' +
-    '<div class="secttl">Past 7 days</div>' +
-    '<div class="ebig"><svg id="echart" viewBox="0 0 340 150"></svg></div>';
+    '<div class="sech" style="padding-left:0;padding-right:0"><span class="ov">Past 7 days</span></div>' +
+    '<div class="panel"><svg id="echart" viewBox="0 0 340 150"></svg></div>';
   const svg = $('echart');
   const W = 340, H = 150, P = 26;
   const vals = hist.map(h => (h.eff == null ? null : h.eff));
@@ -634,26 +952,29 @@ function renderEnergy(){
       const v = vals[i];
       const cmd = (j ? 'L' : 'M') + xs(i).toFixed(1) + ' ' + ys(v).toFixed(1);
       path += cmd; area += cmd;
-      dots += '<circle cx="' + xs(i) + '" cy="' + ys(v) + '" r="3" fill="oklch(0.55 0.11 165)"/>' +
-        '<text x="' + xs(i) + '" y="' + (ys(v) - 8) + '" font-size="9.5" text-anchor="middle" ' +
-        'fill="oklch(0.50 0.018 260)" font-weight="600">' + v + '</text>';
+      dots += '<circle cx="' + xs(i) + '" cy="' + ys(v) + '" r="2.6" fill="var(--acc)"/>' +
+        '<text x="' + xs(i) + '" y="' + (ys(v) - 9) + '" font-size="9.5" text-anchor="middle" ' +
+        'fill="var(--mut)" font-weight="600">' + v + '</text>';
     });
     area += 'L' + xs(seg[seg.length - 1]) + ' ' + (H - P) + 'L' + xs(seg[0]) + ' ' + (H - P) + 'Z';
   });
   let wl = '';
   if(wltp){
     wl = '<line x1="' + P + '" y1="' + ys(wltp) + '" x2="' + (W - 26) + '" y2="' + ys(wltp) +
-      '" stroke="oklch(0.60 0.015 260)" stroke-dasharray="5 4" stroke-width="1.4"/>' +
-      '<text x="' + (P + 4) + '" y="' + (ys(wltp) - 5) + '" font-size="9" text-anchor="start" ' +
-      'fill="oklch(0.60 0.015 260)">WLTP ' + wltp + '</text>';
+      '" stroke="var(--fnt)" stroke-dasharray="4 5" stroke-width="1.2"/>' +
+      '<text x="' + (P) + '" y="' + (ys(wltp) - 6) + '" font-size="8.5" text-anchor="start" ' +
+      'letter-spacing="1" fill="var(--fnt)">WLTP ' + wltp + '</text>';
   }
+  const base = '<line x1="' + P + '" y1="' + (H - P) + '" x2="' + (W - 26) + '" y2="' + (H - P) +
+    '" stroke="var(--line)" stroke-width="1"/>';
   const days = hist.map((h, i) =>
     '<text x="' + xs(i) + '" y="' + (H - 8) + '" font-size="8.5" text-anchor="middle" ' +
-    'fill="oklch(0.60 0.015 260)">' + (h.day || '') + '</text>').join('');
+    'letter-spacing="1" fill="var(--fnt)">' + (h.day || '').toUpperCase() + '</text>').join('');
   svg.innerHTML =
-    '<path d="' + area + '" fill="oklch(0.55 0.11 165 / .13)"/>' +
-    '<path d="' + path + '" fill="none" stroke="oklch(0.55 0.11 165)" stroke-width="2.2" ' +
-      'stroke-linecap="round"/>' + dots + wl + days;
+    '<path d="' + area + '" fill="var(--acc-sf)"/>' + base +
+    '<path d="' + path + '" fill="none" stroke="var(--acc)" stroke-width="1.8" ' +
+      'stroke-linecap="round" stroke-linejoin="round"/>' + dots + wl + days;
+  drawIn(svg);
 }
 
 // ---- battery page: SoC + range + 12V watch + health + care ----
@@ -671,23 +992,25 @@ function renderBatt(){
   if(lf.km != null) rows.push(['Lifetime driven', Math.round(lf.km).toLocaleString() + ' km']);
   if(lf.co2_saved != null) rows.push(['CO2 not emitted', lf.co2_saved.toLocaleString() + ' kg']);
   el.innerHTML =
-    '<div class="ebig"><div class="lbl">State of charge</div>' +
-    '<div class="v num">' + (soc != null ? soc : '\u2014') + '<u>%</u></div>' +
+    '<div class="panel"><div class="plbl">State of charge</div>' +
+    '<div class="pval num">' + (soc != null ? soc : '—') + '<span class="u">%</span></div>' +
     '<div class="socbar"><i style="width:' + (soc || 0) + '%"></i></div></div>' +
-    '<div class="secttl">12V battery</div>' +
-    '<div class="ebig"><div class="lbl">Auxiliary battery</div>' +
-    '<div class="v num">' + (S.volt12 != null ? S.volt12.toFixed(1) : '\u2014') + '<u>V</u></div>' +
-    '<div class="etot"><div><b class="num">' + (S.volt12_min7d != null ? S.volt12_min7d.toFixed(1) + ' V' : '\u2014') +
+    '<div class="sech" style="padding-left:0;padding-right:0"><span class="ov">12V auxiliary</span></div>' +
+    '<div class="panel"><div class="plbl">Resting voltage</div>' +
+    '<div class="pval num">' + (S.volt12 != null ? S.volt12.toFixed(1) : '—') + '<span class="u">V</span></div>' +
+    '<div class="stats"><div><b class="num">' + (S.volt12_min7d != null ? S.volt12_min7d.toFixed(1) + ' V' : '—') +
       '</b><span>7-day low</span></div>' +
-    '<div><b style="color:' + (v12ok ? 'var(--acc)' : 'var(--bad)') + '">' +
-      (S.volt12_status || '\u2014') + '</b><span>status</span></div></div></div>' +
-    (bc.state ? '<div class="secttl">Battery care</div><div class="ebig"><div class="lbl">' +
-      'LFP balancing: full charge weekly' + '</div>' +
-      '<div class="etot"><div><b>' + (bc.last_full_dt || '\u2014') + '</b><span>last 100%</span></div>' +
-      '<div><b>' + (bc.next_due_dt || '\u2014') + '</b><span>next due</span></div></div></div>' : '') +
-    '<div class="secttl">Detail</div>' +
-    '<div class="rowlist">' + rows.map(r =>
-      '<div class="ri">' + r[0] + '<span class="st">' + r[1] + '</span></div>').join('') + '</div>';
+    '<div><b style="color:' + (v12ok ? 'var(--acc-ink)' : 'var(--bad)') + '">' +
+      (S.volt12_status || '—') + '</b><span>status</span></div></div></div>' +
+    (bc.state ? '<div class="sech" style="padding-left:0;padding-right:0"><span class="ov">Battery care</span></div>' +
+      '<div class="panel"><div class="plbl">LFP balancing &mdash; full charge weekly</div>' +
+      '<div class="stats" style="border-top:0;margin-top:14px;padding-top:0">' +
+      '<div><b>' + (bc.last_full_dt || '—') + '</b><span>last 100%</span></div>' +
+      '<div><b>' + (bc.next_due_dt || '—') + '</b><span>next due</span></div></div></div>' : '') +
+    '<div class="sech" style="padding-left:0;padding-right:0"><span class="ov">Detail</span></div>' +
+    '<div class="rows">' + rows.map(r =>
+      '<div class="row"><span class="rl">' + r[0] + '</span><span class="rv">' + r[1] + '</span></div>').join('') +
+    '</div>';
 }
 
 // ---- charging page: live state + charge curve + stats + history ----
@@ -696,10 +1019,11 @@ function renderChg(){
   const c = S.charging || {};
   const s = c.session;
   const cur = S.currency ? S.currency.symbol : '';
-  // charge-curve section between the live/last card and the month stats — same slot as v1
+  const sech = t => '<div class="sech" style="padding-left:0;padding-right:0"><span class="ov">' + t + '</span></div>';
+  // charge-curve section between the live/last panel and the month stats — same slot as v1
   const curveHtml = s ?
-    '<div class="secttl">' + (s.ongoing ? 'Charge curve · live' : 'Last charge · ' + s.start_dt) + '</div>' +
-    '<div class="ebig"><svg id="cchart" viewBox="0 0 340 160"></svg>' +
+    sech(s.ongoing ? 'Charge curve · live' : 'Last charge · ' + s.start_dt) +
+    '<div class="panel"><svg id="cchart" viewBox="0 0 340 160"></svg>' +
     '<div class="cstats">' +
       '<div><b class="num">' + (s.dur_min != null ? s.dur_min + 'm' : '—') + '</b><span>duration</span></div>' +
       '<div><b class="num">' + (s.kwh != null ? s.kwh : '—') + '</b><span>kWh in</span></div>' +
@@ -711,36 +1035,36 @@ function renderChg(){
       (s.cost != null ? ' · ' + cur + Number(s.cost).toLocaleString() : '') + '</div></div>' : '';
   let top;
   if(c.active){
-    top = '<div class="ebig"><div class="lbl">Charging now' + (c.mode ? ' \u00b7 ' + c.mode.toUpperCase() : '') +
-      '</div><div class="v num">' + (c.rate_kw != null ? c.rate_kw : '\u2014') + '<u>kW</u></div>' +
-      '<div class="etot"><div><b class="num">' +
-        (c.remaining_min != null ? c.remaining_min + ' min' : '\u2014') + '</b><span>time left</span></div>' +
-      '<div><b class="num">' + (c.soc != null ? c.soc + '%' : '\u2014') + '</b><span>started at</span></div></div></div>';
+    top = '<div class="panel"><div class="plbl">Charging now' + (c.mode ? ' · ' + c.mode.toUpperCase() : '') +
+      '</div><div class="pval num">' + (c.rate_kw != null ? c.rate_kw : '—') + '<span class="u">kW</span></div>' +
+      '<div class="stats"><div><b class="num">' +
+        (c.remaining_min != null ? c.remaining_min + ' min' : '—') + '</b><span>time left</span></div>' +
+      '<div><b class="num">' + (c.soc != null ? c.soc + '%' : '—') + '</b><span>started at</span></div></div></div>';
   } else {
     const last = (c.history || [])[0];
-    top = '<div class="ebig"><div class="lbl">Not charging</div>' +
-      (last ? '<div class="v num">' + last.kwh + '<u>kWh last session</u></div>' +
-        '<div class="etot"><div><b>' + last.dt + '</b><span>finished</span></div>' +
-        '<div><b class="num">' + last.soc0 + '\u2192' + last.soc1 + '%</b><span>SoC</span></div>' +
+    top = '<div class="panel"><div class="plbl">Not charging</div>' +
+      (last ? '<div class="pval num">' + last.kwh + '<span class="u">kWh last session</span></div>' +
+        '<div class="stats"><div><b>' + last.dt + '</b><span>finished</span></div>' +
+        '<div><b class="num">' + last.soc0 + '→' + last.soc1 + '%</b><span>SoC</span></div>' +
         '<div><b class="num">' + last.avg_kw + ' kW</b><span>avg</span></div></div>'
-      : '<div class="v num">\u2014</div>') + '</div>';
+      : '<div class="pval num">—</div>') + '</div>';
   }
   const hist = (c.history || []).map(x =>
-    '<div class="hrow2"><span>' + x.dt + '</span><span><b class="num">' + x.kwh + ' kWh</b> \u00b7 ' +
-    x.dur_min + ' min \u00b7 ' + cur + Number(x.cost).toLocaleString() + '</span></div>').join('');
+    '<div class="hrow2"><span>' + x.dt + '</span><span><b class="num">' + x.kwh + ' kWh</b> · ' +
+    x.dur_min + ' min · ' + cur + Number(x.cost).toLocaleString() + '</span></div>').join('');
   el.innerHTML = top + curveHtml +
-    '<div class="secttl">This month</div>' +
-    '<div class="ebig"><div class="etot" style="border-top:0;padding-top:0;margin-top:0">' +
+    sech('This month') +
+    '<div class="panel"><div class="stats" style="border-top:0;padding-top:0;margin-top:0">' +
       '<div><b class="num">' + (c.month_kwh || 0) + '</b><span>kWh in</span></div>' +
       '<div><b class="num">' + (c.month || 0) + '</b><span>sessions</span></div>' +
       '<div><b class="num">' + cur + Number(c.month_cost || 0).toLocaleString() + '</b><span>cost</span></div>' +
       '</div></div>' +
-    '<div class="secttl">History</div>' +
-    '<div class="ebig">' + (hist || '<div class="lbl">No sessions logged yet.</div>') + '</div>';
+    sech('History') +
+    '<div class="panel">' + (hist || '<div class="plbl">No sessions logged yet</div>') + '</div>';
   if(s) drawChgCurve(s);
 }
 
-// charge curve (SoC% vs elapsed minutes) — same math as v1's drawCharge, v2 tokens
+// charge curve (SoC% vs elapsed minutes) — same math as v1's drawCharge, instrument tokens
 function drawChgCurve(s){
   const svg = $('cchart'); if(!svg) return;
   if(!s.series || s.series.length < 2){ svg.innerHTML = ''; return; }
@@ -753,39 +1077,44 @@ function drawChgCurve(s){
   let g = '';
   [ymin, (ymin + ymax) / 2, ymax].forEach(v => { const y = Y(v).toFixed(1);
     g += '<line x1="' + L + '" y1="' + y + '" x2="' + (W - R) + '" y2="' + y +
-      '" stroke="var(--line)" stroke-width="1"/>' +
-      '<text x="' + (L - 6) + '" y="' + (+y + 3).toFixed(1) + '" text-anchor="end" font-size="9" fill="var(--fnt)">' +
+      '" stroke="var(--hair)" stroke-width="1"/>' +
+      '<text x="' + (L - 7) + '" y="' + (+y + 3).toFixed(1) + '" text-anchor="end" font-size="9" fill="var(--fnt)">' +
       Math.round(v) + '</text>'; });
-  g += '<text x="' + X(0).toFixed(1) + '" y="' + (H - 7) + '" font-size="9" fill="var(--fnt)">0m</text>';
-  g += '<text x="' + (W - R) + '" y="' + (H - 7) + '" text-anchor="end" font-size="9" fill="var(--fnt)">' +
-    Math.round(xmax) + 'm</text>';
+  g += '<text x="' + X(0).toFixed(1) + '" y="' + (H - 7) + '" font-size="8.5" letter-spacing="1" fill="var(--fnt)">0M</text>';
+  g += '<text x="' + (W - R) + '" y="' + (H - 7) + '" text-anchor="end" font-size="8.5" letter-spacing="1" fill="var(--fnt)">' +
+    Math.round(xmax) + 'M</text>';
   g += '<path d="M ' + X(0).toFixed(1) + ',' + (H - B) + ' L ' + pl.join(' L ') + ' L ' +
-    X(xmax).toFixed(1) + ',' + (H - B) + ' Z" fill="var(--acc-soft)"/>';
-  g += '<polyline points="' + pl.join(' ') + '" fill="none" stroke="var(--acc)" stroke-width="2.5" ' +
+    X(xmax).toFixed(1) + ',' + (H - B) + ' Z" fill="var(--acc-sf)"/>';
+  g += '<polyline points="' + pl.join(' ') + '" fill="none" stroke="var(--acc)" stroke-width="2" ' +
     'stroke-linejoin="round" stroke-linecap="round"/>';
   const lp = s.series[s.series.length - 1];
-  g += '<circle cx="' + X(lp.m).toFixed(1) + '" cy="' + Y(lp.soc).toFixed(1) + '" r="3.5" fill="var(--acc)"/>';
+  g += '<circle cx="' + X(lp.m).toFixed(1) + '" cy="' + Y(lp.soc).toFixed(1) + '" r="3" fill="var(--acc)"/>';
   svg.innerHTML = g;
+  drawIn(svg);
 }
 
 // ---- distance page: monthly calendar (same /api/history as v1's calendar view) ----
 let calMonth = null;   // 'YYYY-MM'
+const MON = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 async function renderDist(){
   const el = $('pgDistBody');
   if(!calMonth){
     const n = new Date();
     calMonth = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
   }
-  el.innerHTML = '<div class="calhead"><button class="calnav" id="calP" aria-label="Previous month">\u2039</button>' +
-    '<b>' + calMonth + '</b>' +
-    '<button class="calnav" id="calN" aria-label="Next month">\u203a</button></div>' +
-    '<div class="calgrid" id="calG"><div class="note">Loading\u2026</div></div>';
+  const [cy, cm] = calMonth.split('-').map(Number);
+  const nav = d => '<svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="1.9" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><path d="' + (d < 0 ? 'M7 1L1 7l6 6' : 'M1 1l6 6-6 6') + '"/></svg>';
+  el.innerHTML = '<div class="calhead">' +
+    '<button class="calnav" id="calP" aria-label="Previous month">' + nav(-1) + '</button>' +
+    '<b>' + MON[cm - 1] + ' ' + cy + '</b>' +
+    '<button class="calnav" id="calN" aria-label="Next month">' + nav(1) + '</button></div>' +
+    '<div class="calgrid" id="calG"><div class="note" style="margin:0">Loading…</div></div>';
   $('calP').onclick = () => { shiftMonth(-1); };
   $('calN').onclick = () => { shiftMonth(1); };
   const d = await api('/api/history?month=' + calMonth);
   const g = $('calG');
-  const [y, m] = calMonth.split('-').map(Number);
-  const lead = (new Date(y, m - 1, 1).getDay() + 6) % 7;   // Monday-first
+  const lead = (new Date(cy, cm - 1, 1).getDay() + 6) % 7;   // Monday-first
   const maxKm = Math.max(1, ...d.days.map(x => x.km));
   let cells = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(x =>
     '<div class="caldow">' + x + '</div>').join('');
@@ -794,24 +1123,24 @@ async function renderDist(){
     const has = x.km > 0;
     const op = has ? (0.35 + 0.65 * x.km / maxKm) : 0;
     cells += '<button class="calday ' + (has ? 'on' : 'off') + '" data-d="' + x.d + '">' +
+      (op ? '<span class="calwash" style="opacity:' + (op * 0.16).toFixed(2) + '"></span>' : '') +
       '<span class="cd">' + x.d + '</span>' +
-      '<span class="ck" style="opacity:' + (has ? 1 : 0.4) + '">' + (has ? x.km : '\u00b7') + '</span>' +
+      '<span class="ck" style="opacity:' + (has ? 1 : 0.4) + '">' + (has ? x.km : '·') + '</span>' +
       (x.chg_kwh > 0 ? '<i class="cdot"></i>' : '') +
-      (op ? '<span style="position:absolute;inset:0;border-radius:12px;background:var(--acc);opacity:' +
-        (op * 0.14).toFixed(2) + ';pointer-events:none"></span>' : '') +
       '</button>';
   });
   g.innerHTML = cells;
   g.querySelectorAll('.calday.on').forEach(b => b.onclick = () => {
     const x = d.days.find(v => v.d == b.dataset.d);
-    if(x) toast(x.d + ' ' + calMonth + ': ' + x.km + ' km \u00b7 ' + x.kwh + ' kWh' +
-      (x.chg_kwh ? ' \u00b7 +' + x.chg_kwh + ' kWh charged' : ''));
+    if(x) toast(MON[cm - 1] + ' ' + x.d + ': ' + x.km + ' km · ' + x.kwh + ' kWh' +
+      (x.chg_kwh ? ' · +' + x.chg_kwh + ' kWh charged' : ''));
   });
   const t = d.totals || {};
   el.insertAdjacentHTML('beforeend',
-    '<div class="caltot"><span><b class="num">' + (t.km || 0) + '</b> km</span>' +
-    '<span><b class="num">' + (t.kwh || 0) + '</b> kWh used</span>' +
-    '<span><b class="num">' + (t.chg_kwh || 0) + '</b> kWh charged</span></div>');
+    '<div class="caltot">' +
+    '<div><b class="num">' + (t.km || 0) + '</b><span>km driven</span></div>' +
+    '<div><b class="num">' + (t.kwh || 0) + '</b><span>kWh used</span></div>' +
+    '<div><b class="num">' + (t.chg_kwh || 0) + '</b><span>kWh charged</span></div></div>');
 }
 function shiftMonth(dir){
   const [y, m] = calMonth.split('-').map(Number);
@@ -826,13 +1155,14 @@ function renderFlex(){
   const lf = S.lifetime || {}, e = S.energy || {};
   el.innerHTML =
     '<div class="flexc"><div class="fm">' + ((S.vehicle && S.vehicle.model) || 'My EV') + '</div>' +
-    '<div class="fbig num">' + (S.km && S.km.month != null ? S.km.month : '\u2014') + '<u>km this month</u></div>' +
+    '<div class="fbig num">' + (S.km && S.km.month != null ? S.km.month : '—') +
+      '<u>km this month</u></div>' +
     '<div class="fgrid2">' +
-    '<div><b class="num">' + (S.battery != null ? S.battery + '%' : '\u2014') + '</b><span>battery now</span></div>' +
-    '<div><b class="num">' + (e.consumption != null ? e.consumption : '\u2014') + '</b><span>kWh/100km</span></div>' +
+    '<div><b class="num">' + (S.battery != null ? S.battery + '%' : '—') + '</b><span>battery now</span></div>' +
+    '<div><b class="num">' + (e.consumption != null ? e.consumption : '—') + '</b><span>kWh/100km</span></div>' +
     '<div><b class="num">' + (lf.saved != null ? (S.currency ? S.currency.symbol : '') +
-      (lf.saved / 1000000).toFixed(1) + 'jt' : '\u2014') + '</b><span>saved vs petrol</span></div>' +
-    '<div><b class="num">' + (lf.co2_saved != null ? lf.co2_saved.toLocaleString() + ' kg' : '\u2014') +
+      (lf.saved / 1000000).toFixed(1) + 'jt' : '—') + '</b><span>saved vs petrol</span></div>' +
+    '<div><b class="num">' + (lf.co2_saved != null ? lf.co2_saved.toLocaleString() + ' kg' : '—') +
       '</b><span>CO2 avoided</span></div>' +
     '</div></div>' +
     '<div class="note">Screenshot to share. Generated locally from your own logged data.</div>';
@@ -843,30 +1173,39 @@ let vinShown = false;
 function renderAcct(){
   $('aModel').textContent = (S.vehicle && S.vehicle.model) || 'My car';
   const vin = (S.vehicle && S.vehicle.vin) || '';
-  $('aVin').textContent = vin ? (vinShown ? vin : 'VIN ' + vin.slice(0, 3) + '\u2026' + vin.slice(-3)) : '';
-  $('aOdo').textContent = S.odometer != null ? Math.round(S.odometer).toLocaleString() : '\u2014';
+  $('aVin').textContent = vin ? (vinShown ? vin : 'VIN ' + vin.slice(0, 3) + '…' + vin.slice(-3)) : '';
+  $('aOdo').textContent = S.odometer != null ? Math.round(S.odometer).toLocaleString() : '—';
   $('aCar').src = $('hCar').src;
-  const rows = [
-    {ic: 'gauge',  t: 'Classic dashboard',  s: 'Trips, SPKLU planner, full stats', fn: () => location.href = '/index.html'},
-    {ic: 'chart',  t: 'Share flex card',    s: 'Month stats as a shareable card', fn: () => openPage('flex')},
-    {ic: 'camera', t: 'Update car photo',   s: 'Re-fetch the render from CarLinko', fn: async ev => {
+
+  const th = readTheme();
+  const ui = (document.cookie.match(/(?:^|;\s*)ui=(\w+)/) || [])[1] || 'v1';
+  const segRow = (ic, label, name, opts, curVal) =>
+    '<div class="row"><span class="ri">' + icon(ic) + '</span>' +
+    '<span class="rl">' + label + '</span><span class="seg">' +
+    opts.map(o => '<button data-' + name + '="' + o[0] + '"' + (curVal === o[0] ? ' class="on"' : '') +
+      '>' + o[1] + '</button>').join('') + '</span></div>';
+
+  const linkRows = [
+    {ic: 'gauge',  t: 'Classic dashboard', s: 'Trips, SPKLU planner, full stats', fn: () => location.href = '/index.html'},
+    {ic: 'chart',  t: 'Share card',        s: 'Month stats as a shareable card',  fn: () => openPage('flex')},
+    {ic: 'camera', t: 'Update car photo',  s: 'Re-fetch the render from CarLinko', fn: async () => {
         const d = await api('/api/photorefresh', {method: 'POST'});
         toast(d.ok ? 'Photo updated' : (d.error || 'failed')); if(d.ok) load(); }},
-    {ic: 'link',   t: 'About', s: '', fn: () => toast('J5 EV Dashboard V2 \u00b7 CarLinko, reverse-engineered')},
+    {ic: 'link',   t: 'About', s: 'J5 EV Dashboard V2 · self-hosted', fn: () =>
+        toast('J5 EV Dashboard V2 · CarLinko, reverse-engineered')},
   ];
-  $('acctRows').innerHTML = rows.map((r, i) =>
-    '<div class="ri" data-r="' + i + '" role="button" tabindex="0">' +
-    '<span class="ic" style="width:24px;height:24px;color:var(--mut);display:inline-flex">' +
-    icon(r.ic) + '</span><span>' + r.t + (r.s ? '<br><span style="font-size:12px;color:var(--fnt);font-weight:500">' +
-    r.s + '</span>' : '') + '</span><span class="chev">\u203a</span></div>').join('');
-  rows.forEach((r, i) => $('acctRows').querySelector('[data-r="' + i + '"]').onclick = r.fn);
-  // default-view toggle lives above the rows: which front end "/" serves on this device
-  const ui = (document.cookie.match(/(?:^|;\s*)ui=(\w+)/) || [])[1] || 'v1';
-  $('acctRows').insertAdjacentHTML('afterbegin',
-    '<div class="ri"><span class="ic" style="width:24px;height:24px;color:var(--mut);display:inline-flex">' +
-    icon('car') + '</span><span>Default view</span>' +
-    '<span class="seg2" style="margin-left:auto"><button data-ui="v1"' + (ui === 'v1' ? ' class="on"' : '') +
-    '>Classic</button><button data-ui="v2"' + (ui === 'v2' ? ' class="on"' : '') + '>V2</button></span></div>');
+
+  $('acctRows').innerHTML =
+    segRow('moon', 'Appearance', 'th', [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], th) +
+    segRow('car', 'Default view', 'ui', [['v1', 'Classic'], ['v2', 'V2']], ui) +
+    linkRows.map((r, i) =>
+      '<button class="row" data-r="' + i + '"><span class="ri">' + icon(r.ic) + '</span>' +
+      '<span class="rl">' + r.t + (r.s ? '<small>' + r.s + '</small>' : '') + '</span>' + CHEV + '</button>').join('');
+
+  linkRows.forEach((r, i) => $('acctRows').querySelector('[data-r="' + i + '"]').onclick = r.fn);
+  $('acctRows').querySelectorAll('[data-th]').forEach(b => b.onclick = () => {
+    setTheme(b.dataset.th); renderAcct();
+  });
   $('acctRows').querySelectorAll('[data-ui]').forEach(b => b.onclick = () => {
     document.cookie = 'ui=' + b.dataset.ui + ';path=/;max-age=31536000';
     renderAcct();
@@ -875,27 +1214,81 @@ function renderAcct(){
   $('aNote').textContent = 'Data source: your own CarLinko account, self-hosted. Nothing leaves this server.';
 }
 
-// ---- navigation ----
+// ---- navigation: two tabs + right-slide pages, now with back gesture and history ----
 const PAGES = {ac: ['pgAc', renderAc], doors: ['pgDoors', renderDoors],
                tyres: ['pgTyres', renderTyres], energy: ['pgEnergy', renderEnergy],
                batt: ['pgBatt', renderBatt], chg: ['pgChg', renderChg],
                dist: ['pgDist', renderDist], flex: ['pgFlex', renderFlex]};
-function openPage(k){
+let openKey = null;
+
+function openPage(k, fromHistory){
   const p = PAGES[k]; if(!p) return;
   if(k === 'ac' && CAPS && CAPS.ac && CAPS.ac.min != null)
     acTarget = Math.min(Math.max(acTarget, Math.ceil(CAPS.ac.min)), Math.floor(CAPS.ac.max));
   p[1]();
-  $(p[0]).classList.add('open');
+  const el = $(p[0]);
+  el.scrollTop = 0;
+  el.classList.add('open');
+  // the page slides in; its contents rise a beat behind it so the two read as one move
+  stagger([...el.querySelectorAll('.pbody > *')], 30, 150);
+  openKey = k;
+  if(!fromHistory) history.pushState({page: k}, '', '#' + k);
 }
-document.querySelectorAll('[data-close]').forEach(b =>
-  b.onclick = () => b.closest('.page').classList.remove('open'));
+function closePage(fromHistory){
+  if(!openKey) return;
+  $(PAGES[openKey][0]).classList.remove('open');
+  openKey = null;
+  if(!fromHistory) history.back();
+}
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closePage());
+window.addEventListener('popstate', ev => {
+  const k = ev.state && ev.state.page;
+  if(openKey && openKey !== k) closePage(true);
+  if(k && k !== openKey) openPage(k, true);
+});
+document.addEventListener('keydown', ev => {
+  if(ev.key !== 'Escape') return;
+  if($('sheet').classList.contains('show')) askClose(false);
+  else if(openKey) closePage();
+});
+
+// edge-swipe back on detail pages
+(function(){
+  let sx = 0, sy = 0, dragging = false, el = null, w = 0;
+  document.addEventListener('touchstart', ev => {
+    if(!openKey || ev.touches.length !== 1) return;
+    const t = ev.touches[0];
+    if(t.clientX > 30) return;
+    el = $(PAGES[openKey][0]); w = el.offsetWidth || 430;
+    sx = t.clientX; sy = t.clientY; dragging = true;
+  }, {passive: true});
+  document.addEventListener('touchmove', ev => {
+    if(!dragging) return;
+    const t = ev.touches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if(Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 14){ dragging = false; el.classList.remove('drag');
+      el.style.transform = ''; return; }
+    if(dx <= 0) return;
+    el.classList.add('drag');
+    el.style.transform = 'translate3d(' + dx + 'px,0,0)';
+  }, {passive: true});
+  document.addEventListener('touchend', ev => {
+    if(!dragging) return;
+    dragging = false;
+    const dx = (ev.changedTouches[0].clientX - sx);
+    el.classList.remove('drag');
+    el.style.transform = '';
+    if(dx > w * 0.32) closePage();
+  }, {passive: true});
+})();
+
 document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tabbar button').forEach(x => x.classList.toggle('on', x === b));
   const home = b.dataset.v === 'home';
+  const shown = home ? $('viewHome') : $('viewAcct');
   $('viewHome').hidden = !home; $('viewAcct').hidden = home;
-  if(home){ $('viewHome').classList.remove('fadein'); void $('viewHome').offsetWidth;
-            $('viewHome').classList.add('fadein'); }
-  else if(!S._acctDone){ renderAcct(); S._acctDone = true; }
+  if(!home && !S._acctDone){ renderAcct(); S._acctDone = true; }
+  shown.classList.remove('fadein'); void shown.offsetWidth; shown.classList.add('fadein');
+  window.scrollTo(0, 0);
 });
 
 // ---- data ----
@@ -903,9 +1296,10 @@ async function load(){
   try{
     S = await api('/api/summary');
     renderHero(); renderQA(); renderCharging(); renderCards();
+    if(S._acctDone) renderAcct();
   }catch(e){ /* auth redirect handled in api() */ }
 }
-$('hRefresh').onclick = async ev => {
+$('hRefresh').onclick = async () => {
   const b = $('hRefresh'); b.classList.add('spin');
   try{ await api('/api/refresh'); }catch(e){}
   await load(); b.classList.remove('spin');
@@ -915,10 +1309,15 @@ $('aEye').onclick = () => { vinShown = !vinShown; renderAcct(); };
 (async () => {
   try{ CAPS = (await api('/api/controls')).caps; }catch(e){ CAPS = null; }
   await load();
+  // first paint only: the instrument comes up top-down, then the actions
+  stagger([$('hModel').parentNode, $('hRange').parentNode, document.querySelector('.hlbl'),
+           document.querySelector('.hmeta'), $('hCar')], 40, 0);
+  stagger([...$('qaRow').children], 40, 200);
   const h = location.hash.slice(1);
   if(PAGES[h]) openPage(h);           // deep link: v2.html#doors / #tyres / #energy / #ac
   if(h === 'acct') document.querySelector('.tabbar button[data-v="acct"]').click();
   setInterval(() => { if(!document.hidden) load(); }, 60000);
 })();
 </script>
-
+</body>
+</html>
