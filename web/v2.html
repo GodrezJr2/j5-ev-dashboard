@@ -9,221 +9,269 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <style>
-  /* ================= INSTRUMENT =================
-     Adaptive light/dark. Graphite and paper, hairlines instead of cards,
-     one accent, editorial numerals. No gradients, no glass, no tiles. */
+  /* ================= BYD-GRAMMAR PORCELAIN =================
+     Owner-pinned reference world: the BYD Auto app (Seal 5 / Sealion 7). Cool blue-grey
+     gradient hero owning the top of the screen, the car's own render as the subject, a huge
+     centred range numeral, white elevated cards on a porcelain ground, round quick actions
+     floating on the hero seam. Adaptive: the same grammar rendered in a deep blue-grey at
+     night, because this is a phone that gets opened in the dark. */
   :root{
-    /* --- light: cool paper --- */
-    --bg:      oklch(0.975 0.003 250);
-    --bg-2:    oklch(1 0 0);
-    --bg-3:    oklch(0.955 0.004 250);
-    --ink:     oklch(0.22 0.012 255);
-    --mut:     oklch(0.44 0.010 255);   /* ~5.6:1 on bg */
-    --fnt:     oklch(0.48 0.008 255);   /* ~4.8:1 on bg */
-    --line:    oklch(0.895 0.004 250);
-    --hair:    oklch(0.93 0.003 250);
-    --acc:     oklch(0.53 0.13 162);    /* graph / fill */
-    --acc-ink: oklch(0.46 0.12 162);    /* accent as text */
-    --acc-sf:  oklch(0.53 0.13 162 / .12);
-    --warn:    oklch(0.58 0.13 68);
-    --bad:     oklch(0.52 0.18 27);
-    --btn:     oklch(0.22 0.012 255);
+    --bg:      oklch(0.963 0.006 250);   /* porcelain ground */
+    --card:    oklch(1 0 0);
+    --card-2:  oklch(0.978 0.004 250);
+    --ink:     oklch(0.25 0.020 260);
+    --mut:     oklch(0.46 0.016 260);    /* ~5.2:1 on porcelain */
+    --fnt:     oklch(0.50 0.014 260);    /* ~4.6:1 on porcelain */
+    --line:    oklch(0.915 0.006 250);
+    --acc:     oklch(0.55 0.11 165);     /* product green: battery, good, charging */
+    --acc-ink: oklch(0.47 0.11 165);     /* accent as body-size text */
+    --acc-sf:  oklch(0.55 0.11 165 / .13);
+    --blue:    oklch(0.56 0.13 250);     /* fuel bar on a PHEV, A/C active */
+    --blue-sf: oklch(0.56 0.13 250 / .13);
+    --warn:    oklch(0.62 0.14 68);
+    --bad:     oklch(0.54 0.18 27);
+    --heroA:   oklch(0.885 0.028 245);   /* steel-blue top of the hero */
+    --heroB:   oklch(0.963 0.006 250);   /* melts into the ground */
+    --btn:     oklch(0.27 0.02 260);     /* charcoal primary */
     --btn-ink: oklch(0.99 0 0);
-    --shade:   oklch(0.22 0.012 255 / .04);
-    --scrim:   oklch(0.22 0.012 255 / .34);
+    --sh-1:    0 1px 3px oklch(0.30 0.03 250 / .06), 0 6px 16px oklch(0.30 0.03 250 / .05);
+    --sh-2:    0 2px 6px oklch(0.30 0.03 250 / .08), 0 12px 28px oklch(0.30 0.03 250 / .10);
+    --scrim:   oklch(0.25 0.02 260 / .36);
 
-    /* --- scales --- */
-    --r1:6px; --r2:10px; --r3:14px; --r4:20px; --rf:999px;
-    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
-    --eo: cubic-bezier(.2,.8,.25,1);
-    --t-fast:140ms; --t-mid:220ms; --t-slow:320ms;
-    --pad:20px;
+    --r1:10px; --r2:14px; --r3:18px; --r4:24px; --rf:999px;
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:22px; --s6:30px; --s7:44px;
+    --pad:18px;
+    --eo: cubic-bezier(.16,1,.3,1);
+    --t-fast:140ms; --t-mid:220ms; --t-slow:340ms;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --bg:      oklch(0.165 0.008 252);  /* graphite */
-      --bg-2:    oklch(0.205 0.009 252);
-      --bg-3:    oklch(0.235 0.010 252);
-      --ink:     oklch(0.955 0.004 250);
-      --mut:     oklch(0.745 0.008 252);
-      --fnt:     oklch(0.615 0.009 252);
-      --line:    oklch(0.305 0.009 252);
-      --hair:    oklch(0.255 0.009 252);
-      --acc:     oklch(0.755 0.145 162);
-      --acc-ink: oklch(0.79 0.14 162);
-      --acc-sf:  oklch(0.755 0.145 162 / .14);
-      --warn:    oklch(0.80 0.13 72);
-      --bad:     oklch(0.68 0.17 25);
+      --bg:      oklch(0.175 0.014 255);
+      --card:    oklch(0.232 0.016 255);
+      --card-2:  oklch(0.262 0.016 255);
+      --ink:     oklch(0.960 0.004 250);
+      --mut:     oklch(0.750 0.010 255);
+      --fnt:     oklch(0.625 0.012 255);
+      --line:    oklch(0.315 0.014 255);
+      --acc:     oklch(0.760 0.140 165);
+      --acc-ink: oklch(0.790 0.135 165);
+      --acc-sf:  oklch(0.760 0.140 165 / .16);
+      --blue:    oklch(0.740 0.125 250);
+      --blue-sf: oklch(0.740 0.125 250 / .16);
+      --warn:    oklch(0.800 0.130 72);
+      --bad:     oklch(0.690 0.170 25);
+      --heroA:   oklch(0.300 0.035 250);
+      --heroB:   oklch(0.175 0.014 255);
       --btn:     oklch(0.955 0.004 250);
-      --btn-ink: oklch(0.165 0.008 252);
-      --shade:   oklch(0 0 0 / .3);
-      --scrim:   oklch(0 0 0 / .5);
+      --btn-ink: oklch(0.175 0.014 255);
+      --sh-1:    0 1px 3px oklch(0 0 0 / .30), 0 6px 16px oklch(0 0 0 / .24);
+      --sh-2:    0 2px 6px oklch(0 0 0 / .36), 0 12px 28px oklch(0 0 0 / .34);
+      --scrim:   oklch(0 0 0 / .55);
     }
   }
   :root[data-theme="dark"]{
-    --bg:      oklch(0.165 0.008 252);
-    --bg-2:    oklch(0.205 0.009 252);
-    --bg-3:    oklch(0.235 0.010 252);
-    --ink:     oklch(0.955 0.004 250);
-    --mut:     oklch(0.745 0.008 252);
-    --fnt:     oklch(0.615 0.009 252);
-    --line:    oklch(0.305 0.009 252);
-    --hair:    oklch(0.255 0.009 252);
-    --acc:     oklch(0.755 0.145 162);
-    --acc-ink: oklch(0.79 0.14 162);
-    --acc-sf:  oklch(0.755 0.145 162 / .14);
-    --warn:    oklch(0.80 0.13 72);
-    --bad:     oklch(0.68 0.17 25);
+    --bg:      oklch(0.175 0.014 255);
+    --card:    oklch(0.232 0.016 255);
+    --card-2:  oklch(0.262 0.016 255);
+    --ink:     oklch(0.960 0.004 250);
+    --mut:     oklch(0.750 0.010 255);
+    --fnt:     oklch(0.625 0.012 255);
+    --line:    oklch(0.315 0.014 255);
+    --acc:     oklch(0.760 0.140 165);
+    --acc-ink: oklch(0.790 0.135 165);
+    --acc-sf:  oklch(0.760 0.140 165 / .16);
+    --blue:    oklch(0.740 0.125 250);
+    --blue-sf: oklch(0.740 0.125 250 / .16);
+    --warn:    oklch(0.800 0.130 72);
+    --bad:     oklch(0.690 0.170 25);
+    --heroA:   oklch(0.300 0.035 250);
+    --heroB:   oklch(0.175 0.014 255);
     --btn:     oklch(0.955 0.004 250);
-    --btn-ink: oklch(0.165 0.008 252);
-    --shade:   oklch(0 0 0 / .3);
-    --scrim:   oklch(0 0 0 / .5);
+    --btn-ink: oklch(0.175 0.014 255);
+    --sh-1:    0 1px 3px oklch(0 0 0 / .30), 0 6px 16px oklch(0 0 0 / .24);
+    --sh-2:    0 2px 6px oklch(0 0 0 / .36), 0 12px 28px oklch(0 0 0 / .34);
+    --scrim:   oklch(0 0 0 / .55);
   }
 
   *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
   html{background:var(--bg);color-scheme:light dark}
-  body{
-    font:400 15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text",Inter,system-ui,sans-serif;
+  body{font:400 15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text",Inter,system-ui,sans-serif;
     color:var(--ink);background:var(--bg);max-width:430px;margin:0 auto;
-    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
-    overscroll-behavior-y:none;-webkit-touch-callout:none;
-    padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+    -webkit-font-smoothing:antialiased;overscroll-behavior-y:none;-webkit-touch-callout:none;
+    padding-bottom:calc(74px + env(safe-area-inset-bottom))}
   button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;
     user-select:none;-webkit-user-select:none}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
   :focus{outline:none}
-  :focus-visible{outline:2px solid var(--acc-ink);outline-offset:3px;border-radius:var(--r1)}
+  :focus-visible{outline:2px solid var(--acc-ink);outline-offset:2px;border-radius:var(--r1)}
   [hidden]{display:none!important}
   @media (prefers-reduced-motion:reduce){
     *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;
       transition-duration:.01ms!important}
   }
 
-  /* ---------- primitives ---------- */
-  .ov{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--fnt);line-height:1.4}
-  .disp{font-size:72px;font-weight:600;letter-spacing:-.04em;line-height:.92;
-    font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text}
-  .disp .u{font-size:19px;font-weight:600;letter-spacing:0;color:var(--mut);margin-left:6px;
-    vertical-align:baseline}
-  .rule{height:1px;background:var(--line);border:0}
-  .sec{padding:0 var(--pad)}
-  .sech{display:flex;align-items:baseline;gap:var(--s2);padding:var(--s6) var(--pad) var(--s3)}
-  .sech .ov{flex:1}
-
-  /* hairline row list — the core structure, replaces cards */
-  .rows{border-top:1px solid var(--line)}
-  .row{display:flex;align-items:center;gap:var(--s3);width:100%;text-align:left;
-    min-height:58px;padding:var(--s3) var(--pad);border-bottom:1px solid var(--hair);
-    color:inherit;transition:background var(--t-fast) linear}
-  .row:last-child{border-bottom:1px solid var(--line)}
-  button.row:active,.row.tap:active{background:var(--bg-3)}
-  .row .ri{width:21px;height:21px;flex:none;color:var(--fnt)}
-  .row .ri svg{width:100%;height:100%;display:block}
-  .row .rl{flex:1;min-width:0;font-size:15px;font-weight:500;letter-spacing:-.005em}
-  .row .rl small{display:block;font-size:12px;font-weight:400;color:var(--fnt);margin-top:2px;
-    letter-spacing:0}
-  .row .rv{font-size:14px;font-weight:600;color:var(--mut);text-align:right;
-    font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-  .row .rv.ok{color:var(--acc-ink)} .row .rv.warn{color:var(--warn)} .row .rv.bad{color:var(--bad)}
-  .row .ch{flex:none;width:7px;height:12px;color:var(--fnt);opacity:.65}
-
-  /* panel — used only where a chart or figure needs containment */
-  .panel{background:var(--bg-2);border:1px solid var(--hair);border-radius:var(--r3);
-    padding:var(--s4)}
-  .panel+.panel{margin-top:var(--s3)}
-  .plbl{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--fnt)}
-  .pval{font-size:40px;font-weight:600;letter-spacing:-.03em;line-height:1;margin-top:10px;
-    font-variant-numeric:tabular-nums}
-  .pval .u{font-size:14px;font-weight:600;color:var(--mut);letter-spacing:0;margin-left:5px}
-  .stats{display:flex;gap:var(--s5);margin-top:var(--s4);padding-top:var(--s3);
-    border-top:1px solid var(--hair)}
-  .stats>div{min-width:0}
-  .stats b{display:block;font-size:16px;font-weight:600;letter-spacing:-.015em;
-    font-variant-numeric:tabular-nums}
-  .stats span{display:block;font-size:10px;font-weight:500;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--fnt);margin-top:4px}
-  .note{font-size:12.5px;line-height:1.6;color:var(--fnt);margin-top:var(--s4);
-    user-select:text;-webkit-user-select:text}
-
   /* ---------- hero ---------- */
-  .hero{padding:max(var(--s5),calc(env(safe-area-inset-top) + var(--s2))) var(--pad) 0}
-  .hbar{display:flex;align-items:center;gap:var(--s3);min-height:26px}
-  .hbar .hm{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
-    color:var(--mut);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rf{width:30px;height:30px;margin-right:-6px;flex:none;display:flex;align-items:center;
-    justify-content:center;color:var(--fnt);transition:transform var(--t-fast) var(--eo)}
-  .rf:active{transform:scale(.86)}
-  .rf svg{width:17px;height:17px}
+  .hero{position:relative;padding:max(var(--s4),calc(env(safe-area-inset-top) + 6px)) var(--pad) 0;
+    background:linear-gradient(180deg,var(--heroA) 0%,var(--heroB) 72%);overflow:hidden}
+  .hbar{display:flex;align-items:flex-start;gap:var(--s3)}
+  .hbar .hname{flex:1;min-width:0}
+  .hname .hm{font-size:17px;font-weight:750;letter-spacing:.01em;display:block;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hname .hs{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:11.5px;color:var(--mut)}
+  .hname .hs .dot{width:6px;height:6px;border-radius:50%;background:var(--fnt);flex:none;position:relative}
+  .hname .hs .dot.on{background:var(--acc);box-shadow:0 0 0 3px var(--acc-sf)}
+  .rf{width:28px;height:28px;flex:none;margin:-2px -4px 0 0;display:flex;align-items:center;
+    justify-content:center;color:var(--mut);transition:transform var(--t-fast) var(--eo)}
+  .rf:active{transform:scale(.85)}
+  .rf svg{width:15px;height:15px}
   .rf.spin svg{animation:spin .8s var(--eo)}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  .hdisp{margin-top:var(--s5)}
-  .hlbl{margin-top:var(--s3)}
-  .hmeta{display:flex;align-items:center;gap:var(--s2);margin-top:var(--s4);
-    padding-top:var(--s3);border-top:1px solid var(--line);
-    font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--mut)}
-  .hmeta .dot{width:6px;height:6px;border-radius:50%;background:var(--fnt);flex:none}
-  .hmeta .dot.on{background:var(--acc);box-shadow:0 0 0 3px var(--acc-sf)}
-  .hmeta .sep{color:var(--line)}
-  .hmeta .soc{font-variant-numeric:tabular-nums}
-  .hmeta .when{margin-left:auto;color:var(--fnt);letter-spacing:.08em;text-transform:none;
-    font-weight:500;font-size:11.5px}
+  /* the range numeral is the hero, dead centre, like the Seal 5 screen */
+  .hrange{text-align:center;margin-top:var(--s5);line-height:.88}
+  .hrange b{font-size:74px;font-weight:750;letter-spacing:-.035em;font-variant-numeric:tabular-nums;
+    user-select:text;-webkit-user-select:text}
+  .hrange u{font-size:19px;font-weight:650;text-decoration:none;color:var(--mut);
+    vertical-align:super;margin-left:3px}
 
-  .hcar{display:block;width:100%;max-width:330px;margin:var(--s4) auto var(--s2);
-    filter:drop-shadow(0 14px 22px var(--shade))}
+  /* battery bar, plus a fuel bar only when the car actually reports a tank */
+  .bars{display:flex;justify-content:center;gap:var(--s5);margin-top:var(--s4);padding:0 var(--s2)}
+  .bar{display:flex;align-items:center;gap:7px;min-width:0}
+  .bar svg{width:15px;height:15px;flex:none}
+  .bar .tr{width:62px;height:5px;border-radius:var(--rf);background:oklch(0.5 0 0 / .16);overflow:hidden}
+  .bar .tr i{display:block;height:100%;border-radius:var(--rf);transition:width .9s var(--eo)}
+  .bar .pc{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--mut)}
+  .bar.ev svg,.bar.ev .pc{color:var(--acc-ink)} .bar.ev .tr i{background:var(--acc)}
+  .bar.fu svg,.bar.fu .pc{color:var(--blue)}    .bar.fu .tr i{background:var(--blue)}
 
-  /* quick actions — hairline circles, labelled */
-  .qa{display:flex;justify-content:center;gap:var(--s7);padding:var(--s2) var(--pad) var(--s5)}
-  .qa button{display:flex;flex-direction:column;align-items:center;gap:9px;
-    font-size:9.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--fnt);
-    transition:color var(--t-mid) linear,opacity var(--t-mid) linear}
-  .qa .qc{width:54px;height:54px;border-radius:50%;border:1px solid var(--line);
-    display:flex;align-items:center;justify-content:center;color:var(--ink);
-    background:var(--bg-2);
-    transition:transform var(--t-fast) var(--eo),border-color var(--t-mid) linear,
-      color var(--t-mid) linear,background var(--t-mid) linear}
+  /* ---- charging view -----------------------------------------------------------
+     While charging, the hero swaps from the three-quarter render to a photo of this car
+     actually plugged in, because the charge port sits on the front-left corner and is not
+     visible on the three-quarter render.
+     Earlier attempts removed that photo's studio background in code and all failed: the
+     backdrop measures 196 mean luminance against the bonnet's 198, so no tone threshold
+     separates them; the backdrop carries a gradient, so a local-variance mask marked 67% of
+     the frame as structure; feathering floated a lit rectangle over the dark theme; and a
+     hand-traced polygon left grey slabs around the mirrors, because straight segments cannot
+     follow a car's curves. The owner cut it out properly in an image tool instead, which is
+     why this now works on both themes with no per-theme variant at all.
+     The green line is traced onto the photograph's own cable, found by detecting the dark
+     opaque pixels rather than by eye. It runs the cable's whole length -- from the nozzle
+     holster on the post, down the slack loop at its left, along the ground, up and into the
+     port -- and deliberately STARTS at the charger, so the pulse reads as energy flowing into
+     the car. Two earlier attempts got this wrong: one traced only the slack loop, so both ends
+     sat near the port and it looked like a glowing noose attached to nothing, and one stopped
+     at the post's base, and a third stopped halfway up the post. The cable leaves the
+     holster at (33,80) in this viewBox -- read off the pixel runs, not guessed.
+     Append ?cable=1 to preview without waiting for a real session. */
+  .carwrap{position:relative;width:100%;max-width:330px;margin:var(--s2) auto 0}
+  .chgshot{display:none;position:relative;width:100%;aspect-ratio:356/211;
+    background:url(car-charging.png) center/contain no-repeat}
+  .carwrap.charging .hcar{display:none}
+  .carwrap.charging .chgshot{display:block;animation:fadein var(--t-slow) var(--eo)}
+  .cable{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .cable path{fill:none;stroke-linecap:round}
+  .cglow{stroke:var(--acc);stroke-width:7;opacity:.15;filter:blur(3px)}
+  .ctrace{stroke:var(--acc);stroke-width:2.6;opacity:.48}
+  .cpulse{stroke:oklch(0.97 0.05 165);stroke-width:2;stroke-dasharray:9 64;opacity:.8;
+    animation:flow 2s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-73}}
+  .pgled{fill:var(--acc);opacity:.85}
+  .pgring{fill:none;stroke:var(--acc);stroke-width:1.6;transform-box:view-box;
+    transform-origin:87px 90px;animation:plugping 2.4s var(--eo) infinite}
+  @keyframes plugping{0%{transform:scale(1);opacity:.85}70%,100%{transform:scale(3.2);opacity:0}}
+
+  .hcar{display:block;width:100%;
+    filter:drop-shadow(0 16px 20px oklch(0.30 0.03 250 / .20))}
+
+  /* quick actions float on the seam between hero and ground */
+  .qa{position:relative;z-index:2;display:flex;justify-content:center;gap:var(--s5);
+    margin:-26px 0 0;padding:0 var(--pad)}
+  .qa button{display:flex;flex-direction:column;align-items:center;gap:7px;
+    font-size:10.5px;font-weight:600;color:var(--mut);transition:color var(--t-mid) linear,opacity var(--t-mid) linear}
+  .qa .qc{width:54px;height:54px;border-radius:50%;background:var(--card);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;box-shadow:var(--sh-1);
+    transition:transform var(--t-fast) var(--eo),color var(--t-mid) linear,box-shadow var(--t-mid) linear}
   .qa button:active .qc{transform:scale(.9)}
   .qa button.busy{opacity:.4;pointer-events:none}
   .qa button.on{color:var(--acc-ink)}
-  .qa button.on .qc{border-color:var(--acc);color:var(--acc-ink);background:var(--acc-sf)}
+  .qa button.on .qc{color:var(--acc-ink);box-shadow:0 2px 6px var(--acc-sf),0 10px 24px var(--acc-sf)}
   .qa svg{width:23px;height:23px}
 
-  /* live charging strip */
-  .chg{display:flex;align-items:center;gap:var(--s2);padding:13px var(--pad);
-    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-    background:var(--acc-sf);color:var(--acc-ink);
-    font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase}
-  .chg svg{width:13px;height:13px;flex:none}
-  .chg .dim{margin-left:auto;color:var(--mut);letter-spacing:.06em;text-transform:none;
-    font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
-
-  /* inline stepper on the climate row */
-  .step{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--line);
-    color:var(--ink);font-size:17px;font-weight:500;line-height:1;
-    display:flex;align-items:center;justify-content:center;background:var(--bg-2);
-    transition:transform var(--t-fast) var(--eo),border-color var(--t-mid) linear}
-  .step:active{transform:scale(.88);border-color:var(--acc)}
-  .step:disabled{opacity:.3}
-  .stepset{display:flex;align-items:center;gap:var(--s3);flex:none}
-  .stepset .tv{font-size:19px;font-weight:600;letter-spacing:-.02em;min-width:44px;text-align:center;
+  /* live charging pill */
+  .chg{display:flex;align-items:center;gap:8px;margin:var(--s4) var(--pad) 0;padding:13px var(--s4);
+    background:var(--card);border-radius:var(--r2);box-shadow:var(--sh-1);
+    font-size:13.5px;font-weight:650}
+  .chg svg{width:15px;height:15px;flex:none;color:var(--acc-ink);animation:breathe 2.6s ease-in-out infinite}
+  .chg .dim{margin-left:auto;color:var(--mut);font-weight:600;font-size:12.5px;
     font-variant-numeric:tabular-nums}
 
-  /* ---------- tab bar ---------- */
-  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;max-width:430px;margin:0 auto;
-    background:var(--bg);border-top:1px solid var(--line);
-    padding-bottom:env(safe-area-inset-bottom)}
-  @supports (backdrop-filter:blur(1px)){
-    .tabbar{background:color-mix(in oklab,var(--bg) 82%,transparent);
-      -webkit-backdrop-filter:saturate(1.4) blur(20px);backdrop-filter:saturate(1.4) blur(20px)}
-  }
-  .tabbar button{flex:1;padding:11px 0 9px;display:flex;flex-direction:column;align-items:center;gap:5px;
-    color:var(--fnt);transition:color var(--t-mid) linear}
-  .tabbar button.on{color:var(--ink)}
-  .tabbar svg{width:21px;height:21px}
-  .tabbar span{font-size:9.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase}
+  /* ---------- card grid ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);padding:var(--s5) var(--pad) 0}
+  .card{background:var(--card);border-radius:var(--r3);padding:var(--s4);min-height:94px;
+    box-shadow:var(--sh-1);text-align:left;color:inherit;display:block;position:relative;
+    transition:transform var(--t-fast) var(--eo)}
+  button.card:active{transform:scale(.975)}
+  .card .ci{width:26px;height:26px;color:var(--mut);display:block;margin-bottom:var(--s2)}
+  .card .ci svg{width:100%;height:100%}
+  .card .t{display:block;font-size:14.5px;font-weight:700;letter-spacing:-.005em;line-height:1.25}
+  .card .s{display:block;font-size:12px;color:var(--fnt);margin-top:4px;line-height:1.35;
+    transition:color 620ms linear}
+  .card .s.ok{color:var(--acc-ink)} .card .s.warn{color:var(--warn)} .card .s.bad{color:var(--bad)}
+  .card .s.flash{color:var(--acc-ink);transition:color 90ms linear}
+  .card.wide{grid-column:1/-1}
+  .card .chv{position:absolute;top:var(--s4);right:var(--s4);width:7px;height:12px;color:var(--fnt);opacity:.5}
 
-  /* ---------- detail page (slide-over, nav model preserved) ---------- */
+  /* A/C card carries its own stepper, like the BYD climate tile */
+  .clim{display:flex;flex-direction:column;justify-content:space-between;min-height:132px}
+  .clim .cr{display:flex;align-items:center;justify-content:space-between}
+  .clim .temp{font-size:28px;font-weight:750;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .step{width:32px;height:32px;flex:none;border-radius:50%;background:var(--card-2);color:var(--ink);
+    font-size:18px;font-weight:500;line-height:1;display:flex;align-items:center;justify-content:center;
+    transition:transform var(--t-fast) var(--eo),background var(--t-mid) linear}
+  .step:active{transform:scale(.88);background:var(--acc-sf)}
+  .step:disabled{opacity:.3}
+  .clim .cb{width:38px;height:38px;border-radius:50%;background:var(--card-2);color:var(--mut);
+    display:flex;align-items:center;justify-content:center;flex:none}
+  .clim .cb.on{background:var(--blue-sf);color:var(--blue)}
+  .clim .cb svg{width:20px;height:20px}
+
+  /* full-width list rows, the lower half of the BYD home screen */
+  .rowcard{background:var(--card);border-radius:var(--r3);box-shadow:var(--sh-1);overflow:hidden;
+    margin:var(--s3) var(--pad) 0}
+  .row{display:flex;align-items:center;gap:var(--s3);width:100%;text-align:left;color:inherit;
+    padding:15px var(--s4);min-height:60px;transition:background var(--t-fast) linear}
+  .row+.row{border-top:1px solid var(--line)}
+  button.row:active{background:var(--card-2)}
+  .row .ri{width:22px;height:22px;flex:none;color:var(--mut)}
+  .row .ri svg{width:100%;height:100%;display:block}
+  .row .rl{flex:1;min-width:0;font-size:14.5px;font-weight:650;letter-spacing:-.005em}
+  .row .rl small{display:block;font-size:12px;font-weight:400;color:var(--fnt);margin-top:3px}
+  .row .rv{font-size:13px;font-weight:650;color:var(--mut);text-align:right;
+    font-variant-numeric:tabular-nums;transition:color 620ms linear}
+  .row .rv.ok{color:var(--acc-ink)} .row .rv.warn{color:var(--warn)} .row .rv.bad{color:var(--bad)}
+  .row .rv.flash{color:var(--acc-ink);transition:color 90ms linear}
+  .row .ch{flex:none;width:7px;height:12px;color:var(--fnt);opacity:.5}
+  .sec{padding:0 var(--pad)}
+  .sech{padding:var(--s5) var(--pad) 0}
+  .sech .ov{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fnt)}
+
+  /* ---------- bottom tabs ---------- */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;max-width:430px;margin:0 auto;
+    background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+  @supports (backdrop-filter:blur(1px)){
+    .tabbar{background:color-mix(in oklab,var(--card) 86%,transparent);
+      -webkit-backdrop-filter:saturate(1.5) blur(20px);backdrop-filter:saturate(1.5) blur(20px)}
+  }
+  .tabbar button{flex:1;padding:9px 0 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--fnt);transition:color var(--t-mid) linear,transform var(--t-fast) var(--eo)}
+  .tabbar button:active{transform:scale(.94)}
+  .tabbar button.on{color:var(--ink)}
+  .tabbar svg{width:23px;height:23px;transition:transform var(--t-mid) var(--eo)}
+  .tabbar button.on svg{transform:translateY(-1px)}
+  .tabbar span{font-size:10.5px;font-weight:650}
+
+  /* ---------- detail page (slide-over) ---------- */
   .page{position:fixed;inset:0;z-index:60;background:var(--bg);max-width:430px;margin:0 auto;
     transform:translate3d(100%,0,0);visibility:hidden;
     transition:transform var(--t-slow) var(--eo),visibility 0s linear var(--t-slow);
@@ -231,217 +279,232 @@
     padding-bottom:calc(var(--s7) + env(safe-area-inset-bottom))}
   .page.open{transform:none;visibility:visible;transition:transform var(--t-slow) var(--eo),visibility 0s}
   .page.drag{transition:none}
-  .phead{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:var(--s3);
-    padding:max(var(--s4),calc(env(safe-area-inset-top) + var(--s2))) var(--pad) var(--s3);
-    border-bottom:1px solid var(--line);background:var(--bg)}
+  .phead{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:var(--s2);
+    padding:max(var(--s4),calc(env(safe-area-inset-top) + 6px)) var(--pad) var(--s3);
+    background:var(--bg)}
   @supports (backdrop-filter:blur(1px)){
     .phead{background:color-mix(in oklab,var(--bg) 84%,transparent);
       -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
   }
-  .phead h2{flex:1;font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--mut)}
-  .pback{width:30px;height:30px;margin-left:-7px;flex:none;display:flex;align-items:center;
+  .phead h2{flex:1;text-align:center;font-size:16px;font-weight:700;margin-right:36px}
+  .pback{width:32px;height:32px;margin-left:-8px;flex:none;display:flex;align-items:center;
     justify-content:center;color:var(--ink);transition:transform var(--t-fast) var(--eo)}
   .pback:active{transform:translateX(-2px)}
-  .pback svg{width:9px;height:16px}
-  .pbody{padding:var(--s5) var(--pad) 0}
-  .pbody .rows{margin:0 calc(var(--pad) * -1)}
+  .pback svg{width:10px;height:17px}
+  .pbody{padding:var(--s2) var(--pad) 0}
+  .pbody .rowcard{margin-left:0;margin-right:0}
 
-  /* top-view diagram for doors / tyres */
-  .topwrap{position:relative;width:232px;margin:var(--s2) auto var(--s3)}
+  /* white card used by charts and figures on detail pages */
+  .panel{background:var(--card);border-radius:var(--r3);padding:var(--s5) var(--s4);
+    box-shadow:var(--sh-1)}
+  .panel+.panel{margin-top:var(--s3)}
+  .plbl{font-size:12.5px;color:var(--mut);font-weight:600}
+  .pval{font-size:38px;font-weight:750;letter-spacing:-.03em;line-height:1;margin-top:8px;
+    font-variant-numeric:tabular-nums}
+  .pval .u{font-size:14px;font-weight:650;color:var(--mut);letter-spacing:0;margin-left:5px}
+  .stats{display:flex;gap:var(--s5);margin-top:var(--s4);padding-top:var(--s3);
+    border-top:1px solid var(--line)}
+  .stats>div{min-width:0}
+  .stats b{display:block;font-size:16.5px;font-weight:750;letter-spacing:-.015em;
+    font-variant-numeric:tabular-nums}
+  .stats span{display:block;font-size:10.5px;color:var(--fnt);margin-top:3px}
+  .note{font-size:12.5px;line-height:1.6;color:var(--fnt);margin-top:var(--s4);padding:0 2px;
+    user-select:text;-webkit-user-select:text}
+
+  /* top-view diagram, shared by Doors and Tyres */
+  .topwrap{position:relative;width:228px;margin:var(--s3) auto var(--s3)}
   .topwrap svg{width:100%;display:block;overflow:visible}
-  /* tyres carry the only colour on the diagram, so state reads at a glance */
-  .wh{fill:var(--bg-3);stroke:var(--line);stroke-width:1.4}
+  .wh{fill:var(--card-2);stroke:var(--line);stroke-width:1.4}
   .wh.ok{fill:var(--acc-sf);stroke:var(--acc);stroke-width:1.8}
   .wh.warn{fill:oklch(0.7 0.14 70 / .16);stroke:var(--warn);stroke-width:1.8}
   .wh.bad{fill:oklch(0.6 0.18 27 / .16);stroke:var(--bad);stroke-width:1.8}
   .whc{fill:var(--fnt);font-size:7.5px;font-weight:600;letter-spacing:.12em}
-  .whv{font-size:11px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;
-    fill:var(--mut)}
+  .whv{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;fill:var(--mut)}
   .whv.ok{fill:var(--acc-ink)} .whv.warn{fill:var(--warn)} .whv.bad{fill:var(--bad)}
-  /* caption directly under the diagram, explaining what the four shapes mean */
-  .topcap{text-align:center;font-size:11.5px;line-height:1.5;color:var(--fnt);
-    margin:0 auto var(--s5);max-width:290px}
-  .topcap b{color:var(--mut);font-weight:600}
-
+  .cbody{fill:var(--card);stroke:var(--line);stroke-width:1.6}
+  .cglass,.croof{fill:var(--card-2);stroke:var(--line);stroke-width:1}
+  .cmir{fill:var(--line)}
+  .chole{fill:var(--bg);opacity:0;transition:opacity 300ms linear}
+  .chole.on{opacity:1}
+  .cdoor,.clid,.csun{transform-box:view-box;fill:var(--card-2);stroke:var(--line);stroke-width:1.3;
+    transition:transform 520ms var(--eo),fill 320ms linear,stroke 320ms linear}
+  .cdoor.open,.clid.open,.csun.open{fill:oklch(0.62 0.18 27 / .18);stroke:var(--bad);stroke-width:1.7}
+  .cdoor.l.open{transform:rotate(-34deg)}
+  .cdoor.r.open{transform:rotate(34deg)}
+  .clid.open{transform:scaleY(.3)}
+  .csun.open{transform:scaleY(.16)}
+  .clockg{transition:color 320ms linear;color:var(--acc)}
+  .clockg.un{color:var(--warn)}
+  .topcap{text-align:center;font-size:12px;line-height:1.5;color:var(--fnt);
+    margin:0 auto var(--s4);max-width:290px}
+  .topcap b{color:var(--mut);font-weight:650}
   .ckc{display:inline-flex;align-items:center;gap:6px}
   .ckc svg{width:13px;height:13px;flex:none}
 
-  /* primary action */
-  .bigbtn{display:block;width:100%;margin-top:var(--s5);background:var(--btn);color:var(--btn-ink);
-    border-radius:var(--r2);padding:16px;font-size:11px;font-weight:600;letter-spacing:.16em;
-    text-transform:uppercase;transition:transform var(--t-fast) var(--eo),opacity var(--t-mid) linear}
+  .bigbtn{display:block;width:100%;margin-top:var(--s4);background:var(--btn);color:var(--btn-ink);
+    border-radius:var(--r2);padding:16px;font-size:14.5px;font-weight:700;
+    transition:transform var(--t-fast) var(--eo),opacity var(--t-mid) linear}
   .bigbtn:active{transform:scale(.985)}
   .bigbtn:disabled{opacity:.35}
 
   /* A/C page */
-  .acbig{display:flex;align-items:center;justify-content:center;gap:var(--s5);margin:var(--s7) 0 var(--s3)}
-  .acbig .cur{font-size:76px;font-weight:600;letter-spacing:-.045em;line-height:.9;
+  .acbig{display:flex;align-items:center;justify-content:center;gap:var(--s6);margin:var(--s6) 0 var(--s2)}
+  .acbig .cur{font-size:72px;font-weight:750;letter-spacing:-.04em;line-height:.9;
     font-variant-numeric:tabular-nums}
-  .acbig .cur u{font-size:20px;font-weight:600;color:var(--mut);text-decoration:none;letter-spacing:0}
-  .acbig .side{font-size:22px;font-weight:500;color:var(--line);font-variant-numeric:tabular-nums}
-  .acsub{text-align:center;margin-bottom:var(--s2)}
-  .acrow{display:flex;justify-content:center;gap:var(--s5);margin-bottom:var(--s7)}
-  .acacts{display:flex;justify-content:center;gap:var(--s7);padding-top:var(--s5);
-    border-top:1px solid var(--line)}
-  .acacts button{display:flex;flex-direction:column;align-items:center;gap:9px;
-    font-size:9.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--fnt);
-    transition:color var(--t-mid) linear}
-  .acacts .cic{width:54px;height:54px;border-radius:50%;border:1px solid var(--line);
-    background:var(--bg-2);display:flex;align-items:center;justify-content:center;color:var(--ink);
-    transition:transform var(--t-fast) var(--eo),border-color var(--t-mid) linear,
-      color var(--t-mid) linear,background var(--t-mid) linear}
+  .acbig .cur u{font-size:20px;font-weight:650;color:var(--mut);text-decoration:none}
+  .acbig .side{font-size:22px;font-weight:600;color:var(--line);font-variant-numeric:tabular-nums}
+  .acsub{text-align:center;font-size:12.5px;color:var(--mut);margin-bottom:var(--s2)}
+  .acrow{display:flex;justify-content:center;gap:var(--s5);margin-bottom:var(--s6)}
+  .acrow .step{width:40px;height:40px;font-size:21px;box-shadow:var(--sh-1);background:var(--card)}
+  .acacts{display:flex;justify-content:center;gap:var(--s6)}
+  .acacts button{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;
+    font-weight:650;color:var(--mut);transition:color var(--t-mid) linear}
+  .acacts .cic{width:54px;height:54px;border-radius:50%;background:var(--card);
+    display:flex;align-items:center;justify-content:center;color:var(--ink);box-shadow:var(--sh-1);
+    transition:transform var(--t-fast) var(--eo),color var(--t-mid) linear,box-shadow var(--t-mid) linear}
   .acacts button:active .cic{transform:scale(.9)}
   .acacts button.on{color:var(--acc-ink)}
-  .acacts button.on .cic{border-color:var(--acc);color:var(--acc-ink);background:var(--acc-sf)}
+  .acacts button.on .cic{color:var(--acc-ink);box-shadow:0 2px 6px var(--acc-sf),0 10px 24px var(--acc-sf)}
   .acacts .cic svg{width:23px;height:23px}
+
+  /* energy bars ----------------------------------------------------------------
+     A faint full-height track keeps a no-driving day visible as an empty slot instead of a
+     hole, so the week always reads as seven days. */
+  .etrack{fill:var(--card-2)}
+  .ebar{fill:var(--acc)}
+  .eval{font-size:10px;font-weight:700;fill:var(--mut);font-variant-numeric:tabular-nums}
+  .eday{font-size:9px;fill:var(--fnt);font-variant-numeric:tabular-nums}
+  .eday.off{opacity:.45}
+  .ebase{stroke:var(--line);stroke-width:1}
+  .ewltp{stroke:var(--fnt);stroke-width:1.2;stroke-dasharray:3 4;opacity:.75}
+  .ewlbl{font-size:9px;font-weight:650;fill:var(--fnt);letter-spacing:.04em}
+  .elegend{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:var(--s4);
+    padding-top:var(--s3);border-top:1px solid var(--line);font-size:11px;color:var(--fnt)}
+  .elegend span{display:inline-flex;align-items:center;gap:6px}
+  .elegend .sw{width:9px;height:9px;border-radius:3px;background:var(--acc);flex:none}
+  .elegend .sw.d{width:12px;height:0;border-radius:0;background:none;
+    border-top:1.5px dashed var(--fnt)}
+  .elegend .gap{margin-left:auto;font-weight:600;color:var(--mut)}
 
   /* charts */
   #echart,#cchart{display:block;width:100%;margin-top:var(--s3);overflow:visible}
   .cstats{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s2);margin-top:var(--s4);
-    padding-top:var(--s3);border-top:1px solid var(--hair)}
-  .cstats b{display:block;font-size:16px;font-weight:600;letter-spacing:-.015em;
+    padding-top:var(--s3);border-top:1px solid var(--line);text-align:center}
+  .cstats b{display:block;font-size:16.5px;font-weight:750;letter-spacing:-.015em;
     font-variant-numeric:tabular-nums}
-  .cstats span{display:block;font-size:9px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--fnt);margin-top:4px}
-  .crange{font-size:12px;color:var(--fnt);margin-top:var(--s3);line-height:1.6;
+  .cstats span{display:block;font-size:10px;color:var(--fnt);margin-top:3px}
+  .crange{text-align:center;font-size:12px;color:var(--fnt);margin-top:var(--s3);line-height:1.5;
     font-variant-numeric:tabular-nums}
-
-  .socbar{height:4px;border-radius:var(--rf);background:var(--line);overflow:hidden;margin-top:var(--s4)}
+  .socbar{height:8px;border-radius:var(--rf);background:oklch(0.5 0 0 / .14);overflow:hidden;margin-top:var(--s4)}
   .socbar i{display:block;height:100%;border-radius:var(--rf);background:var(--acc);
     transition:width .9s var(--eo)}
-
   .hrow2{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s3);
-    padding:13px 0;border-top:1px solid var(--hair);font-size:12.5px;color:var(--fnt);
+    padding:12px 0;border-top:1px solid var(--line);font-size:12.5px;color:var(--fnt);
     font-variant-numeric:tabular-nums}
   .hrow2:first-child{border-top:0}
-  .hrow2 b{color:var(--ink);font-weight:600}
+  .hrow2 b{color:var(--ink);font-weight:700}
 
   /* calendar */
-  .calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s4)}
-  .calhead b{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
-  .calnav{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);color:var(--ink);
-    display:flex;align-items:center;justify-content:center;background:var(--bg-2);
+  .calhead{display:flex;align-items:center;justify-content:space-between;margin:var(--s2) 0 var(--s4)}
+  .calhead b{font-size:16px;font-weight:750}
+  .calnav{width:32px;height:32px;border-radius:50%;background:var(--card);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;box-shadow:var(--sh-1);
     transition:transform var(--t-fast) var(--eo)}
   .calnav:active{transform:scale(.88)}
   .calnav svg{width:8px;height:13px}
   .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
-  .caldow{text-align:center;font-size:9.5px;font-weight:600;color:var(--fnt);letter-spacing:.11em;
-    text-transform:uppercase;padding-bottom:var(--s1)}
-  .calday{background:var(--bg-2);border:1px solid var(--hair);border-radius:var(--r1);
-    padding:6px 2px;text-align:center;min-height:50px;position:relative;overflow:hidden;
-    font:inherit;color:var(--ink);transition:transform var(--t-fast) var(--eo)}
+  .caldow{text-align:center;font-size:10px;font-weight:650;color:var(--fnt);padding-bottom:var(--s1)}
+  .calday{background:var(--card);border-radius:var(--r1);padding:6px 2px;text-align:center;
+    min-height:50px;position:relative;overflow:hidden;font:inherit;color:var(--ink);
+    box-shadow:var(--sh-1);transition:transform var(--t-fast) var(--eo)}
   .calday.on:active{transform:scale(.92)}
-  .calday.off{opacity:.4;pointer-events:none;background:transparent}
-  .calday .cd{position:relative;z-index:1;font-size:10px;font-weight:500;color:var(--fnt);display:block;
+  .calday.off{opacity:.4;pointer-events:none;box-shadow:none;background:transparent}
+  .calday .cd{position:relative;z-index:1;font-size:10px;font-weight:600;color:var(--fnt);display:block;
     font-variant-numeric:tabular-nums}
-  .calday .ck{position:relative;z-index:1;font-size:12px;font-weight:600;display:block;margin-top:3px;
+  .calday .ck{position:relative;z-index:1;font-size:12px;font-weight:750;display:block;margin-top:3px;
     letter-spacing:-.02em;font-variant-numeric:tabular-nums}
   .calday .cdot{position:absolute;z-index:1;top:5px;right:5px;width:4px;height:4px;border-radius:50%;
     background:var(--acc)}
   .calwash{position:absolute;inset:0;background:var(--acc);pointer-events:none}
-  .caltot{display:flex;gap:var(--s5);margin-top:var(--s5);padding-top:var(--s4);
-    border-top:1px solid var(--line)}
-  .caltot>div{min-width:0}
-  .caltot b{display:block;font-size:16px;font-weight:600;letter-spacing:-.015em;
-    font-variant-numeric:tabular-nums}
-  .caltot span{display:block;font-size:9.5px;font-weight:500;letter-spacing:.11em;text-transform:uppercase;
-    color:var(--fnt);margin-top:4px}
+  .caltot{display:flex;gap:var(--s5);justify-content:center;margin-top:var(--s5);padding-top:var(--s4);
+    border-top:1px solid var(--line);text-align:center}
+  .caltot b{display:block;font-size:16.5px;font-weight:750;font-variant-numeric:tabular-nums}
+  .caltot span{display:block;font-size:10.5px;color:var(--fnt);margin-top:3px}
 
   /* account header + share card */
-  .vveh{padding:0 0 var(--s5);border-bottom:1px solid var(--line);position:relative}
-  .vveh .vm{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
-  .vveh .vo{font-size:46px;font-weight:600;letter-spacing:-.04em;line-height:1;margin-top:var(--s4);
+  .vveh{background:linear-gradient(140deg,var(--heroA),var(--card));border-radius:var(--r3);
+    padding:var(--s5) var(--s4);margin:var(--s2) 0 0;position:relative;overflow:hidden;
+    box-shadow:var(--sh-1)}
+  .vveh .vm{font-size:18px;font-weight:750}
+  .vveh .vv{font-size:12px;color:var(--mut);margin-top:5px;font-variant-numeric:tabular-nums;
+    user-select:text;-webkit-user-select:text}
+  .vveh .vo{font-size:26px;font-weight:750;margin-top:var(--s3);letter-spacing:-.02em;
     font-variant-numeric:tabular-nums}
-  .vveh .vo u{font-size:14px;font-weight:600;color:var(--mut);text-decoration:none;letter-spacing:0;
-    margin-left:5px}
-  .vveh .vv{font-size:11.5px;color:var(--fnt);margin-top:10px;letter-spacing:.06em;
-    font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text}
-  .vveh .ve{position:absolute;top:0;right:-6px;width:30px;height:30px;display:flex;
-    align-items:center;justify-content:center;color:var(--fnt)}
-  .vveh .ve svg{width:17px;height:17px}
-  .vveh img{display:block;width:100%;max-width:250px;margin:var(--s3) auto 0;
-    filter:drop-shadow(0 10px 16px var(--shade))}
+  .vveh .vo u{font-size:13px;font-weight:650;color:var(--mut);text-decoration:none;margin-left:3px}
+  .vveh .ve{position:absolute;top:var(--s4);right:var(--s4);width:30px;height:30px;border-radius:50%;
+    background:oklch(1 0 0 / .45);display:flex;align-items:center;justify-content:center;color:var(--mut)}
+  .vveh .ve svg{width:16px;height:16px}
+  .vveh img{position:absolute;right:-10px;bottom:-8px;width:168px;
+    filter:drop-shadow(0 8px 10px oklch(0.30 0.03 250 / .22))}
 
-  .flexc{border:1px solid var(--line);border-radius:var(--r3);padding:var(--s5);background:var(--bg-2)}
-  .flexc .fm{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--fnt)}
-  .flexc .fbig{font-size:56px;font-weight:600;letter-spacing:-.04em;line-height:.95;margin:var(--s4) 0 0;
+  .flexc{background:linear-gradient(155deg,var(--heroA),var(--card));border-radius:var(--r4);
+    padding:var(--s5);box-shadow:var(--sh-2)}
+  .flexc .fm{font-size:12px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+  .flexc .fbig{font-size:52px;font-weight:750;letter-spacing:-.03em;line-height:1;margin-top:var(--s3);
     font-variant-numeric:tabular-nums}
-  .flexc .fbig u{display:block;font-size:10px;font-weight:600;color:var(--fnt);text-decoration:none;
-    letter-spacing:.18em;text-transform:uppercase;margin-top:10px}
+  .flexc .fbig u{display:block;font-size:13px;font-weight:650;color:var(--mut);text-decoration:none;
+    margin-top:8px}
   .fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4);margin-top:var(--s5);
-    padding-top:var(--s4);border-top:1px solid var(--hair)}
-  .fgrid2 b{display:block;font-size:18px;font-weight:600;letter-spacing:-.02em;
-    font-variant-numeric:tabular-nums}
-  .fgrid2 span{display:block;font-size:9.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--fnt);margin-top:4px}
+    padding-top:var(--s4);border-top:1px solid var(--line)}
+  .fgrid2 b{display:block;font-size:18px;font-weight:750;font-variant-numeric:tabular-nums}
+  .fgrid2 span{display:block;font-size:11px;color:var(--fnt);margin-top:3px}
 
-  /* segmented control */
-  .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r1);overflow:hidden;
-    flex:none;background:var(--bg)}
-  .seg button{padding:6px 11px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--fnt);transition:background var(--t-mid) linear,color var(--t-mid) linear}
-  .seg button+button{border-left:1px solid var(--line)}
+  .seg{display:inline-flex;border-radius:var(--r1);overflow:hidden;flex:none;background:var(--card-2)}
+  .seg button{padding:7px 12px;font-size:12px;font-weight:700;color:var(--mut);
+    transition:background var(--t-mid) linear,color var(--t-mid) linear}
   .seg button.on{background:var(--btn);color:var(--btn-ink)}
 
-  /* confirm sheet — replaces native confirm() */
+  /* confirm sheet */
   .scrim{position:fixed;inset:0;z-index:88;background:var(--scrim);opacity:0;pointer-events:none;
     transition:opacity var(--t-mid) linear}
   .scrim.show{opacity:1;pointer-events:auto}
   .sheet{position:fixed;left:0;right:0;bottom:0;z-index:90;max-width:430px;margin:0 auto;
-    background:var(--bg-2);border-top:1px solid var(--line);
-    border-radius:var(--r4) var(--r4) 0 0;
+    background:var(--card);border-radius:var(--r4) var(--r4) 0 0;
     padding:var(--s5) var(--pad) calc(var(--s5) + env(safe-area-inset-bottom));
-    transform:translate3d(0,110%,0);transition:transform var(--t-slow) var(--eo)}
+    transform:translate3d(0,110%,0);transition:transform var(--t-slow) var(--eo);box-shadow:var(--sh-2)}
   .sheet.show{transform:none}
-  .sheet .sq{font-size:17px;font-weight:600;letter-spacing:-.015em;text-align:center}
+  .sheet .sq{font-size:17px;font-weight:750;text-align:center}
   .sheet .ss{font-size:12.5px;color:var(--fnt);text-align:center;margin-top:var(--s2);line-height:1.5}
   .sheet .sb{display:flex;gap:var(--s3);margin-top:var(--s5)}
-  .sheet .sb button{flex:1;padding:15px;border-radius:var(--r2);font-size:11px;font-weight:600;
-    letter-spacing:.16em;text-transform:uppercase;transition:transform var(--t-fast) var(--eo)}
+  .sheet .sb button{flex:1;padding:15px;border-radius:var(--r2);font-size:14.5px;font-weight:700;
+    transition:transform var(--t-fast) var(--eo)}
   .sheet .sb button:active{transform:scale(.985)}
-  .sheet .no{border:1px solid var(--line);color:var(--ink)}
+  .sheet .no{background:var(--card-2);color:var(--ink)}
   .sheet .yes{background:var(--btn);color:var(--btn-ink)}
 
   .toast{position:fixed;left:var(--pad);right:var(--pad);bottom:calc(88px + env(safe-area-inset-bottom));
-    max-width:390px;margin:0 auto;
-    background:var(--btn);color:var(--btn-ink);font-size:12.5px;font-weight:500;line-height:1.45;
-    padding:13px 16px;border-radius:var(--r2);text-align:center;
-    opacity:0;transform:translate3d(0,10px,0);pointer-events:none;
+    max-width:390px;margin:0 auto;background:var(--btn);color:var(--btn-ink);
+    font-size:13px;font-weight:600;line-height:1.4;padding:13px 16px;border-radius:var(--r2);
+    text-align:center;opacity:0;transform:translate3d(0,10px,0);pointer-events:none;
     transition:opacity var(--t-mid) linear,transform var(--t-slow) var(--eo);z-index:80}
   .toast.show{opacity:1;transform:none}
 
+  /* ---------- motion ----------
+     State-bearing only, transform and opacity. The reduced-motion block flattens the CSS and
+     the JS helpers check the same query before running. */
   .fadein{animation:fadein var(--t-slow) var(--eo)}
   @keyframes fadein{from{opacity:0;transform:translate3d(0,6px,0)}}
-
-  /* ---------- motion detail ----------
-     Restrained, state-bearing only: a first-paint rise, a needle-style count on the
-     numerals, a drawn chart line, a live pulse. Nothing loops unless the car is
-     actually doing something. All transform/opacity; the reduced-motion block above
-     flattens every one of these, and the JS count-up checks the same query. */
   .rise{animation:rise 420ms var(--eo) both}
   @keyframes rise{from{opacity:0;transform:translate3d(0,10px,0)}}
-
-  /* live dot: a single expanding ring, only while the car is online */
-  .hmeta .dot{position:relative}
-  .hmeta .dot.on:after{content:"";position:absolute;inset:0;border-radius:50%;
+  .hname .hs .dot.on:after{content:"";position:absolute;inset:0;border-radius:50%;
     border:1px solid var(--acc);animation:ping 2.8s var(--eo) infinite}
-  @keyframes ping{0%{transform:scale(1);opacity:.7}70%,100%{transform:scale(3.4);opacity:0}}
-
-  /* charging bolt breathes while a session is live */
-  .chg svg{animation:breathe 2.6s ease-in-out infinite}
+  @keyframes ping{0%{transform:scale(1);opacity:.7}70%,100%{transform:scale(3.2);opacity:0}}
   @keyframes breathe{50%{opacity:.42}}
-
-  /* chart line draws itself in */
   .draw{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);
     animation:draw 760ms var(--eo) 60ms forwards}
   @keyframes draw{to{stroke-dashoffset:0}}
   .drawf{opacity:0;animation:drawf 520ms linear 420ms forwards}
   @keyframes drawf{to{opacity:1}}
-
-  /* a value that changed on the last poll warms for a moment */
-  .rv,.hmeta .soc{transition:color 620ms linear}
-  .rv.flash,.hmeta .soc.flash{color:var(--acc-ink);transition:color 90ms linear}
 </style>
 </head>
 <body>
@@ -465,23 +528,32 @@ MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduc
 <div id="viewHome">
   <header class="hero">
     <div class="hbar">
-      <span class="hm" id="hModel">&mdash;</span>
+      <div class="hname">
+        <span class="hm" id="hModel">&mdash;</span>
+        <span class="hs"><i class="dot" id="hDot"></i><span id="hState">&mdash;</span>
+          <span id="hWhen"></span></span>
+      </div>
       <button class="rf" id="hRefresh" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 9.5a8 8 0 0113.3-2.7L20.5 9.5"/><path d="M20.5 4.5v5h-5"/><path d="M19.5 14.5a8 8 0 01-13.3 2.7L3.5 14.5"/><path d="M3.5 19.5v-5h5"/></svg></button>
     </div>
-    <div class="hdisp disp num"><span id="hRange">&mdash;</span><span class="u">km</span></div>
-    <div class="ov hlbl">Estimated range</div>
-    <div class="hmeta">
-      <span class="dot" id="hDot"></span>
-      <span class="soc num" id="hSoc">&mdash;</span>
-      <span class="sep">&#47;</span>
-      <span id="hState">&mdash;</span>
-      <span class="when" id="hWhen"></span>
+    <div class="hrange"><b class="num" id="hRange">&mdash;</b><u>km</u></div>
+    <div class="bars" id="hBars"></div>
+    <div class="carwrap" id="carWrap">
+      <img class="hcar" id="hCar" src="car-generic.svg" alt="Your car" width="330" height="212">
+      <div class="chgshot" aria-hidden="true">
+        <svg class="cable" viewBox="0 0 356 211" preserveAspectRatio="none">
+          <path class="cglow"  d="M32 76 C33 82 34 88 33 92 C26 102 14 128 9 149 C7 159 11 167 19 172 C28 176 40 177 50 174 C58 171 62 165 64 156 C66 143 67 125 69 110 C72 100 79 93 87 90"/>
+          <path class="ctrace" d="M32 76 C33 82 34 88 33 92 C26 102 14 128 9 149 C7 159 11 167 19 172 C28 176 40 177 50 174 C58 171 62 165 64 156 C66 143 67 125 69 110 C72 100 79 93 87 90"/>
+          <path class="cpulse" d="M32 76 C33 82 34 88 33 92 C26 102 14 128 9 149 C7 159 11 167 19 172 C28 176 40 177 50 174 C58 171 62 165 64 156 C66 143 67 125 69 110 C72 100 79 93 87 90"/>
+          <circle class="pgled" cx="87" cy="90" r="4"/>
+          <circle class="pgring" cx="87" cy="90" r="4"/>
+        </svg>
+      </div>
     </div>
-    <img class="hcar" id="hCar" src="car-generic.svg" alt="Your car" width="330" height="212">
   </header>
   <nav class="qa" id="qaRow" aria-label="Quick actions"></nav>
   <div class="chg" id="chgPill" hidden></div>
-  <div id="groupsHost"></div>
+  <div class="grid" id="cardGrid"></div>
+  <div id="rowsHost"></div>
 </div>
 
 <div id="viewAcct" hidden>
@@ -495,7 +567,7 @@ MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduc
     </div>
   </div>
   <div class="sech"><span class="ov">Settings</span></div>
-  <div class="rows" id="acctRows"></div>
+  <div class="rowcard" id="acctRows"></div>
   <div class="sec"><div class="note" id="aNote"></div></div>
 </div>
 
@@ -588,6 +660,9 @@ const IC = {
   gauge:   '<path d="M4 18a8 8 0 0116 0"/><path d="M12 18l4.5-6.5"/><circle cx="12" cy="18" r="1.5" fill="currentColor" stroke="none"/><path d="M4 18h1.5M18.5 18H20"/>',
   camera:  '<path d="M3 9.5A2.5 2.5 0 015.5 7h1.2l1.1-2h6.4l1.1 2h1.2A2.5 2.5 0 0120 9.5v8A2.5 2.5 0 0117.5 20h-11A2.5 2.5 0 014 17.5z"/><circle cx="12" cy="13" r="3.4"/>',
   link:    '<path d="M9 15l6-6"/><path d="M11.5 6.5l1.4-1.4a4 4 0 015.6 5.6L17 12"/><path d="M12.5 17.5l-1.4 1.4a4 4 0 01-5.6-5.6L7 12"/>',
+  batt:    '<rect x="2.5" y="7" width="16" height="10" rx="2.6"/><path d="M21 10.5v3"/><rect x="4.8" y="9.3" width="11.4" height="5.4" rx="1.2" fill="currentColor" stroke="none"/>',
+  fuel:    '<path d="M4 20V6a2 2 0 012-2h5a2 2 0 012 2v14"/><path d="M3 20h11"/><path d="M13 11h3a2 2 0 012 2v3.4a1.6 1.6 0 003.2 0V9.2L17.6 5.6"/><rect x="6.2" y="6.4" width="4.6" height="3.4" rx="1" fill="currentColor" stroke="none"/>',
+  plug:    '<path d="M9 3v5M15 3v5"/><path d="M6.5 8h11v3.2a5.5 5.5 0 01-5.5 5.5 5.5 5.5 0 01-5.5-5.5Z"/><path d="M12 16.7V21"/>',
   moon:    '<path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>',
 };
 function icon(k, w){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) +
@@ -677,16 +752,34 @@ async function fire(op, btn){
 function renderHero(){
   $('hModel').textContent = (S.vehicle && S.vehicle.model) || 'My car';
   countTo($('hRange'), S.range_km != null ? Math.round(S.range_km) : null);
-  const soc = $('hSoc');
-  soc.textContent = S.battery != null ? S.battery + '%' : '—';
-  flash(soc, 'soc', S.battery);
   $('hDot').className = 'dot' + (S.online ? ' on' : '');
   $('hState').textContent =
-    S.moving ? 'Driving' : (S.charging && S.charging.active) ? 'Charging' : 'Parked';
-  $('hWhen').textContent = ago(S.updated) || 'never updated';
+    S.moving ? 'Driving' : (S.charging && S.charging.active) ? 'Charging' : 'Powered off';
+  $('hWhen').textContent = '\u00b7  Updated ' + (ago(S.updated) || 'never');
+  renderBars();
+  // the cable is a charging state, so it lives with the rest of the hero state
+  $('carWrap').classList.toggle('charging',
+    !!(S.charging && S.charging.active) || /[?&]cable=1/.test(location.search));
   const img = $('hCar');
   img.onerror = () => { img.onerror = null; img.src = 'car-generic.svg'; };
   img.src = '/car-photo';
+}
+
+// State-of-charge bar under the range numeral. A second, blue fuel bar appears only when the
+// car actually reports a tank -- the BYD screen this follows is a PHEV and shows two, but
+// inventing one on a BEV would be stating a number the car never sent.
+function renderBars(){
+  const el = $('hBars');
+  const bar = (cls, ic, pct) =>
+    '<span class="bar ' + cls + '">' + icon(ic, 2) +
+    '<span class="tr"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></span>' +
+    '<span class="pc num">' + Math.round(pct) + '%</span></span>';
+  let h = '';
+  if(S.battery != null) h += bar('ev', 'batt', S.battery);
+  if(S.fuel != null)    h += bar('fu', 'fuel', S.fuel);
+  el.innerHTML = h;
+  const pc = el.querySelector('.bar.ev .pc');
+  if(pc) flash(pc, 'soc', S.battery);
 }
 
 function renderQA(){
@@ -746,11 +839,22 @@ function renderCharging(){
   if(c.remaining_min != null) bits.push(Math.floor(c.remaining_min / 60) ?
     (Math.floor(c.remaining_min / 60) + ' h ' + (c.remaining_min % 60) + ' min left') :
     (c.remaining_min + ' min left'));
-  el.innerHTML = icon('bolt', 2.2) + '<span>Charging</span><span class="dim">' +
+  el.innerHTML = icon('plug', 2) + '<span>Charging</span><span class="dim">' +
     (bits.join(' · ') || '') + '</span>';
 }
 
-// ---- home row lists (hairline groups, not a tile grid) ----
+/* ---- home: BYD card grid on top, full-width rows underneath ----
+   The grid carries the things you act on (climate, doors, tyres, battery). The rows carry the
+   things you only read. Same split as the reference app, and it keeps the first screen to one
+   thumb-reach of controls. */
+function card(ic, title, sub, cls, page){
+  const tag = page ? 'button' : 'div';
+  return '<' + tag + ' class="card"' + (page ? ' data-page="' + page + '"' : '') + '>' +
+    '<span class="ci">' + icon(ic) + '</span>' +
+    '<span class="t">' + title + '</span>' +
+    '<span class="s ' + (cls || '') + '">' + sub + '</span>' +
+    (page ? CHEV.replace('class="ch"', 'class="chv"') : '') + '</' + tag + '>';
+}
 function row(ic, label, val, cls, page){
   const tag = page ? 'button' : 'div';
   return '<' + tag + ' class="row"' + (page ? ' data-page="' + page + '"' : '') + '>' +
@@ -758,9 +862,6 @@ function row(ic, label, val, cls, page){
     '<span class="rl">' + label + '</span>' +
     '<span class="rv ' + (cls || '') + '">' + val + '</span>' +
     (page ? CHEV : '') + '</' + tag + '>';
-}
-function group(title, body){
-  return '<div class="sech"><span class="ov">' + title + '</span></div><div class="rows">' + body + '</div>';
 }
 
 function renderCards(){
@@ -770,55 +871,60 @@ function renderCards(){
   const tyreSub = S.tyre_indirect === false
     ? (S.tyre_status === 'Normal' ? 'Normal' : 'Check tyres')
     : (S.tyre_status || 'Status only');
-  const acSub = S.ac_on ? 'On' + (S.ac_temp_c && S.ac_temp_c < 60 ? ' · cabin ' + S.ac_temp_c + '°' : '') : 'Off';
+  const cabin = S.ac_temp_c && S.ac_temp_c < 60 ? S.ac_temp_c + '\u00b0C Cabin Temp' : 'Not turned on';
   const seatsKnown = (S.seat_heat && (S.seat_heat[0] || S.seat_heat[1])) ||
                      (S.seat_vent && (S.seat_vent[0] || S.seat_vent[1]));
   const chgSub = (S.charging && S.charging.active)
-    ? 'Charging' + (S.charging.rate_kw != null ? ' · ' + S.charging.rate_kw + ' kW' : '')
+    ? 'Charging' + (S.charging.rate_kw != null ? ' \u00b7 ' + S.charging.rate_kw + ' kW' : '')
     : (S.charging && S.charging.month_kwh ? S.charging.month_kwh + ' kWh this month' : 'No sessions yet');
-  const battSub = (S.battery != null ? S.battery + '%' : '—') +
-    (S.volt12_status ? ' · 12V ' + S.volt12_status : '');
+  const battSub = (S.battery != null ? S.battery + '%' : '\u2014') +
+    (S.volt12_status ? ' \u00b7 12V ' + S.volt12_status : '');
   const distSub = (S.km && S.km.today != null ? S.km.today + ' km today' : 'No driving yet');
 
-  // climate row carries its own stepper, so it is built by hand
-  const climRow =
-    '<div class="row"><span class="ri">' + icon('ac') + '</span>' +
-    '<button class="rl" data-page="ac" style="text-align:left">Climate' +
-      '<small id="climState">' + acSub + '</small></button>' +
-    '<span class="stepset">' +
-      '<button class="step" data-step="-1" aria-label="Cooler">&minus;</button>' +
-      '<span class="tv num" id="climTemp">' + acTarget + '°</span>' +
-      '<button class="step" data-step="1" aria-label="Warmer">+</button>' +
-    '</span></div>';
+  // climate tile is hand-built: it carries a stepper, so it is a control, not a link
+  $('cardGrid').innerHTML =
+    '<div class="card clim">' +
+      '<div class="cr"><button class="step" data-step="-1" aria-label="Cooler">&minus;</button>' +
+        '<span class="temp num" id="climTemp">' + acTarget + '\u00b0</span>' +
+        '<button class="step" data-step="1" aria-label="Warmer">+</button></div>' +
+      '<div class="cr" style="margin-top:12px">' +
+        '<span><span class="t">A/C</span><span class="s ' + (S.ac_on ? 'ok' : '') + '" id="climState">' +
+          cabin + '</span></span>' +
+        '<button class="cb' + (S.ac_on ? ' on' : '') + '" data-page="ac" aria-label="Climate detail">' +
+          icon('ac') + '</button></div></div>' +
+    '<div style="display:grid;gap:12px">' +
+      card('door', 'Doors', ds.t, ds.cls, 'doors') +
+      card('tyre', 'Tyres', tyreSub, S.tyre_status === 'Normal' ? 'ok' : 'warn', 'tyres') +
+    '</div>' +
+    card('bolt',  'Battery',  battSub, S.volt12_status === 'critical' ? 'bad' : '', 'batt') +
+    card('plug', 'Charging', chgSub, (S.charging && S.charging.active) ? 'ok' : '', 'chg');
 
-  $('groupsHost').innerHTML =
-    group('Vehicle',
-      climRow +
-      row('door', 'Doors and windows', ds.t, ds.cls, 'doors') +
-      row('tyre', 'Tyres', tyreSub, S.tyre_status === 'Normal' ? 'ok' : 'warn', 'tyres') +
-      row('seat', 'Seats', seatsKnown ? 'Active' : 'Not available', '', null)) +
-    group('Energy',
-      row('bolt',  'Battery',  battSub, S.volt12_status === 'critical' ? 'bad' : '', 'batt') +
-      row('gauge', 'Charging', chgSub, (S.charging && S.charging.active) ? 'ok' : '', 'chg') +
-      row('chart', 'Consumption', cons, '', 'energy') +
-      row('car',   'Distance', distSub, '', 'dist'));
+  $('rowsHost').innerHTML = '<div class="rowcard">' +
+    row('chart', 'Energy consumption', cons, '', 'energy') +
+    row('car',   'Distance',  distSub, '', 'dist') +
+    row('seat',  'Seats', seatsKnown ? 'Active' : 'Not available', '', null) +
+    '</div>';
 
-  const host = $('groupsHost');
-  host.querySelectorAll('.row').forEach((r, i) => {
-    const v = r.querySelector('.rv');
-    if(v) flash(v, 'row' + i, v.textContent);
-  });
-  if(!S._painted){ stagger([...host.querySelectorAll('.sech,.row')], 26, 90); S._painted = true; }
-  host.querySelectorAll('[data-page]').forEach(b => b.onclick = () => openPage(b.dataset.page));
-  host.querySelectorAll('[data-step]').forEach(b => b.onclick = ev => {
+  const hosts = [$('cardGrid'), $('rowsHost')];
+  hosts.forEach(h => h.querySelectorAll('[data-page]').forEach(b =>
+    b.onclick = ev => { ev.stopPropagation(); openPage(b.dataset.page); }));
+  $('cardGrid').querySelectorAll('[data-step]').forEach(b => b.onclick = ev => {
     ev.stopPropagation();
     const caps = (CAPS && CAPS.ac) || {};
     const mn = caps.min != null ? Math.ceil(caps.min) : 16;
     const mx = caps.max != null ? Math.floor(caps.max) : 30;
     acTarget = Math.min(mx, Math.max(mn, acTarget + Number(b.dataset.step)));
-    $('climTemp').textContent = acTarget + '°';
+    $('climTemp').textContent = acTarget + '\u00b0';
     sendTemp();
   });
+
+  // warm any value the poll actually changed; rise once on the first paint only
+  let i = 0;
+  hosts.forEach(h => h.querySelectorAll('.card .s, .row .rv').forEach(v => flash(v, 'v' + (i++), v.textContent)));
+  if(!S._painted){
+    stagger([].concat([...$('cardGrid').children], [...$('rowsHost').children]), 40, 120);
+    S._painted = true;
+  }
 }
 
 // ---- subpages ----
@@ -858,37 +964,102 @@ function renderAc(){
   el.querySelector('[data-ac="pwr"]').classList.toggle('on', !!S.ac_on);
 }
 
-// Top view of the car. `wheels` is optional: either one class applied to all four (a car that
-// reports a single overall status, like this one) or an array of four in FL, FR, RL, RR order
-// (a car with real per-wheel sensors). `vals` is the matching per-wheel label, if any.
-const WHEEL_XY = [[11, 38], [97, 38], [11, 124], [97, 124]];   // FL, FR, RL, RR
+/* ---- shared top-view diagram ----
+   A deliberately generic car: an outline, a greenhouse, four hinged door panels, a liftgate, a
+   sunroof and four wheels. It is not a J5 and is not trying to be — it is the universal top-down
+   body every car app draws, so it stays honest for whatever vehicle the backend is talking to.
+   Both the Tyres and the Doors page render this same shape; each lights up only the parts it
+   actually has data for. Every moving panel pivots about a real hinge, so opening is a rotation
+   (a door) or a foreshortening toward the hinge (a hatch or sunroof lifting away from the viewer).
+
+   opts:
+     wheels     one class for all four, or an array of four in FL FR RL RR order
+     wheelVals  per-wheel label text, same order
+     codes      draw the FL/FR/RL/RR corner codes
+     doors      array of four booleans, FL FR RL RR, true = open
+     trunk      liftgate open
+     sunroof    sunroof open
+     unlocked   draws the body lock glyph open instead of shut                            */
+const WHEEL_XY = [[19, 48], [110, 48], [19, 150], [110, 150]];   // FL, FR, RL, RR
 const WHEEL_POS = ['FL', 'FR', 'RL', 'RR'];
-function topCarSvg(wheels, vals){
-  const cls = i => 'wh' + (wheels ? ' ' + (Array.isArray(wheels) ? (wheels[i] || '') : wheels) : '');
+// door panel: [path, hinge x, hinge y, side]. Hinge is always the forward edge, as on a real car.
+const DOOR_GEO = [
+  ['M40 74 L31 76 C29.5 88 29.5 106 31 116 L40 118 Z',  35.5,  75, 'l'],   // FL
+  ['M100 74 L109 76 C110.5 88 110.5 106 109 116 L100 118 Z', 104.5, 75, 'r'], // FR
+  ['M40 121 L31 121 C29.5 132 29.5 150 31 159 L40 161 Z', 35.5, 121, 'l'],  // RL
+  ['M100 121 L109 121 C110.5 132 110.5 150 109 159 L100 161 Z', 104.5, 121, 'r'], // RR
+];
+function carTop(o){
+  o = o || {};
+  const cls = i => 'wh' + (o.wheels ? ' ' + (Array.isArray(o.wheels) ? (o.wheels[i] || '') : o.wheels) : '');
   let w = '';
   WHEEL_XY.forEach((p, i) => {
-    const left = p[0] < 60;
-    const tx = left ? p[0] - 4 : p[0] + 16;      // labels sit outside the wheel
+    const left = p[0] < 70;
+    const tx = left ? p[0] - 4 : p[0] + 15;      // labels sit outside the wheel
     const anc = left ? 'end' : 'start';
-    w += '<rect class="' + cls(i) + '" x="' + p[0] + '" y="' + p[1] + '" width="12" height="30" rx="4.5"/>' +
-      '<text class="whc" x="' + tx + '" y="' + (p[1] + 12) + '" text-anchor="' + anc + '">' +
+    w += '<rect class="' + cls(i) + '" x="' + p[0] + '" y="' + p[1] + '" width="11" height="30" rx="4.5"/>';
+    if(o.codes)
+      w += '<text class="whc" x="' + tx + '" y="' + (p[1] + 12) + '" text-anchor="' + anc + '">' +
         WHEEL_POS[i] + '</text>';
-    if(vals && vals[i])
-      w += '<text class="whv ' + (Array.isArray(wheels) ? (wheels[i] || '') : (wheels || '')) +
-        '" x="' + tx + '" y="' + (p[1] + 25) + '" text-anchor="' + anc + '">' + vals[i] + '</text>';
+    if(o.wheelVals && o.wheelVals[i])
+      w += '<text class="whv ' + (Array.isArray(o.wheels) ? (o.wheels[i] || '') : (o.wheels || '')) +
+        '" x="' + tx + '" y="' + (p[1] + 25) + '" text-anchor="' + anc + '">' + o.wheelVals[i] + '</text>';
   });
-  return '<svg viewBox="-16 4 152 182">' + w +
-    '<path d="M38 12C31 12 27 22 26 36L24 148C24 166 29 178 39 178h42c10 0 15-12 15-30l-2-112C94 22 89 12 82 12Z" ' +
-      'fill="var(--bg-2)" stroke="var(--line)" stroke-width="1.5"/>' +
-    '<path d="M31 52C33 40 37 33 43 31h34c6 2 10 9 12 21-8-4-18-6-29-6s-21 2-29 6Z" fill="var(--bg-3)" ' +
-      'stroke="var(--line)" stroke-width="1"/>' +
-    '<rect x="37" y="70" width="46" height="58" rx="7" fill="var(--bg-3)" stroke="var(--line)" stroke-width="1"/>' +
-    '<path d="M26 76h-6v10h6M94 76h6v10h-6" fill="var(--line)"/></svg>';
+
+  const doors = o.doors || [];
+  let dp = '';
+  DOOR_GEO.forEach((g, i) => {
+    dp += '<path class="cdoor ' + g[3] + (doors[i] ? ' open' : '') + '" data-door="' + i + '" d="' + g[0] +
+      '" style="transform-origin:' + g[1] + 'px ' + g[2] + 'px"/>';
+  });
+
+  const lock = '<g class="clockg' + (o.unlocked ? ' un' : '') + '" stroke="currentColor" fill="none" ' +
+    'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+    '<rect x="64" y="128" width="12" height="9" rx="2.2"/>' +
+    (o.unlocked ? '<path d="M66.5 128v-3.2a3.5 3.5 0 016.6-1.6"/>'
+                : '<path d="M66.5 128v-3.2a3.5 3.5 0 017 0V128"/>') + '</g>';
+
+  return '<svg viewBox="-14 0 168 224">' + w +
+    // body
+    '<path class="cbody" d="M70 6 C52 6 38 14 35 28 L31 64 C29 92 29 132 31 160 L35 196 ' +
+      'C38 210 52 218 70 218 C88 218 102 210 105 196 L109 160 C111 132 111 92 109 64 ' +
+      'L105 28 C102 14 88 6 70 6 Z"/>' +
+    // mirrors, windscreen, rear glass
+    '<path class="cmir" d="M31 64h-6v9h6M109 64h6v9h-6"/>' +
+    '<path class="cglass" d="M40 58 C42 46 48 40 54 37 L86 37 C92 40 98 46 100 58 ' +
+      'C90 53 80 51 70 51 C60 51 50 53 40 58 Z"/>' +
+    '<path class="cglass" d="M41 168 C43 180 49 186 55 189 L85 189 C91 186 97 180 99 168 ' +
+      'C89 173 79 175 70 175 C61 175 51 173 41 168 Z"/>' +
+    // roof, then the sunroof aperture and its panel
+    '<rect class="croof" x="42" y="62" width="56" height="102" rx="8"/>' +
+    '<rect class="chole' + (o.sunroof ? ' on' : '') + '" x="52" y="70" width="36" height="36" rx="4"/>' +
+    '<rect class="csun' + (o.sunroof ? ' open' : '') + '" x="52" y="70" width="36" height="36" rx="4" ' +
+      'style="transform-origin:70px 106px"/>' +
+    // liftgate, hinged at its forward edge
+    '<rect class="chole' + (o.trunk ? ' on' : '') + '" x="44" y="180" width="52" height="28" rx="6"/>' +
+    '<rect class="clid' + (o.trunk ? ' open' : '') + '" x="44" y="180" width="52" height="28" rx="6" ' +
+      'style="transform-origin:70px 180px"/>' +
+    dp + lock + '</svg>';
 }
+
+/* Door bitmask from byte 2: 1 = driver, 2 = passenger, 4 = rear-driver, 8 = rear-passenger.
+   Live per-door tested on an Omoda E5 (issue #5), NOT yet cross-checked on the J5, so the page
+   says where the mapping came from. "Driver" is a side, not a fixed corner: this car is RHD
+   (Jakarta plate), so the driver sits front-right. Panel order is FL, FR, RL, RR. */
+const RHD = true;
+function doorBits(mask){
+  if(mask == null) return [false, false, false, false];
+  const drv = 1, pas = 2, rdrv = 4, rpas = 8;
+  return RHD
+    ? [!!(mask & pas), !!(mask & drv), !!(mask & rpas), !!(mask & rdrv)]
+    : [!!(mask & drv), !!(mask & pas), !!(mask & rdrv), !!(mask & rpas)];
+}
+const DOOR_NAME = ['Front left', 'Front right', 'Rear left', 'Rear right'];
 
 function renderDoors(){
   const el = $('pgDoorsBody');
   const winOpen = windowsOpen();
+  const open = doorBits(S.doors);
   const doorsOpen = S.doors != null && (S.doors & 15) !== 0;
   const rows = [];
   function r(label, ok, okTxt, badTxt){
@@ -898,25 +1069,45 @@ function renderDoors(){
   }
   r('Doors', !doorsOpen && !S.unlocked,
     S.unlocked ? 'Closed' : 'Closed and locked',
-    doorsOpen ? 'Open' : 'Unlocked');
+    doorsOpen ? open.map((v, i) => v ? DOOR_NAME[i] : null).filter(Boolean).join(', ') || 'Open'
+              : 'Unlocked');
   if(winOpen !== null) r('Windows', !winOpen, 'Closed', 'Open');
   if(CAPS && CAPS.sunroof && (CAPS.sunroof.open || CAPS.sunroof.tilt))
     r('Sunroof', !S.sunroof_open, 'Closed', 'Open');
   r('Rear trunk', !S.trunk_open, 'Closed', 'Open');
-  el.innerHTML = '<div class="topwrap">' + topCarSvg() + '</div>' +
-    '<div class="rows">' + rows.join('') + '</div>';
+
+  // Paint everything shut, then let the open panels swing on the next frame, so entering the page
+  // plays the movement rather than showing a car that was already hanging open.
+  el.innerHTML = '<div class="topwrap" id="doorCar">' + carTop({unlocked: !!S.unlocked}) + '</div>' +
+    '<div class="rowcard">' + rows.join('') + '</div>';
+  const paint = () => {
+    const svg = $('doorCar');
+    if(!svg) return;
+    svg.querySelectorAll('[data-door]').forEach(p =>
+      p.classList.toggle('open', !!open[+p.dataset.door]));
+    svg.querySelector('.clid').classList.toggle('open', !!S.trunk_open);
+    svg.querySelector('.csun').classList.toggle('open', !!S.sunroof_open);
+    svg.querySelectorAll('.chole')[0].classList.toggle('on', !!S.sunroof_open);
+    svg.querySelectorAll('.chole')[1].classList.toggle('on', !!S.trunk_open);
+  };
+  if(REDUCED()) paint(); else requestAnimationFrame(() => requestAnimationFrame(paint));
   if(winOpen === true && CAPS && CAPS.windows && CAPS.windows.close){
     const b = document.createElement('button');
     b.className = 'bigbtn'; b.textContent = 'Close windows remotely';
     b.onclick = () => fire('740500', b);
     el.appendChild(b);
   }
-  if(winOpen === null){
-    const note = document.createElement('div');
-    note.className = 'note';
-    note.textContent = 'Window position is not decoded reliably on this model yet; hidden rather than guessed.';
-    el.appendChild(note);
-  }
+  const note = document.createElement('div');
+  note.className = 'note';
+  note.innerHTML =
+    (winOpen === null
+      ? 'Window position is not decoded reliably on this model yet, so that row is hidden rather ' +
+        'than guessed. '
+      : '') +
+    'Which corner a door bit means was live-tested on an Omoda E5 and has not been cross-checked ' +
+    'on this car, and the sides assume right-hand drive. If you open one door and the diagram ' +
+    'lights the wrong one, that mapping is what needs fixing.';
+  el.appendChild(note);
 }
 
 function renderTyres(){
@@ -942,9 +1133,10 @@ function renderTyres(){
     cap = known ? 'Live pressure from each wheel sensor.' : 'No wheel sensor has reported yet.';
   }
 
-  el.innerHTML = '<div class="topwrap">' + topCarSvg(wheels, vals) + '</div>' +
+  el.innerHTML = '<div class="topwrap">' +
+      carTop({wheels: wheels, wheelVals: vals, codes: true, unlocked: !!S.unlocked}) + '</div>' +
     '<div class="topcap">' + cap + '</div>' +
-    '<div class="rows"><div class="row"><span class="rl">Status</span><span class="rv ' +
+    '<div class="rowcard"><div class="row"><span class="rl">Status</span><span class="rv ' +
       (ok ? 'ok' : 'bad') + '">' +
       (ok ? CK_OK : CK_BAD) + (S.tyre_status || '—') + '</span></span></div>' +
       (S.tpms_age_min != null ? '<div class="row"><span class="rl">Last wheel frame</span>' +
@@ -964,58 +1156,99 @@ function renderEnergy(){
   const wltp = S.wltp_kwh_100;
   el.innerHTML =
     '<div class="panel"><div class="plbl">Recent average</div>' +
-    '<div class="pval num">' + (e.consumption != null ? e.consumption : '—') +
+    '<div class="pval num">' + (e.consumption != null ? e.consumption : '\u2014') +
       '<span class="u">kWh/100km</span></div>' +
     '<div class="stats">' +
-      '<div><b class="num">' + (S.km && S.km.today != null ? S.km.today : '—') + '</b><span>km today</span></div>' +
-      '<div><b class="num">' + (e.today_kwh != null ? e.today_kwh : '—') + '</b><span>kWh today</span></div>' +
-      '<div><b class="num">' + (S.km && S.km.week != null ? S.km.week : '—') + '</b><span>km / week</span></div>' +
+      '<div><b class="num">' + (S.km && S.km.today != null ? S.km.today : '\u2014') + '</b><span>km today</span></div>' +
+      '<div><b class="num">' + (e.today_kwh != null ? e.today_kwh : '\u2014') + '</b><span>kWh today</span></div>' +
+      '<div><b class="num">' + (S.km && S.km.week != null ? S.km.week : '\u2014') + '</b><span>km / week</span></div>' +
     '</div></div>' +
     '<div class="sech" style="padding-left:0;padding-right:0"><span class="ov">Past 7 days</span></div>' +
-    '<div class="panel"><svg id="echart" viewBox="0 0 340 150"></svg></div>';
-  const svg = $('echart');
-  const W = 340, H = 150, P = 26;
+    '<div class="panel"><svg id="echart" viewBox="0 0 340 184"></svg>' +
+    '<div class="elegend" id="eLegend"></div></div>';
+  drawEnergy(hist, wltp);
+}
+
+/* Seven-day efficiency, drawn as bars rather than a line.
+   A line is the wrong mark here: most weeks have days with no driving, and joining across those
+   gaps invents a trend, while leaving the gaps breaks the line into stubs and orphan dots (which
+   is what this looked like before). Bars degrade honestly -- a day with no driving is simply an
+   empty slot, and every value gets its own label with room to breathe.
+   Bars are measured from zero because they encode a magnitude; the WLTP rating is the reference
+   line you actually compare against. */
+function drawEnergy(hist, wltp){
+  const svg = $('echart'); if(!svg) return;
+  const W = 340, H = 184;
+  const L = 6, R = 6, T = 30, B = 30;          // room above for value labels, below for dates
+  const days = hist.length || 7;
   const vals = hist.map(h => (h.eff == null ? null : h.eff));
   const present = vals.filter(v => v != null);
-  const maxV = Math.max(20, ...present, wltp || 0) * 1.15;
-  const xs = i => P + i * (W - P - 26) / 6;
-  const ys = v => H - P - (v / maxV) * (H - P - 14);
-  const segs = [];
-  let cur = null;
-  vals.forEach((v, i) => {
-    if(v == null){ cur = null; return; }
-    if(!cur){ cur = []; segs.push(cur); }
-    cur.push(i);
+
+  if(!present.length){
+    svg.innerHTML = '<text x="' + (W / 2) + '" y="' + (H / 2) + '" text-anchor="middle" ' +
+      'font-size="12" fill="var(--fnt)">No driving logged in the past 7 days</text>';
+    $('eLegend').innerHTML = '';
+    return;
+  }
+
+  const top = Math.max(...present, wltp || 0) * 1.16;
+  const band = (W - L - R) / days;
+  const bw = Math.min(26, band * 0.52);
+  const cx = i => L + band * i + band / 2;
+  const y  = v => H - B - (v / top) * (H - T - B);
+  const base = H - B;
+
+  let track = '', bars = '', labels = '', dates = '';
+  hist.forEach((h, i) => {
+    const v = vals[i];
+    const x = cx(i) - bw / 2;
+    // faint full-height track so an empty day still occupies visible space
+    track += '<rect class="etrack" x="' + x.toFixed(1) + '" y="' + (T + 4) + '" width="' + bw.toFixed(1) +
+      '" height="' + (base - T - 4).toFixed(1) + '" rx="' + (bw / 2.6).toFixed(1) + '"/>';
+    if(v != null){
+      const yy = y(v);
+      bars += '<rect class="ebar" x="' + x.toFixed(1) + '" y="' + yy.toFixed(1) + '" width="' + bw.toFixed(1) +
+        '" height="' + Math.max(3, base - yy).toFixed(1) + '" rx="' + (bw / 2.6).toFixed(1) + '"/>';
+      labels += '<text class="eval" x="' + cx(i).toFixed(1) + '" y="' + (yy - 8).toFixed(1) +
+        '" text-anchor="middle">' + v + '</text>';
+    }
+    dates += '<text class="eday' + (v == null ? ' off' : '') + '" x="' + cx(i).toFixed(1) +
+      '" y="' + (H - 10) + '" text-anchor="middle">' + (h.day || '') + '</text>';
   });
-  let path = '', area = '', dots = '';
-  segs.forEach(seg => {
-    seg.forEach((i, j) => {
-      const v = vals[i];
-      const cmd = (j ? 'L' : 'M') + xs(i).toFixed(1) + ' ' + ys(v).toFixed(1);
-      path += cmd; area += cmd;
-      dots += '<circle cx="' + xs(i) + '" cy="' + ys(v) + '" r="2.6" fill="var(--acc)"/>' +
-        '<text x="' + xs(i) + '" y="' + (ys(v) - 9) + '" font-size="9.5" text-anchor="middle" ' +
-        'fill="var(--mut)" font-weight="600">' + v + '</text>';
-    });
-    area += 'L' + xs(seg[seg.length - 1]) + ' ' + (H - P) + 'L' + xs(seg[0]) + ' ' + (H - P) + 'Z';
-  });
+
+  // WLTP reference, labelled at the right edge where no bar label can reach it
   let wl = '';
   if(wltp){
-    wl = '<line x1="' + P + '" y1="' + ys(wltp) + '" x2="' + (W - 26) + '" y2="' + ys(wltp) +
-      '" stroke="var(--fnt)" stroke-dasharray="4 5" stroke-width="1.2"/>' +
-      '<text x="' + (P) + '" y="' + (ys(wltp) - 6) + '" font-size="8.5" text-anchor="start" ' +
-      'letter-spacing="1" fill="var(--fnt)">WLTP ' + wltp + '</text>';
+    const wy = y(wltp);
+    wl = '<line class="ewltp" x1="' + L + '" y1="' + wy.toFixed(1) + '" x2="' + (W - R) +
+      '" y2="' + wy.toFixed(1) + '"/>' +
+      '<text class="ewlbl" x="' + (W - R) + '" y="' + (wy - 6).toFixed(1) +
+      '" text-anchor="end">WLTP ' + wltp + '</text>';
   }
-  const base = '<line x1="' + P + '" y1="' + (H - P) + '" x2="' + (W - 26) + '" y2="' + (H - P) +
-    '" stroke="var(--line)" stroke-width="1"/>';
-  const days = hist.map((h, i) =>
-    '<text x="' + xs(i) + '" y="' + (H - 8) + '" font-size="8.5" text-anchor="middle" ' +
-    'letter-spacing="1" fill="var(--fnt)">' + (h.day || '').toUpperCase() + '</text>').join('');
-  svg.innerHTML =
-    '<path d="' + area + '" fill="var(--acc-sf)"/>' + base +
-    '<path d="' + path + '" fill="none" stroke="var(--acc)" stroke-width="1.8" ' +
-      'stroke-linecap="round" stroke-linejoin="round"/>' + dots + wl + days;
-  drawIn(svg);
+
+  svg.innerHTML = track + wl + bars + labels +
+    '<line class="ebase" x1="' + L + '" y1="' + base + '" x2="' + (W - R) + '" y2="' + base + '"/>' +
+    dates;
+
+  const worse = present.filter(v => wltp && v > wltp).length;
+  $('eLegend').innerHTML = wltp
+    ? '<span><i class="sw"></i>kWh/100km</span><span><i class="sw d"></i>WLTP ' + wltp + '</span>' +
+      '<span class="gap">' + (worse ? worse + ' of ' + present.length + ' days above rating'
+                                    : 'every logged day at or under rating') + '</span>'
+    : '<span><i class="sw"></i>kWh/100km</span>';
+
+  if(!REDUCED()){
+    // grow the bars out of the baseline, left to right
+    svg.querySelectorAll('.ebar').forEach((b, i) => {
+      const h = +b.getAttribute('height'), yy = +b.getAttribute('y');
+      b.style.transformOrigin = '0px ' + (yy + h) + 'px';
+      b.style.transformBox = 'view-box';
+      b.animate([{transform: 'scaleY(0)'}, {transform: 'scaleY(1)'}],
+                {duration: 520, delay: 60 + i * 55, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'});
+    });
+    svg.querySelectorAll('.eval').forEach((t, i) =>
+      t.animate([{opacity: 0}, {opacity: 1}], {duration: 260, delay: 320 + i * 55, fill: 'backwards'}));
+  }
 }
 
 // ---- battery page: SoC + range + 12V watch + health + care ----
@@ -1049,7 +1282,7 @@ function renderBatt(){
       '<div><b>' + (bc.last_full_dt || '—') + '</b><span>last 100%</span></div>' +
       '<div><b>' + (bc.next_due_dt || '—') + '</b><span>next due</span></div></div></div>' : '') +
     '<div class="sech" style="padding-left:0;padding-right:0"><span class="ov">Detail</span></div>' +
-    '<div class="rows">' + rows.map(r =>
+    '<div class="rowcard">' + rows.map(r =>
       '<div class="row"><span class="rl">' + r[0] + '</span><span class="rv">' + r[1] + '</span></div>').join('') +
     '</div>';
 }
