@@ -245,7 +245,7 @@ generates correct ones for your user and paths, so you shouldn't need to.
 | key | required | what |
 | --- | --- | --- |
 | `email`, `password` | ✅ | your CarLinko login (plaintext over TLS; stored locally only) |
-| `region` | | API region, default `sea` |
+| `region` | | API region, default `sea` (Southeast Asia). **Login fails with the wrong one** — an account made in Europe/Middle East/Africa needs `emea` (reported on a J5 Noble in Israel, [#6](https://github.com/GodrezJr2/j5-ev-dashboard/issues/6)). If a correct password is refused, try another region before anything else |
 | `vehicle_id`, `device_sn` | auto | your vehicle id + device serial — **`setup.py` fills these for you** |
 | `vehicle` | auto | `{plate, model, vin}` — auto-detected; UI hides plate+VIN by default |
 | `battery_kwh`, `wltp_kwh_100` | | usable pack size + WLTP reference. **The car never reports pack size**, so it comes from you or from the [known-cars table](#known-cars); an unrecognised model is asked at setup and labelled *assumed* in the UI until you set it. It scales every kWh, cost and efficiency figure |
