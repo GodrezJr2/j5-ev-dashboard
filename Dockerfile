@@ -11,7 +11,9 @@ ENV CARLINKO_DATA=/data
 WORKDIR /app/tools
 EXPOSE 8088
 
-# Default = dashboard + logger in one container (single-service hosts like Railway;
-# writes /data/creds.json from $CREDS_JSON if set). docker-compose overrides this
-# per service (see docker-compose.yml), so compose behavior is unchanged.
-CMD ["bash", "railway_start.sh"]
+# Default = the dashboard, and nothing else. The logger runs as a second service
+# (see docker-compose.yml). A single-service host that wants both in one container
+# points its start command at `bash railway_start.sh` -- deliberately not the default,
+# because CarLinko allows one live session per account and a plain `docker run` that
+# quietly started a logger would knock the owner's own app offline.
+CMD ["python", "server.py", "8088"]

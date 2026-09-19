@@ -321,12 +321,21 @@ browser (add it to your home screen as a PWA).
 | --- | --- | --- |
 | A spare PC / old laptop / **Raspberry Pi** at home | free | best privacy; reach it over [Tailscale](https://tailscale.com) |
 | A small **VPS** (Hetzner, Contabo, DigitalOcean…) | ~$4/mo | easiest always-on; keep it private with Tailscale, or set a `dashboard_password` |
-| **Fly.io / Railway / Render** free tier | free | deploy the Docker image; set a `dashboard_password` |
+| **Fly.io / Railway / Render** free tier | free | deploy the Docker image; set a `dashboard_password`. A host that gives you one service and one volume can run the logger alongside the dashboard with the start command `bash railway_start.sh` (see below) |
 | **Oracle Cloud Free / Google e2-micro** | free | always-on free VM |
 
 > **Public hosting = set a dashboard password.** On a private/home/Tailscale host you can leave it
 > open. The moment the URL is reachable from the internet, set a `dashboard_password` (login page →
 > Advanced) so only you can open the dashboard.
+
+> **One service, both processes.** `docker compose` runs the dashboard and the logger as two
+> services sharing `./data`. A host that attaches a volume to a *single* service (Railway) can't
+> do that, so `tools/railway_start.sh` starts the logger in the background and the dashboard in
+> the foreground from one container. Set it as the service's start command —
+> `bash railway_start.sh` — and put the contents of `creds.json` in a `CREDS_JSON` service
+> variable; the script writes it into the volume on every boot. It is deliberately **not** the
+> image's default: CarLinko allows one live session per account, so a `docker run` that quietly
+> started a logger would knock your own CarLinko app offline.
 
 ### Per-OS setup
 The Docker path is identical on every OS — install Docker, then `docker compose up -d` and open

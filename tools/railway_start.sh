@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# Railway entrypoint: one service runs both the dashboard and the logger,
-# sharing the /data volume (Railway volumes attach to a single service only).
+# Optional entrypoint for single-service hosts: one service runs both the dashboard
+# and the logger, sharing the /data volume (Railway volumes attach to a single
+# service only). It is NOT the image's default command -- point the host's start
+# command at it (Railway: Settings -> Deploy -> Custom Start Command,
+# `bash railway_start.sh`), so that a plain `docker run` still starts the dashboard
+# alone and never opens a second CarLinko session behind the owner's back.
 #
 # creds.json never ships in the image (.dockerignore excludes it). Instead the
 # CREDS_JSON service variable is written into the volume on every boot, so
