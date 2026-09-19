@@ -26,3 +26,6 @@ data/
 
 # Demo video — hosted as a GitHub release asset, not committed (keeps the repo small)
 *.mp4
+
+# pre-cleanup DB snapshots taken on the server before deglitching
+*.db.bak*

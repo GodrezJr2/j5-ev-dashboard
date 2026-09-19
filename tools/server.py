@@ -471,6 +471,10 @@ ODO_RESYNC_KM = 12      # a frame pair advancing more than this is a late cloud 
                         # some unknown earlier time, so they can't be dated to a day/trip -- skip the
                         # pair (the lifetime odo span still includes them). Real driving is ticked in
                         # ~1 km steps, so the largest genuine batch seen is ~11 km.
+MAX_SOC_DROP = 25       # max SoC points a real pack can lose between two frames; the cloud
+                        # occasionally emits a single-frame glitch (74%->0%->74% in 2 s) and counting
+                        # it as energy poisons the day's kWh. logger.py drops these at ingest, but
+                        # historical rows predate that guard.
 PETROL_KM_L = float(_CC.get("petrol_kml") or 12.0)        # comparable ICE fuel economy (km per litre)
 PETROL_RP_L = float(_CC.get("petrol_price") or 16250)     # petrol price /litre in CUR_CODE
                                                           # (IDR default: Pertamax, Jawa/Bali, 1 Jul 2026)
@@ -546,7 +550,8 @@ def day_energy(data, resync_skip):
             if resync_skip and (o1 - o0) > max(ODO_RESYNC_KM, (t1 - t0) / 3600.0 * ODO_MAX_KMH):
                 continue                               # re-sync burst: the SoC drop that synced with
             last_move = t1                             # it is earlier driving, not this day's
-        if b0 is not None and b1 is not None and b0 > b1 and last_move and t1 - last_move <= 900:
+        if b0 is not None and b1 is not None and 0 < b0 - b1 <= MAX_SOC_DROP \
+                and last_move and t1 - last_move <= 900:
             k = time.strftime("%Y-%m-%d", time.localtime(t1))
             out[k] = out.get(k, 0.0) + (b0 - b1) / 100.0 * CAP_KWH
     return out

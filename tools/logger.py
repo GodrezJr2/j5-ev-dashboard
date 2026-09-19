@@ -47,6 +47,84 @@ CREATE TABLE IF NOT EXISTS telemetry (
 );
 """
 
+# Glitch guard: the cloud occasionally emits a single-frame bogus reading, then the true value
+# again a couple of seconds later. Two shapes have been seen in the J5's own log:
+#   * battery plunging to 0      74% -> 0% -> 74%     (2026-09-07, 09-08)
+#   * range_km collapsing to 0   284 -> 0 -> 284 km    (13 times, 4 of them after the battery
+#                                                       guard went in, which only looked at SoC)
+# Either one stored as the newest frame puts it straight on the dashboard hero, so a suspect frame
+# is HELD instead of stored, and committed only if the next frame agrees with it -- a genuine
+# change survives, a glitch that snaps back does not.
+#
+# Range needs the confirmation step and not a blanket "range 0 with charge left is impossible"
+# rule: a PHEV at its hold buffer can legitimately report 0 EV range at 15-20% SoC, and this
+# logger also runs on a Tiggo 7 PHEV (#3). Holding one frame costs nothing on any car.
+# Rises are left alone -- DC fast charging between sparse polls can legitimately jump.
+MAX_FRAME_DROP   = 25   # SoC points between frames; more than this is physically impossible
+CONFIRM_TOL      = 5    # next frame within this many SoC points of the held one => it was real
+RANGE_GLITCH_MIN = 20   # km; only a range above this collapsing to exactly 0 is treated as suspect
+RANGE_CONFIRM_KM = 5    # next frame at or under this => the 0 km reading was real
+
+_last_batt  = None    # battery level of the last frame actually stored
+_last_range = None    # range_km of the last frame actually stored
+_pending    = None    # (ts, dt, d, blob, why) held for one-frame confirmation
+
+def _init_glitch_guard(conn):
+    global _last_batt, _last_range
+    row = conn.execute("SELECT battery FROM telemetry WHERE battery IS NOT NULL "
+                       "ORDER BY ts DESC LIMIT 1").fetchone()
+    _last_batt = row[0] if row else None
+    row = conn.execute("SELECT range_km FROM telemetry WHERE range_km IS NOT NULL "
+                       "ORDER BY ts DESC LIMIT 1").fetchone()
+    _last_range = row[0] if row else None
+
+def _insert(conn, ts, dt, d, blob):
+    global _last_batt, _last_range
+    conn.execute("INSERT OR REPLACE INTO telemetry VALUES (?,?,?,?,?,?,?,?)",
+                 (ts, dt, d.get("battery"), d.get("range_km"), d.get("odo_guess"),
+                  d.get("tyre_raw"), 1, blob))
+    if d.get("battery") is not None:
+        _last_batt = d["battery"]
+    if d.get("range_km") is not None:
+        _last_range = d["range_km"]
+
+def _suspect(d):
+    """Why this frame should be held for confirmation, or None if it can be stored now."""
+    b, r = d.get("battery"), d.get("range_km")
+    if b is not None and _last_batt is not None and _last_batt - b > MAX_FRAME_DROP:
+        return "battery %s%% after %s%%" % (b, _last_batt)
+    # range to exactly 0 while the pack barely moved: the range_km twin of the SoC glitch
+    if (r == 0 and _last_range is not None and _last_range > RANGE_GLITCH_MIN
+            and (b is None or _last_batt is None or abs(_last_batt - b) <= CONFIRM_TOL)):
+        return "range 0 km after %s km at %s%%" % (_last_range, b)
+    return None
+
+def _confirms(held, d):
+    """Does the next frame agree with the held one, i.e. was the held reading real?"""
+    hb, b = held.get("battery"), d.get("battery")
+    if hb is not None and b is not None and abs(b - hb) > CONFIRM_TOL:
+        return False
+    if held.get("range_km") == 0 and (d.get("range_km") or 0) > RANGE_CONFIRM_KM:
+        return False
+    return True
+
+def _store_guarded(conn, ts, dt, d, blob):
+    """Insert a decoded frame, holding back a single-frame implausible reading."""
+    global _pending
+    if _pending is not None and (d.get("battery") is not None or d.get("range_km") is not None):
+        pts, pdt, pd, pblob, why = _pending
+        _pending = None
+        if _confirms(pd, d):                             # stayed there -> the change was real
+            _insert(conn, pts, pdt, pd, pblob)
+        else:                                            # snapped back -> one-frame glitch
+            print(f"{pdt}  glitch frame dropped ({why})")
+    why = _suspect(d)
+    if why:
+        _pending = (ts, dt, d, blob, why)
+        return d
+    _insert(conn, ts, dt, d, blob)
+    return d
+
 def decode(hexstr):
     b = bytes.fromhex(hexstr)
     d = {"raw": hexstr}
@@ -126,10 +204,7 @@ def poll_once(conn, _retried=False):
     dt = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
     if blob:
         d = decode(blob)
-        conn.execute(
-            "INSERT OR REPLACE INTO telemetry VALUES (?,?,?,?,?,?,?,?)",
-            (ts, dt, d.get("battery"), d.get("range_km"), d.get("odo_guess"),
-             d.get("tyre_raw"), 1, blob))
+        _store_guarded(conn, ts, dt, d, blob)
         print(f"{dt}  battery={d.get('battery')}%  range={d.get('range_km')}km  "
               f"odo?={d.get('odo_guess')}  spd={d.get('speed')}  unl={d.get('unlocked')}")
         return d
@@ -214,9 +289,7 @@ RECONNECT_WAIT  = 3   # backoff before reopening a dropped socket
 def _store_blob(conn, blob):
     ts = int(time.time()); dt = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
     d = decode(blob)
-    conn.execute("INSERT OR REPLACE INTO telemetry VALUES (?,?,?,?,?,?,?,?)",
-                 (ts, dt, d.get("battery"), d.get("range_km"), d.get("odo_guess"),
-                  d.get("tyre_raw"), 1, blob))
+    _store_guarded(conn, ts, dt, d, blob)
     conn.commit()
     return d
 
@@ -292,6 +365,7 @@ def main():
     args = ap.parse_args()
     conn = sqlite3.connect(DB)
     conn.executescript(SCHEMA)
+    _init_glitch_guard(conn)
     if args.stream:
         stream_loop(conn)
     elif args.adaptive:
