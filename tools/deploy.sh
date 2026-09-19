@@ -22,8 +22,9 @@ fi
 cd "$(dirname "$0")/.."
 PY_FILES=(tools/server.py tools/logger.py tools/auth.py tools/setup.py tools/query_service.py
           tools/report.py tools/known_cars.py)
-WEB_FILES=(web/index.html web/login.html web/slot-text.js web/manifest.webmanifest web/icon.svg
-           web/car-front.png web/car-generic.svg web/leaflet.js web/leaflet.css)
+WEB_FILES=(web/index.html web/v2.html web/login.html web/slot-text.js web/manifest.webmanifest web/icon.svg
+           web/car-front.png web/car-generic.svg web/car-charging-j5.png
+           web/leaflet.js web/leaflet.css)
 
 echo "==> syntax check"
 python -m py_compile "${PY_FILES[@]}"

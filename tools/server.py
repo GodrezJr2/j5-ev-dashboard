@@ -7,6 +7,17 @@ import hmac, hashlib, base64, secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import known_cars          # per-model constants the telemetry never carries (pack size, tyre scale)
 
+# Version of the /api/summary contract, stamped onto every payload as "api_version".
+#
+# There are now clients out there that this repo does not control (see issue #12), so a field
+# rename or a change in meaning is somebody else's outage, not just ours. The rule:
+#   * ADDING a field is backwards compatible. Do not bump.
+#   * REMOVING a field, renaming one, or changing its units, type or meaning is breaking. Bump,
+#     and say what changed in docs/api-map.md.
+# Clients should treat an api_version they do not recognise as "newer than me" and degrade rather
+# than guess, and should treat a missing api_version as version 0 (any build before 2026-09-11).
+API_VERSION = 1
+
 _poll_lock = threading.Lock()
 
 def live_poll():
@@ -432,6 +443,11 @@ BALANCE_DAYS = float(_CC.get("full_charge_days") or (7 if CHEMISTRY == "lfp" els
 IDLE_GAP = 1800         # parked + no SoC rise for 30 min => charge session ended
 CHARGE_PARK_MIN = 600   # a real charge sits odo-flat >=10 min; regen blips (odo coarse=1km) don't
 MIN_GAIN_PCT = 2        # net SoC gain floor; drops 1% regen/noise that survives the park gate
+MAX_CHG_KW = 150        # no charge on this platform exceeds ~68 kW DC. A single frame step implying
+                        # more than this isn't charging -- it's a SoC cloud re-sync: the car went
+                        # dark mid-charge and dumped the whole SoC gain in one frame on reconnect
+                        # (same failure as ODO_RESYNC_KM for driving). Its timespan is a measurement
+                        # artifact, so avg/peak kW from it are fiction -> drop the session.
 _TARIFF = float(TARIFF_IDR_CFG or 2540)   # all-in DC tariff/kWh, in CUR_CODE (IDR default: Rp2.467 + 3% tax; service Rp0)
 TARIFF_IDR = int(_TARIFF) if _TARIFF == int(_TARIFF) else _TARIFF  # keep cents for decimal currencies (e.g. ZAR 3.10)
 CHG_EFF_AVG = 0.89      # blended DC charge efficiency for the per-km cost insight
@@ -581,6 +597,11 @@ def build_sessions(fr, now):
             continue                                                 # regen / noise, not a charge
         kwh = max(0.0, (soc1 - soc0) / 100.0 * CAP_KWH)
         dur_h = max((s["last_rise"] - s["start"]) / 3600.0, 1e-6)
+        # SoC re-sync guard: the session's own average rate can't beat MAX_CHG_KW. When it does,
+        # the car dark-synced its whole SoC gain into one frame on reconnect -- the timespan (and
+        # so avg/peak kW, and the flat "curve") is a measurement artifact, not a chargeable event.
+        if kwh / dur_h > MAX_CHG_KW:
+            continue
         peak, j = 0.0, 0                               # peak kW over >=3 min windows (1% steps are coarse)
         for k in range(1, len(pts)):
             dtp, dsc = pts[k][0] - pts[j][0], pts[k][1] - pts[j][1]
@@ -838,6 +859,18 @@ def demo_summary():
     return out
 
 def summary():
+    """Public /api/summary payload.
+
+    The version is stamped here rather than inside _summary(), which has four separate return
+    paths (demo, two early-outs and the full build). Doing it in one wrapper means a new branch
+    added later cannot ship a payload without it.
+    """
+    out = _summary()
+    out["api_version"] = API_VERSION
+    return out
+
+
+def _summary():
     if DEMO:
         return demo_summary()
     out = {"vehicle": VEHICLE, "online": False, "battery": None, "range_km": None,
