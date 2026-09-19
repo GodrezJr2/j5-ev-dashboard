@@ -77,6 +77,11 @@ VEHICLE = {"plate": _V.get("plate") or "—", "model": _V.get("model") or "EV", 
 # vendor's CDN -- keeps the dashboard self-hosted and offline-friendly, and leaks no referer.
 VEHICLE_IMG = (_V.get("img") or "").strip() or None
 _CAR_PHOTO = os.path.join(_DATA, "car-photo.img")
+# The owner's own upload lives in a separate file, because three paths delete the CarLinko cache
+# to force a re-fetch -- /api/photorefresh, the vehicle re-capture on web login, and clearing the
+# override -- and one shared file meant any of them quietly put CarLinko's render back while
+# car_image still said "/car-photo". The owner's photo would be gone with nothing saying so.
+_CAR_PHOTO_OWNER = os.path.join(_DATA, "car-photo-owner.img")
 _CAR_PHOTO_MAX = 8 * 1024 * 1024                       # same cap as the CarLinko fetch below
 TPMS_POS = ["FL", "FR", "RL", "RR"]
 
@@ -1469,19 +1474,24 @@ class H(BaseHTTPRequestHandler):
             except Exception as e:
                 self._send(200, json.dumps({"error": str(e)[:180]}).encode(), "application/json")
             return
-        if path == "/car-photo":     # cached proxy for CarLinko's own render of this exact car.
-            try:                     # Behind the gate: the render gives away model + colour.
-                img = _vehicle_img()
-                if not os.path.exists(_CAR_PHOTO):
-                    if not img:
-                        self._send(404, b"no vehicle image", "text/plain"); return
-                    req = urllib.request.Request(img, headers={"User-Agent": "carlinko-dash"})
-                    with urllib.request.urlopen(req, timeout=20) as r:
-                        blob = r.read(8 * 1024 * 1024)    # cap: it's a car render, not a payload
-                    tmp = _CAR_PHOTO + ".part"            # write-then-rename, so an interrupted
-                    with open(tmp, "wb") as f: f.write(blob)   # fetch can't leave a truncated cache
-                    os.replace(tmp, _CAR_PHOTO)
-                with open(_CAR_PHOTO, "rb") as f: blob = f.read()
+        if path == "/car-photo":     # the owner's own upload if there is one, else a cached proxy
+            try:                     # for CarLinko's render of this exact car. Behind the gate:
+                                     # the render gives away model + colour.
+                if os.path.exists(_CAR_PHOTO_OWNER):      # an upload outranks the render, and
+                    with open(_CAR_PHOTO_OWNER, "rb") as f:   # survives every path that busts
+                        blob = f.read()                   # the cache below
+                else:
+                    img = _vehicle_img()
+                    if not os.path.exists(_CAR_PHOTO):
+                        if not img:
+                            self._send(404, b"no vehicle image", "text/plain"); return
+                        req = urllib.request.Request(img, headers={"User-Agent": "carlinko-dash"})
+                        with urllib.request.urlopen(req, timeout=20) as r:
+                            blob = r.read(8 * 1024 * 1024)  # cap: it's a car render, not a payload
+                        tmp = _CAR_PHOTO + ".part"          # write-then-rename, so an interrupted
+                        with open(tmp, "wb") as f: f.write(blob)  # fetch can't leave a truncated
+                        os.replace(tmp, _CAR_PHOTO)               # cache
+                    with open(_CAR_PHOTO, "rb") as f: blob = f.read()
                 kind = "image/png" if blob[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
                 self._send(200, blob, kind)
             except Exception as e:
@@ -1680,9 +1690,9 @@ class H(BaseHTTPRequestHandler):
                     self._send(200, json.dumps({"ok": False,
                                                 "error": "only PNG or JPEG"}).encode(),
                                "application/json"); return
-                tmp = _CAR_PHOTO + ".part"             # write-then-rename, so an interrupted
+                tmp = _CAR_PHOTO_OWNER + ".part"       # write-then-rename, so an interrupted
                 with open(tmp, "wb") as f: f.write(blob)    # upload can't leave a truncated photo
-                os.replace(tmp, _CAR_PHOTO)
+                os.replace(tmp, _CAR_PHOTO_OWNER)
                 c = _creds(); c["car_image"] = "/car-photo"  # override wins in _car_image()
                 _save_creds(c)
                 self._send(200, json.dumps({"ok": True, "car_image": "/car-photo",
@@ -1700,11 +1710,20 @@ class H(BaseHTTPRequestHandler):
                 # Every key is optional, but at least one has to be present: an empty POST that
                 # answered ok:true is how a client ends up believing a setting was saved when the
                 # server never understood the field (see the app's car-photo capability probe).
-                known = [k for k in ("resync_km", "car_image") if k in body]
+                if not isinstance(body, dict):
+                    body = {}
+                fields = ("resync_km", "car_image")
+                known = [k for k in fields if k in body]
                 if not known:
                     self._send(200, json.dumps({"ok": False,
                                                 "error": "nothing to set"}).encode(),
                                "application/json"); return
+                # A key we do not recognise is named back rather than dropped in silence: a POST
+                # of one good field and one typo would otherwise answer ok:true having saved half
+                # of what was asked, which is the same lie as the empty success above. Naming it
+                # keeps a newer client working against an older server -- it gets its answer and
+                # a list of what this build did not understand.
+                ignored = [k for k in body if k not in fields]
                 if "resync_km" in body and body["resync_km"] not in ("skip", "count"):
                     self._send(200, json.dumps({"ok": False,
                                                 "error": "resync_km must be skip or count"}).encode(),
@@ -1727,13 +1746,14 @@ class H(BaseHTTPRequestHandler):
                         c["car_image"] = img
                     else:
                         c.pop("car_image", None)
-                        try: os.remove(_CAR_PHOTO)     # drop an uploaded photo along with the override
-                        except Exception: pass
+                        try: os.remove(_CAR_PHOTO_OWNER)   # drop the upload with the override;
+                        except Exception: pass             # CarLinko's cache is not ours to clear
                 json.dump(c, open(cpath, "w"), indent=2)
                 try: os.chmod(cpath, 0o600)
                 except Exception: pass
                 self._send(200, json.dumps({"ok": True, "resync_km": c.get("resync_km", "skip"),
-                                            "car_image": c.get("car_image", "")}).encode(),
+                                            "car_image": c.get("car_image", ""),
+                                            "ignored": ignored}).encode(),
                            "application/json")
             except Exception as e:
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(),
