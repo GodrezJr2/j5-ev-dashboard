@@ -830,6 +830,16 @@ function windowsOpen(){
   return S.windows !== 0;
 }
 
+// ac_temp_c (byte 24): a raw degC reading, validated against the Omoda E5's A/C target temp.
+// The J5 has read wildly different things under this same byte over time -- 159-169 in earlier
+// logs, and a near-static 47-51 now that barely moves with A/C on/off or the hour of day. Neither
+// is a plausible cabin-air temperature, so on a J5 this byte is unverified and refused rather than
+// shown as if it were a real reading (see #5 for the E5 validation this was carried over from).
+function cabinTemp(){
+  if(isJ5()) return null;
+  return (S.ac_temp_c && S.ac_temp_c < 60) ? S.ac_temp_c : null;
+}
+
 function doorSummary(){
   const parts = [];
   const openDoors = S.doors == null ? null : (S.doors & 15) !== 0;
@@ -885,7 +895,8 @@ function renderCards(){
   const tyreSub = S.tyre_indirect === false
     ? (S.tyre_status === 'Normal' ? 'Normal' : 'Check tyres')
     : (S.tyre_status || 'Status only');
-  const cabin = S.ac_temp_c && S.ac_temp_c < 60 ? S.ac_temp_c + '\u00b0C Cabin Temp' : 'Not turned on';
+  const ct = cabinTemp();
+  const cabin = ct != null ? ct + '\u00b0C Cabin Temp' : (S.ac_on ? 'On' : 'Not turned on');
   const seatsKnown = (S.seat_heat && (S.seat_heat[0] || S.seat_heat[1])) ||
                      (S.seat_vent && (S.seat_vent[0] || S.seat_vent[1]));
   const chgSub = (S.charging && S.charging.active)
@@ -954,7 +965,8 @@ function renderAc(){
   const caps = (CAPS && CAPS.ac) || {};
   const mn = caps.min != null ? Math.ceil(caps.min) : 16;
   const mx = caps.max != null ? Math.floor(caps.max) : 30;
-  const cabin = S.ac_temp_c && S.ac_temp_c < 60 ? S.ac_temp_c + '°C' : null;
+  const ct = cabinTemp();
+  const cabin = ct != null ? ct + '°C' : null;
   el.innerHTML =
     '<div class="acsub ov">' + (cabin ? 'Cabin now ' + cabin : 'Set a target, then power on') + '</div>' +
     '<div class="acbig"><span class="side">' + Math.max(mn, acTarget - 1) + '</span>' +

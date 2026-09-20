@@ -347,10 +347,16 @@ def decode(hexstr):
         d["seat_heat"] = [b[32], b[33]]                     # L, R (0 = off)
         d["seat_vent"] = [b[37], b[38]]                     # L, R (0 = off)
         d["defrost_front"] = bool(b[42])
-        # Rated (WLTC) range, NOT a mirror of EV range (b29-30). On the J5 they differ in 72,482 of
-        # 72,507 frames (334 vs 302 at 66% -- 302/0.66 = 457.6, the car's 461 km NEDC rating).
-        # The Omoda E5 owner in #5 cross-checked it live against the app: 304 vs 329, digit-for-digit.
-        # On the Tiggo 8 PHEV they happen to coincide (its EV range IS the rated estimate).
+        # Rated (WLTC) range, historically NOT a mirror of EV range (b29-30): on the J5 they
+        # differed in 137,553 of 183,885 logged frames (334 vs 302 at 66% -- 302/0.66 = 457.6,
+        # the car's 461 km NEDC rating). The Omoda E5 owner in #5 cross-checked it live against
+        # the app: 304 vs 329, digit-for-digit. On the Tiggo 8 PHEV they happen to coincide (its
+        # EV range IS the rated estimate). UPDATE 2026-09-20: on this J5 the two fields have read
+        # identical on every frame since 2026-09-04 (0 diffs across 4,000+ recent frames spanning
+        # 100%->28% SoC, live-verified against the dash at 455 km/99%) -- something on the car's
+        # side (likely an OTA) appears to have made b68-69 track b29-30. Both still surfaced
+        # separately in case they diverge again; the hero range display uses range_km (b29-30),
+        # which has tracked the dash correctly throughout.
         d["wltc_range_km"] = int.from_bytes(b[68:70], "big")
         # HV/motor state per #5 (>=2 = on). The E5 owner's live data: 0=off while parked, 2=ready
         # in 100% of driving samples, 1 as a 15-90s transition at power on/off -- i.e.
