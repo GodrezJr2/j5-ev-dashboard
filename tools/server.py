@@ -3,7 +3,7 @@ Serves the mobile PWA in ./web and a JSON API computed from carlinko.db.
 Run: python server.py [port]   (default 8088, binds 0.0.0.0 so Tailscale can reach it)
 """
 import os, sys, json, time, sqlite3, threading, math, calendar, urllib.request, urllib.parse
-import hmac, hashlib, base64, secrets
+import hmac, hashlib, base64, secrets, re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import known_cars          # per-model constants the telemetry never carries (pack size, tyre scale)
 
@@ -1605,7 +1605,14 @@ class H(BaseHTTPRequestHandler):
             except Exception as e:
                 msg = str(e)
                 if "login failed" in msg.lower() or "code" in msg.lower():
-                    msg = "Login failed — check your email and password."
+                    m = re.search(r"'code': '(\d+)'", msg)
+                    code = m.group(1) if m else "?"
+                    if code == "10012":                    # CarLinko: 用户不存在 (user does not exist)
+                        msg = ("No CarLinko account with that email in this region (code 10012). "
+                               "Check the email, or try another region (sea / emea).")
+                    else:
+                        msg = (f"Login failed (code {code}) — check your email and password, "
+                               "or try another region (sea / emea).")
                 self._send(200, json.dumps({"ok": False, "error": msg[:160]}).encode(), "application/json")
             return
         if path == "/api/unlock":                          # re-enter the dashboard password to get a session
