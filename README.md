@@ -190,7 +190,16 @@ of the official app. Avoid the clash by giving the dashboard its **own** CarLink
 > auto-detect finds the vehicle, you're good). If it can't, the alternative is to just use one
 > account and accept the occasional re-login.
 
-### Quick start — Docker (recommended)
+### Quick start — Windows, no Docker (easiest)
+1. On this page click **Code → Download ZIP**, then extract it.
+2. Double-click **`start.bat`**. First run installs Python if you lack it (then double-click again)
+   and two small libraries.
+3. Your browser opens the login page. Enter your CarLinko email + password; it finds your car.
+
+Leave the window open — it runs the dashboard *and* the logger. Same limits as everywhere:
+the PC has to stay on to build history. Not on Windows? `python tools/run.py` does the same.
+
+### Quick start — Docker
 ```bash
 docker compose up -d        # then open http://localhost:8088
 ```
