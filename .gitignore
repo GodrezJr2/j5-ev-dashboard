@@ -29,3 +29,4 @@ data/
 
 # pre-cleanup DB snapshots taken on the server before deglitching
 *.db.bak*
+build/

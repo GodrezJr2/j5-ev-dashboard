@@ -352,6 +352,25 @@
     font-size:12.5px;font-weight:700;transition:transform var(--t-fast) var(--eo),opacity var(--t-mid) linear}
   .racts button:active{transform:scale(.93)}
   .racts button.busy{opacity:.4;pointer-events:none}
+  /* low-poly 3D car (car3d.js). Replaces the flat diagram when WebGL loads; labels and the lock
+     badge are DOM so they stay crisp and selectable. */
+  .car3d{position:relative;width:100%;aspect-ratio:5/4;margin:var(--s2) 0 var(--s2);opacity:0;
+    border-radius:var(--r4);overflow:hidden;transition:opacity var(--t-slow) linear}
+  .car3d.ready{opacity:1}
+  .car3d .c3d{display:block;width:100%;height:100%;cursor:grab}
+  .car3d .c3d:active{cursor:grabbing}
+  .c3l{position:absolute;left:0;top:0;pointer-events:none;display:flex;flex-direction:column;
+    align-items:center;gap:1px;font-size:10px;line-height:1.1;color:var(--fnt);will-change:transform;
+    transition:opacity var(--t-mid) linear}
+  .c3l b{font-weight:650;letter-spacing:.12em;font-size:9px}
+  .c3l span{font-weight:700;font-variant-numeric:tabular-nums}
+  .c3l.ok span{color:var(--acc-ink)} .c3l.warn span{color:var(--warn)} .c3l.bad span{color:var(--bad)}
+  .c3lock{position:absolute;top:var(--s3);right:var(--s3);display:inline-flex;align-items:center;gap:6px;
+    padding:6px 11px;border-radius:var(--rf);background:var(--card);box-shadow:var(--sh-1);
+    font-size:11.5px;font-weight:650;color:var(--acc-ink)}
+  .c3lock.un{color:var(--warn)}
+  .c3lock svg{width:13px;height:13px}
+  .car3d-hint{text-align:center;font-size:11px;color:var(--fnt);margin:-2px 0 var(--s3)}
   .ckc{display:inline-flex;align-items:center;gap:6px}
   .ckc svg{width:13px;height:13px;flex:none}
 
@@ -1009,6 +1028,39 @@ function renderAc(){
   el.querySelector('[data-ac="pwr"]').classList.toggle('on', !!S.ac_on);
 }
 
+/* ---- 3D car ----
+   car3d.js (low-poly clay SUV, three.js) is loaded on demand the first time a page needs it. If
+   the module, WebGL or the dynamic import is unavailable, the flat diagram below simply stays. */
+const CAR3D = {};
+function isDark(){
+  const t = document.documentElement.getAttribute('data-theme');
+  return t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+}
+function mount3d(key, wrapId, view, state, labels){
+  if(CAR3D[key]){ CAR3D[key].dispose(); delete CAR3D[key]; }
+  const wrap = $(wrapId);
+  if(!wrap) return;
+  import('./car3d.js').then(m => {
+    if(!wrap.isConnected) return;                        // page was re-rendered meanwhile
+    const host = document.createElement('div');
+    host.className = 'car3d';
+    wrap.parentNode.insertBefore(host, wrap);
+    const hint = document.createElement('div');
+    hint.className = 'car3d-hint'; hint.textContent = 'Drag to turn the car';
+    try{
+      CAR3D[key] = m.createCar3D(host, {view: view, dark: isDark(), labels: labels || null,
+        lockIcon: icon('lock', 2),
+        onFail: () => {                                   // car_parts.* did not load: back to the flat diagram
+          if(CAR3D[key]){ CAR3D[key].dispose(); delete CAR3D[key]; }
+          host.remove(); hint.remove(); wrap.hidden = false;
+        }});
+    }catch(e){ host.remove(); return; }
+    wrap.hidden = true;
+    CAR3D[key].set(state);
+    host.after(hint);
+  }).catch(() => {});
+}
+
 /* ---- shared top-view diagram ----
    A deliberately generic car: an outline, a greenhouse, four hinged door panels, a liftgate, a
    sunroof and four wheels. It is not a J5 and is not trying to be — it is the universal top-down
@@ -1125,6 +1177,8 @@ function renderDoors(){
   // plays the movement rather than showing a car that was already hanging open.
   el.innerHTML = '<div class="topwrap" id="doorCar">' + carTop({unlocked: !!S.unlocked}) + '</div>' +
     '<div class="rowcard">' + rows.join('') + '</div>';
+  mount3d('doors', 'doorCar', 'doors', {doors: open, trunk: !!S.trunk_open, sunroof: !!S.sunroof_open,
+    unlocked: !!S.unlocked});
   const paint = () => {
     const svg = $('doorCar');
     if(!svg) return;
@@ -1210,13 +1264,18 @@ function renderTyres(){
       ? 'All four reading <b>normal</b>. This car reports one status for the whole vehicle, not four pressures.'
       : 'The car is reporting <b>a problem</b> but cannot say which wheel. Check all four by hand.';
   } else {
-    wheels = t.map(w => w.psi == null ? '' : ((w.psi < 28 || w.psi > 40) ? 'bad' : 'ok'));
-    vals = t.map(w => w.psi == null ? '' : Math.round(w.psi) + ' ' + unit);
+    // the server sends "psi" in the configured display unit (psi | bar | kpa); judge in PSI, print in that unit
+    const toPsi = v => unit === 'bar' ? v * 14.5038 : unit === 'kpa' ? v * .145038 : v;
+    const dec = unit === 'bar' ? 1 : 0, uLabel = unit === 'kpa' ? 'kPa' : unit;
+    wheels = t.map(w => { if(w.psi == null) return '';
+      const p = toPsi(w.psi);
+      return (p < 28 || p > 40) ? 'bad' : (p < 30 || p > 38) ? 'warn' : 'ok'; });       // bad matches the server's "Check tyres"
+    vals = t.map(w => w.psi == null ? '' : w.psi.toFixed(dec) + ' ' + uLabel);
     const known = t.filter(w => w.psi != null).length;
     cap = known ? 'Live pressure from each wheel sensor.' : 'No wheel sensor has reported yet.';
   }
 
-  el.innerHTML = '<div class="topwrap">' +
+  el.innerHTML = '<div class="topwrap" id="tyreCar">' +
       carTop({wheels: wheels, wheelVals: vals, codes: true, unlocked: !!S.unlocked}) + '</div>' +
     '<div class="topcap">' + cap + '</div>' +
     '<div class="rowcard"><div class="row"><span class="rl">Status</span><span class="rv ' +
@@ -1230,6 +1289,9 @@ function renderTyres(){
         'sensors, so it can only report normal or not. Per-wheel pressures appear here on cars with real ' +
         'sensors.'
       : 'Pressures from the last frame that carried live sensors.') + '</div>';
+  mount3d('tyres', 'tyreCar', 'tyres', {
+    wheels: Array.isArray(wheels) ? wheels : [wheels, wheels, wheels, wheels],
+    values: vals || [], unlocked: !!S.unlocked}, WHEEL_POS);
 }
 
 function renderEnergy(){
