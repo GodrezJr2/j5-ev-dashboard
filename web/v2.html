@@ -341,6 +341,17 @@
   .topcap{text-align:center;font-size:12px;line-height:1.5;color:var(--fnt);
     margin:0 auto var(--s4);max-width:290px}
   .topcap b{color:var(--mut);font-weight:650}
+  /* remote actions on the Doors page: one row per part, small pill buttons on the right */
+  .rrow{display:flex;align-items:center;gap:var(--s3);padding:12px var(--s4);min-height:56px}
+  .rrow+.rrow{border-top:1px solid var(--line)}
+  .rrow .ri{width:22px;height:22px;flex:none;color:var(--mut)}
+  .rrow .ri svg{width:100%;height:100%;display:block}
+  .rrow .rl{flex:1;min-width:0;font-size:14.5px;font-weight:650}
+  .racts{display:flex;gap:var(--s2);flex:none}
+  .racts button{padding:8px 13px;border-radius:var(--rf);background:var(--card-2);color:var(--ink);
+    font-size:12.5px;font-weight:700;transition:transform var(--t-fast) var(--eo),opacity var(--t-mid) linear}
+  .racts button:active{transform:scale(.93)}
+  .racts button.busy{opacity:.4;pointer-events:none}
   .ckc{display:inline-flex;align-items:center;gap:6px}
   .ckc svg{width:13px;height:13px;flex:none}
 
@@ -667,6 +678,8 @@ const IC = {
   fuel:    '<path d="M4 20V6a2 2 0 012-2h5a2 2 0 012 2v14"/><path d="M3 20h11"/><path d="M13 11h3a2 2 0 012 2v3.4a1.6 1.6 0 003.2 0V9.2L17.6 5.6"/><rect x="6.2" y="6.4" width="4.6" height="3.4" rx="1" fill="currentColor" stroke="none"/>',
   plug:    '<path d="M9 3v5M15 3v5"/><path d="M6.5 8h11v3.2a5.5 5.5 0 01-5.5 5.5 5.5 5.5 0 01-5.5-5.5Z"/><path d="M12 16.7V21"/>',
   moon:    '<path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>',
+  trunk:   '<path d="M3 18.5v-5.2a2 2 0 01.7-1.5L7 9h9.5a2 2 0 011.8 1.1L21 14.5v4"/><path d="M3 18.5h18"/><path d="M7 9l-1.8-4.2h-2"/><circle cx="7.5" cy="18.5" r="1.6" fill="currentColor" stroke="none"/><circle cx="16.5" cy="18.5" r="1.6" fill="currentColor" stroke="none"/>',
+  window:  '<path d="M5 20V9.5C5 6.5 8 4.5 12 4.5s7 2 7 5V20"/><path d="M5 11.5h14"/><path d="M12 11.5V17M9.5 14.5L12 17l2.5-2.5"/>',
 };
 function icon(k, w){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) +
   '" stroke-linecap="round" stroke-linejoin="round">' + (IC[k] || '') + '</svg>'; }
@@ -711,7 +724,7 @@ function flash(el, key, next){
 // first-paint rise, one small stagger, never on a re-poll
 function stagger(nodes, step, base){
   if(REDUCED()) return;
-  nodes.forEach((n, i) => {
+  nodes.filter(Boolean).forEach((n, i) => {
     n.style.animationDelay = ((base || 0) + i * (step || 34)) + 'ms';
     n.classList.add('rise');
   });
@@ -799,6 +812,12 @@ function renderQA(){
     {k: 'ac',   label: acOn ? 'A/C off' : 'A/C on', op: acOn ? '741000' : '741001', active: acOn},
     {k: 'find', label: 'Find', op: '740400'},
   ];
+  // trunk sits on the home row because it is the one you reach for with full hands; it asks first
+  // so a pocket-tap cannot pop the boot. 740300 / 740A00 runtime-confirmed on a J5 (docs/control-opcodes.md).
+  if(!CAPS || CAPS.liftgate || CAPS.trunk)
+    defs.push(S.trunk_open
+      ? {k: 'trunk', label: 'Close trunk', op: '740A00', active: true}
+      : {k: 'trunk', label: 'Trunk', op: '740300', ask: true, askNote: 'Opens the rear trunk now.'});
   if(S.charging && S.charging.active)
     defs.push({k: 'power', label: 'Stop', op: '742701', ask: true, askNote: 'Ends the charging session on the car.'});
   defs.forEach(d => {
@@ -1117,11 +1136,49 @@ function renderDoors(){
     svg.querySelectorAll('.chole')[1].classList.toggle('on', !!S.trunk_open);
   };
   if(REDUCED()) paint(); else requestAnimationFrame(() => requestAnimationFrame(paint));
-  if(winOpen === true && CAPS && CAPS.windows && CAPS.windows.close){
-    const b = document.createElement('button');
-    b.className = 'bigbtn'; b.textContent = 'Close windows remotely';
-    b.onclick = () => fire('740500', b);
-    el.appendChild(b);
+  // remote actions, only for what vehicleControlConfig says this car has. Window state is unknown
+  // on a J5, so windows are plain Close / Vent / Open rather than a toggle that guesses.
+  const acts = [];
+  if(!CAPS || CAPS.liftgate || CAPS.trunk)
+    acts.push({ic: 'trunk', label: 'Rear trunk', btns: [
+      {t: 'Open', op: '740300', ask: 'Open the rear trunk?'}, {t: 'Close', op: '740A00'}]});
+  const wc = (CAPS && CAPS.windows) || {};
+  const wbtns = [];
+  if(wc.close) wbtns.push({t: 'Close', op: '740500'});
+  if(wc.vent)  wbtns.push({t: 'Vent',  op: '740E00'});
+  if(wc.open)  wbtns.push({t: 'Open',  op: '740600', ask: 'Open all windows?'});
+  if(wbtns.length) acts.push({ic: 'window', label: 'Windows', btns: wbtns});
+  if(CAPS && CAPS.sunroof && (CAPS.sunroof.open || CAPS.sunroof.tilt)){
+    const sb = [{t: 'Close', op: '740F00'}];
+    if(CAPS.sunroof.tilt) sb.push({t: 'Tilt', op: '740F02'});
+    if(CAPS.sunroof.open) sb.push({t: 'Open', op: '740F01', ask: 'Open the sunroof?'});
+    acts.push({ic: 'car', label: 'Sunroof', btns: sb});
+  }
+  if(!CAPS || CAPS.find) acts.push({ic: 'find', label: 'Find car', btns: [{t: 'Flash', op: '740400'}]});
+  if(acts.length){
+    const h = document.createElement('div');
+    h.className = 'sech'; h.style.padding = 'var(--s5) 0 var(--s2)';
+    h.innerHTML = '<span class="ov">Remote</span>';
+    const card = document.createElement('div');
+    card.className = 'rowcard'; card.style.margin = '0';
+    acts.forEach(a => {
+      const r = document.createElement('div');
+      r.className = 'rrow';
+      r.innerHTML = '<span class="ri">' + icon(a.ic) + '</span><span class="rl">' + a.label + '</span>';
+      const box = document.createElement('div'); box.className = 'racts';
+      a.btns.forEach(bt => {
+        const b = document.createElement('button');
+        b.textContent = bt.t;
+        b.setAttribute('aria-label', a.label + ' ' + bt.t.toLowerCase());
+        b.onclick = async () => {
+          if(bt.ask && !(await ask(bt.ask, 'The command is sent to the car now.'))) return;
+          fire(bt.op, b);
+        };
+        box.appendChild(b);
+      });
+      r.appendChild(box); card.appendChild(r);
+    });
+    el.appendChild(h); el.appendChild(card);
   }
   const note = document.createElement('div');
   note.className = 'note';
