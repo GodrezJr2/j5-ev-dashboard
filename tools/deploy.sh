@@ -99,7 +99,9 @@ for f in $(git ls-files 'web/*.html' 'web/*.js' 'web/*.css' 'web/*.svg' 'web/*.w
   n=$((n + 1))
   if [ "$l" != "$r" ]; then echo "   NOT SERVED: $f"; bad=1; fi
 done
-[ "$bad" -eq 0 ] && echo "   $n page(s) match what the server is serving" \
-  || { echo "!! the running server is not serving the repo's version of the page(s) above" >&2; exit 1; }
+if [ "$bad" -ne 0 ]; then
+  echo "!! the running server is not serving the repo's version of the page(s) above" >&2; exit 1
+elif [ "$n" -eq 0 ]; then echo "   no web pages changed in this deploy"
+else echo "   $n page(s) match what the server is serving"; fi
 
 echo "==> done"
