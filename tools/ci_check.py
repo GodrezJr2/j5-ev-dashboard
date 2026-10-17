@@ -3,10 +3,10 @@
 
 No dependencies, nothing is executed: Python files must compile, JSON must parse, and every
 script the dashboard ships to a browser must parse (inline <script> blocks in web/*.html and the
-web/*.js files; vendored leaflet is skipped). Needs `node` for the JS part and says so loudly
-when it is missing instead of silently passing.
+web/*.js files; vendored leaflet is skipped). The JS part needs `node` and fails when it is
+missing rather than silently passing; `--skip-js` opts out.
 
-Run from the repo root:  python tools/ci_check.py
+Run from the repo root:  python tools/ci_check.py [--skip-js]
 """
 import json
 import os
@@ -69,7 +69,7 @@ def node_check(node, tmp, name, source):
 def check_js():
     node = shutil.which("node")
     if not node:
-        print("js: SKIPPED, node not found (install Node to check the web scripts)")
+        bad("web", "node not found, so the scripts cannot be checked (install Node, or pass --skip-js)")
         return
     n = 0
     with tempfile.TemporaryDirectory() as tmp:
@@ -98,7 +98,10 @@ def check_js():
 if __name__ == "__main__":
     check_python()
     check_json()
-    check_js()
+    if "--skip-js" in sys.argv:
+        print("js: skipped (--skip-js)")
+    else:
+        check_js()
     if problems:
         print(f"\n{len(problems)} problem(s)", file=sys.stderr)
         sys.exit(1)
