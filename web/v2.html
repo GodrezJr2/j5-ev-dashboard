@@ -1058,8 +1058,8 @@ function renderAc(){
     '<button data-ac="cool"><span class="cic">' + icon('cool') + '</span>Cool</button>' +
     '<button data-ac="pwr"><span class="cic">' + icon('power') + '</span><span id="acPwrLbl">' +
       (S.ac_on ? 'Turn off' : 'Turn on') + '</span></button></div>' +
-    '<div class="note">Temperature command (7411 + hex) comes from the jump-table decode and is pending ' +
-    'on-car verification. Power and quick heat/cool use the verified map.</div>';
+    '<div class="note">Setting a target temperature is not confirmed on the car yet. Power and quick ' +
+    'heat/cool are.</div>';
   $('acMinus').onclick = () => { acTarget = Math.max(mn, acTarget - 1); renderAc(); sendTemp(); };
   $('acPlus').onclick  = () => { acTarget = Math.min(mx, acTarget + 1); renderAc(); sendTemp(); };
   el.querySelector('[data-ac="heat"]').onclick = () => fire(S.ac_on ? '741F00' : '741F01');
