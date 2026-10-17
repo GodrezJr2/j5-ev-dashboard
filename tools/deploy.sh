@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
-# Push the working tree to a self-hosted instance, restart it, and verify it came back.
+# Update a systemd self-hosted box (the layout tools/install.sh creates: a git checkout the units
+# run out of). It deploys what is on GitHub, so the repo and the box cannot drift apart:
 #
-#   ./tools/deploy.sh                    # uses $CARLINKO_HOST
-#   ./tools/deploy.sh jay@192.168.1.7    # or pass the host
-#   CARLINKO_REMOTE=~/carlinko CARLINKO_WEB=~/web ./tools/deploy.sh user@host
+#   1. refuses if your commits are not pushed yet (nothing to pull) or tracked files are dirty
+#   2. on the box: git fetch + fast-forward to origin/<branch>
+#   3. restarts only the units whose code changed (web-only edits need no restart)
+#   4. checks /api/status, then fetches the changed pages back from the running server and
+#      compares them with the repo, so "deployed" means "being served", not "a file landed"
 #
-# Deployment here is plain scp, not a git checkout, so it is easy for the box to drift behind the
-# repo. This script also runs a drift check afterwards and prints any file that still differs.
+#   ./tools/deploy.sh user@host                     # or set CARLINKO_HOST (an ssh alias works too)
+#   CARLINKO_DIR=~/j5-ev-dashboard ./tools/deploy.sh host   # checkout path on the box (default)
+#   CARLINKO_PORT=8088  CARLINKO_BRANCH=main  CARLINKO_SERVICES="carlinko-web carlinko-logger"
+#
+# Set CARLINKO_SERVICES to force-restart exactly those units instead of the automatic choice.
 set -euo pipefail
 
 HOST="${1:-${CARLINKO_HOST:-}}"
-REMOTE="${CARLINKO_REMOTE:-~/carlinko}"
-WEB="${CARLINKO_WEB:-~/web}"
-SERVICES="${CARLINKO_SERVICES:-carlinko-web carlinko-logger}"
+DIR="${CARLINKO_DIR:-~/j5-ev-dashboard}"
+PORT="${CARLINKO_PORT:-8088}"
+BRANCH="${CARLINKO_BRANCH:-main}"
+FORCE_SERVICES="${CARLINKO_SERVICES:-}"
 
 if [ -z "$HOST" ]; then
   echo "usage: $0 user@host   (or set CARLINKO_HOST)" >&2
@@ -20,36 +27,79 @@ if [ -z "$HOST" ]; then
 fi
 
 cd "$(dirname "$0")/.."
-PY_FILES=(tools/server.py tools/logger.py tools/auth.py tools/setup.py tools/query_service.py
-          tools/report.py tools/known_cars.py)
-WEB_FILES=(web/index.html web/v2.html web/login.html web/slot-text.js web/manifest.webmanifest web/icon.svg
-           web/car-front.png web/car-generic.svg web/car-charging-j5.png
-           web/leaflet.js web/leaflet.css)
 
-echo "==> syntax check"
-python -m py_compile "${PY_FILES[@]}"
+echo "==> local checks"
+python -m py_compile tools/*.py
+if ! git diff --quiet HEAD -- . ; then
+  echo "!! tracked files have uncommitted changes; commit them first (the box deploys commits)" >&2
+  exit 1
+fi
+git fetch -q origin "$BRANCH"
+HEAD_SHA="$(git rev-parse HEAD)"
+if ! git merge-base --is-ancestor "$HEAD_SHA" "origin/$BRANCH"; then
+  echo "!! HEAD is not on origin/$BRANCH; run: git push origin $BRANCH" >&2
+  exit 1
+fi
+echo "   deploying origin/$BRANCH ($(git rev-parse --short origin/$BRANCH))"
 
-echo "==> copying to $HOST"
-scp -q "${PY_FILES[@]}" "$HOST:$REMOTE/"
-scp -q "${WEB_FILES[@]}" "$HOST:$WEB/"
+echo "==> updating $HOST:$DIR"
+# the remote script prints OLD..NEW and the changed files; $DIR and $BRANCH expand locally
+out="$(ssh "$HOST" "cd $DIR && \
+  if [ -n \"\$(git status --porcelain --untracked-files=no)\" ]; then \
+    echo 'REMOTE_DIRTY'; git status --short --untracked-files=no; exit 3; fi && \
+  old=\$(git rev-parse HEAD) && git fetch -q origin $BRANCH && git merge --ff-only -q origin/$BRANCH && \
+  new=\$(git rev-parse HEAD) && echo \"RANGE \$old \$new\" && \
+  if [ \"\$old\" != \"\$new\" ]; then git diff --name-only \$old \$new; fi")" || {
+  echo "$out" >&2
+  echo "!! the box could not fast-forward (local edits or diverged history there)" >&2
+  exit 1
+}
+range="$(printf '%s\n' "$out" | sed -n 's/^RANGE //p')"
+changed="$(printf '%s\n' "$out" | grep -v '^RANGE ' || true)"
+echo "   ${range:-unknown}"
+if [ -z "$changed" ]; then echo "   already up to date"; else printf '%s\n' "$changed" | sed 's/^/   changed: /'; fi
 
-echo "==> restarting: $SERVICES"
-# shellcheck disable=SC2029  # $SERVICES is meant to expand locally
-ssh "$HOST" "sudo systemctl restart $SERVICES && sleep 3 && systemctl is-active $SERVICES"
+# which units to restart. server.py imports auth + known_cars; logger.py imports auth. A logger
+# restart drops its single CarLinko WebSocket session, so it is left alone unless it must change.
+if [ -n "$FORCE_SERVICES" ]; then
+  SERVICES="$FORCE_SERVICES"
+else
+  SERVICES=""
+  grep -Eq '^tools/(server|auth|known_cars)\.py$' <<<"$changed" && SERVICES="carlinko-web"
+  grep -Eq '^tools/(logger|auth)\.py$' <<<"$changed" && SERVICES="$SERVICES carlinko-logger"
+  SERVICES="${SERVICES# }"
+fi
+if [ -n "$SERVICES" ]; then
+  echo "==> restarting: $SERVICES"
+  # shellcheck disable=SC2029  # $SERVICES is meant to expand locally
+  ssh "$HOST" "sudo -n systemctl restart $SERVICES && sleep 3 && systemctl is-active $SERVICES"
+else
+  echo "==> no restart needed (no server/logger code changed)"
+fi
 
 echo "==> health"
-ssh "$HOST" "curl -fsS -m 60 http://127.0.0.1:8088/api/status" && echo
+status="$(ssh "$HOST" "curl -fsS -m 60 http://127.0.0.1:$PORT/api/status")"
+echo "   $status"
 
-echo "==> drift check"
-drift=0
-for f in "${PY_FILES[@]}" "${WEB_FILES[@]}"; do
-  case "$f" in web/*) dir="$WEB" ;; *) dir="$REMOTE" ;; esac
-  b="$(basename "$f")"
-  # strip CR so a CRLF working tree on Windows doesn't look like drift
-  l="$(tr -d '\r' < "$f" | sha256sum | cut -c1-16)"
-  r="$(ssh "$HOST" "tr -d '\r' < $dir/$b 2>/dev/null | sha256sum | cut -c1-16" || true)"
-  if [ "$l" != "$r" ]; then echo "   DRIFT: $f"; drift=1; fi
+echo "==> served pages"
+rhead="$(ssh "$HOST" "cd $DIR && git rev-parse HEAD")"
+[ "$rhead" = "$HEAD_SHA" ] || { echo "!! box is at ${rhead:0:7}, expected ${HEAD_SHA:0:7}" >&2; exit 1; }
+if printf '%s' "$status" | grep -q '"gated": *true'; then
+  # a dashboard password makes the box answer unauthenticated fetches with the login page
+  echo "   dashboard is password-gated; skipped the served-page comparison (box is at ${rhead:0:7})"
+  echo "==> done"; exit 0
+fi
+bad=0; n=0
+for f in $(git ls-files 'web/*.html' 'web/*.js' 'web/*.css' 'web/*.svg' 'web/*.webmanifest'); do
+  # only files this deploy touched, unless the box was already current (then check them all)
+  if [ -n "$changed" ] && ! grep -qx "$f" <<<"$changed"; then continue; fi
+  # strip CR so a CRLF working tree on Windows does not look like drift
+  l="$(git show "HEAD:$f" | tr -d '\r' | sha256sum | cut -c1-16)"
+  r="$(ssh "$HOST" "curl -fsS -m 30 http://127.0.0.1:$PORT/$(basename "$f") | tr -d '\r' | sha256sum | cut -c1-16" || true)"
+  n=$((n + 1))
+  if [ "$l" != "$r" ]; then echo "   NOT SERVED: $f"; bad=1; fi
 done
-[ "$drift" -eq 0 ] && echo "   all files match" || { echo "!! some files differ" >&2; exit 1; }
+[ "$bad" -eq 0 ] && echo "   $n page(s) match what the server is serving" \
+  || { echo "!! the running server is not serving the repo's version of the page(s) above" >&2; exit 1; }
 
 echo "==> done"

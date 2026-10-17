@@ -347,15 +347,21 @@ No Docker? Install **Python 3.10+** ([python.org](https://www.python.org/downloa
 
 ### Updating a self-hosted box
 
-If you run it from systemd rather than Docker (files copied to the host, no git checkout there),
-`tools/deploy.sh` pushes the working tree, restarts the units, checks `/api/status`, and then
-diffs every file against the box so nothing silently stays behind:
+**Docker:** `git pull && docker compose up -d --build`.
+
+**systemd** (the layout `tools/install.sh` sets up: the units run out of a git checkout). Push your
+commits, then from your own machine:
 
 ```bash
-./tools/deploy.sh user@host          # or set CARLINKO_HOST
+./tools/deploy.sh user@host          # or set CARLINKO_HOST; an ssh alias works too
 ```
 
-Override paths with `CARLINKO_REMOTE` / `CARLINKO_WEB` / `CARLINKO_SERVICES` if your layout differs.
+It refuses if you have unpushed commits or dirty tracked files, fast-forwards the checkout on the
+box (`git pull --ff-only`), restarts only the units whose code changed (web-only edits need none),
+checks `/api/status`, then fetches the changed pages back from the running server and compares them
+with the repo. So "deployed" means "being served", not just "a file landed". Set `CARLINKO_DIR`
+(default `~/j5-ev-dashboard`), `CARLINKO_PORT`, `CARLINKO_BRANCH` or `CARLINKO_SERVICES` if your
+layout differs. Or do it by hand on the box: `git pull --ff-only`, then `sudo systemctl restart carlinko-web`.
 
 ### Set it up with an AI coding agent
 If the terminal isn't your thing, paste this into an AI coding agent (Claude Code, Cursor, etc.)
