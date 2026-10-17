@@ -357,11 +357,12 @@ commits, then from your own machine:
 ```
 
 It refuses if you have unpushed commits or dirty tracked files, fast-forwards the checkout on the
-box (`git pull --ff-only`), restarts only the units whose code changed (web-only edits need none),
-checks `/api/status`, then fetches the changed pages back from the running server and compares them
-with the repo. So "deployed" means "being served", not just "a file landed". Set `CARLINKO_DIR`
-(default `~/j5-ev-dashboard`), `CARLINKO_PORT`, `CARLINKO_BRANCH` or `CARLINKO_SERVICES` if your
-layout differs. Or do it by hand on the box: `git pull --ff-only`, then `sudo systemctl restart carlinko-web`.
+box, then runs `tools/apply.sh` there: restarts only the units whose code changed (web-only edits
+need none), checks `/api/status`, then fetches the changed pages back from the running server and
+compares them with the repo. So "deployed" means "being served", not just "a file landed". Set
+`CARLINKO_DIR` (default `~/j5-ev-dashboard`), `CARLINKO_PORT`, `CARLINKO_BRANCH` or
+`CARLINKO_SERVICES` if your layout differs. Or run `tools/apply.sh` on the box itself. The
+maintainer's push-to-deploy pipeline is described in [docs/ci-cd.md](docs/ci-cd.md).
 
 ### Set it up with an AI coding agent
 If the terminal isn't your thing, paste this into an AI coding agent (Claude Code, Cursor, etc.)

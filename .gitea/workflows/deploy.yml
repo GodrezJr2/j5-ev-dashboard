@@ -1,0 +1,67 @@
+name: ci-cd
+
+# Push to the local Gitea (origin for CI/CD), and the home server checks it, deploys it, and only
+# then publishes it to GitHub, so the public repo never gets a commit that failed the checks.
+#
+# Runs on the act_runner on homeservergs itself (label "homeserver", host mode, user jay), so the
+# steps act on ~/j5-ev-dashboard, the git checkout the carlinko-* systemd units run from.
+# That checkout's remotes: "gitea" = this repo (fetched with the token in ~/.gitea_token, nothing
+# secret lives in the repo) and "origin" = GitHub over ssh (the mirror push).
+# Rollback: git revert + push; a failed deploy also resets the checkout to the previous commit.
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: homeserver
+    steps:
+      - name: Fetch the pushed commit
+        run: |
+          cd ~/j5-ev-dashboard
+          git -c http.extraHeader="Authorization: token $(cat ~/.gitea_token)" fetch -q gitea main
+          git cat-file -e "${{ github.sha }}^{commit}"
+
+      - name: Static checks on a clean copy of that commit
+        run: |
+          cd ~/j5-ev-dashboard
+          git worktree remove --force /tmp/j5-ci 2>/dev/null || true
+          git worktree prune
+          git worktree add -q --detach /tmp/j5-ci "${{ github.sha }}"
+          cd /tmp/j5-ci
+          python3 tools/ci_check.py
+
+      - name: Remove the check copy
+        if: always()
+        run: cd ~/j5-ev-dashboard && git worktree remove --force /tmp/j5-ci || true
+
+  deploy:
+    needs: check
+    runs-on: homeserver
+    steps:
+      - name: Fast-forward the live checkout to the pushed commit
+        run: |
+          cd ~/j5-ev-dashboard
+          echo "OLD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          git merge --ff-only "${{ github.sha }}"
+
+      - name: Restart what changed and verify what is served
+        run: cd ~/j5-ev-dashboard && tools/apply.sh --from "$OLD"
+
+      - name: Roll back to the previous commit
+        if: failure()
+        run: |
+          cd ~/j5-ev-dashboard
+          git reset --hard "$OLD"
+          tools/apply.sh --from "${{ github.sha }}"
+
+  mirror:
+    needs: deploy
+    runs-on: homeserver
+    steps:
+      - name: Publish to GitHub
+        run: cd ~/j5-ev-dashboard && git push origin main
