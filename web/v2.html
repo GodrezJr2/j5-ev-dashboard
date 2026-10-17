@@ -768,7 +768,37 @@ function ago(dt){ if(!dt) return ''; const s = (Date.now() - new Date(dt.replace
   if(s < 86400) return Math.round(s / 3600) + ' h ago'; return Math.round(s / 86400) + ' d ago'; }
 
 // ---- remote control: same pipe as v1 (init 77, then fire) ----
+// What the toast says per opcode: [result when the car accepted it, the thing we tried to do].
+// Opcodes themselves stay out of the UI; unknown ones fall back to a generic line.
+const OP_TEXT = {
+  '740100': ['Car locked', 'lock the car'],
+  '740200': ['Car unlocked', 'unlock the car'],
+  '741001': ['A/C is on', 'turn the A/C on'],
+  '741000': ['A/C is off', 'turn the A/C off'],
+  '741F01': ['Heat is on', 'turn the heat on'],
+  '741F00': ['Heat is off', 'turn the heat off'],
+  '742001': ['Cooling is on', 'turn cooling on'],
+  '742000': ['Cooling is off', 'turn cooling off'],
+  '740400': ['Car is signalling', 'find the car'],
+  '740300': ['Trunk opening', 'open the trunk'],
+  '740A00': ['Trunk closing', 'close the trunk'],
+  '740500': ['Windows closing', 'close the windows'],
+  '740E00': ['Windows venting', 'vent the windows'],
+  '740600': ['Windows opening', 'open the windows'],
+  '740F00': ['Sunroof closing', 'close the sunroof'],
+  '740F02': ['Sunroof tilting', 'tilt the sunroof'],
+  '740F01': ['Sunroof opening', 'open the sunroof'],
+  '742701': ['Charging stopped', 'stop charging'],
+};
+function opText(op){
+  const k = String(op).toUpperCase();
+  if(OP_TEXT[k]) return OP_TEXT[k];
+  const m = /^7411([0-9A-F]{2})$/.exec(k);       // A/C target temp, one hex byte of degC
+  if(m){ const c = parseInt(m[1], 16); return ['A/C set to ' + c + '°C', 'set the A/C to ' + c + '°C']; }
+  return ['Done', 'do that'];
+}
 async function fire(op, btn){
+  const [done, doing] = opText(op);
   if(btn) btn.classList.add('busy');
   try{
     await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
@@ -776,10 +806,11 @@ async function fire(op, btn){
     await new Promise(r => setTimeout(r, 600));
     const d = await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
       body: JSON.stringify({data: op, timeOut: 20})});
-    if(d.ok){ toast('Sent ' + op); setTimeout(load, 1800); }
+    if(d.ok){ toast(done); setTimeout(load, 1800); }
     else if(String(d.code) === '50043') toast('Car is asleep or out of signal');
-    else toast(d.msg || d.error || ('Failed: ' + d.code));
-  }catch(e){ toast('Network error'); }
+    else if(String(d.code) === '9997') toast('CarLinko login expired');
+    else toast('Could not ' + doing);
+  }catch(e){ toast('Could not reach the dashboard server'); }
   if(btn) btn.classList.remove('busy');
 }
 
