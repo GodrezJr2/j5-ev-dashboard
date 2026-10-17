@@ -463,6 +463,15 @@
     border-top:1px solid var(--line);text-align:center}
   .caltot b{display:block;font-size:16.5px;font-weight:750;font-variant-numeric:tabular-nums}
   .caltot span{display:block;font-size:10.5px;color:var(--fnt);margin-top:3px}
+  .caltot.mid{margin-top:var(--s4);padding-top:0;border-top:0}
+  .calsub{text-align:center;font-size:12px;color:var(--fnt);margin-top:var(--s4)}
+  .calday.off.cg{opacity:.75;pointer-events:auto;background:var(--card);box-shadow:var(--sh-1)}
+  .calday.sel{box-shadow:inset 0 0 0 1.5px var(--acc)}
+  .calcard{margin:var(--s5) 0 0}
+  .calch{padding:var(--s4) var(--s4) 0;font-size:13.5px;font-weight:700}
+  .calcard .caltot{margin:0;border-top:0;padding:var(--s3) var(--s4) var(--s4)}
+  .calcard .row{min-height:54px;padding:11px var(--s4)}
+  .calcard .caltot + .row{border-top:1px solid var(--line)}
 
   /* account header + share card */
   .vveh{background:linear-gradient(140deg,var(--heroA),var(--card));border-radius:var(--r3);
@@ -1544,14 +1553,43 @@ function drawChgCurve(s){
 }
 
 // ---- distance page: monthly calendar (same /api/history as v1's calendar view) ----
+// Grid + month summary on top, and a card for the selected day (trips, energy, charging) below.
 let calMonth = null;   // 'YYYY-MM'
+let calSel = null;     // selected day of calMonth; null = newest day with activity
+let distSeq = 0;       // renderDist can be entered twice (deep link + tap, fast month flips)
 const MON = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function money(n){
+  const c = S.currency || {};
+  return (c.symbol || '') + Math.round(n).toLocaleString(c.locale || undefined);
+}
+function calStat(v, u){ return '<div><b class="num">' + v + '</b><span>' + u + '</span></div>'; }
+function calDay(x, cy, cm){
+  const when = new Date(cy, cm - 1, x.d).toLocaleDateString('en-GB',
+    {weekday: 'long', day: 'numeric', month: 'long'});
+  let h = '<div class="rowcard calcard"><div class="calch">' + when + '</div>' +
+    '<div class="caltot">' + calStat(x.km, 'km driven') + calStat(x.kwh || '—', 'kWh used') +
+    calStat(x.eff != null ? x.eff : '—', 'kWh/100km') + '</div>';
+  (x.trips || []).forEach(t => {
+    h += '<div class="row"><span class="rl">' + t.from + (t.to !== t.from ? ' – ' + t.to : '') +
+      (t.min >= 1 ? '<small>' + t.min + ' min</small>' : '') + '</span>' +
+      '<span class="rv">' + t.km + ' km</span></div>';
+  });
+  (x.charges || []).forEach(c => {
+    h += '<div class="row"><span class="rl">Charged ' + c.at + ' · +' + c.kwh + ' kWh<small>' +
+      c.soc0 + '% → ' + c.soc1 + '% · ' + c.min + ' min · avg ' + c.avg_kw + ' kW</small></span>' +
+      '<span class="rv">' + money(c.cost) + '</span></div>';
+  });
+  if(!(x.trips || []).length && !(x.charges || []).length)
+    h += '<div class="row"><span class="rl">Nothing logged<small>The car was not seen on the road or on a charger.</small></span></div>';
+  return h + '</div>';
+}
 async function renderDist(){
   const el = $('pgDistBody');
   if(!calMonth){
     const n = new Date();
     calMonth = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
   }
+  const mine = ++distSeq;
   const [cy, cm] = calMonth.split('-').map(Number);
   const nav = d => '<svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="1.9" ' +
     'stroke-linecap="round" stroke-linejoin="round"><path d="' + (d < 0 ? 'M7 1L1 7l6 6' : 'M1 1l6 6-6 6') + '"/></svg>';
@@ -1563,16 +1601,24 @@ async function renderDist(){
   $('calP').onclick = () => { shiftMonth(-1); };
   $('calN').onclick = () => { shiftMonth(1); };
   const d = await api('/api/history?month=' + calMonth);
+  if(mine !== distSeq) return;                     // a newer render started while this was loading
   const g = $('calG');
   const lead = (new Date(cy, cm - 1, 1).getDay() + 6) % 7;   // Monday-first
   const maxKm = Math.max(1, ...d.days.map(x => x.km));
+  const active = x => x.km > 0 || x.chg_kwh > 0;
+  if(calSel == null || !d.days.some(x => x.d === calSel && active(x))){
+    const last = d.days.filter(active).pop();
+    calSel = last ? last.d : null;
+  }
   let cells = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(x =>
     '<div class="caldow">' + x + '</div>').join('');
   for(let i = 0; i < lead; i++) cells += '<div></div>';
   d.days.forEach(x => {
     const has = x.km > 0;
     const op = has ? (0.35 + 0.65 * x.km / maxKm) : 0;
-    cells += '<button class="calday ' + (has ? 'on' : 'off') + '" data-d="' + x.d + '">' +
+    // a day with only a charge is dim but still tappable, so its session is reachable
+    cells += '<button class="calday ' + (has ? 'on' : 'off') + (!has && x.chg_kwh > 0 ? ' cg' : '') +
+      (x.d === calSel ? ' sel' : '') + '" data-d="' + x.d + '">' +
       (op ? '<span class="calwash" style="opacity:' + (op * 0.16).toFixed(2) + '"></span>' : '') +
       '<span class="cd">' + x.d + '</span>' +
       '<span class="ck" style="opacity:' + (has ? 1 : 0.4) + '">' + (has ? x.km : '·') + '</span>' +
@@ -1580,22 +1626,35 @@ async function renderDist(){
       '</button>';
   });
   g.innerHTML = cells;
-  g.querySelectorAll('.calday.on').forEach(b => b.onclick = () => {
-    const x = d.days.find(v => v.d == b.dataset.d);
-    if(x) toast(MON[cm - 1] + ' ' + x.d + ': ' + x.km + ' km · ' + x.kwh + ' kWh' +
-      (x.chg_kwh ? ' · +' + x.chg_kwh + ' kWh charged' : ''));
-  });
   const t = d.totals || {};
+  const per = t.days_driven ? Math.round(t.km / t.days_driven) : null;
   el.insertAdjacentHTML('beforeend',
-    '<div class="caltot">' +
-    '<div><b class="num">' + (t.km || 0) + '</b><span>km driven</span></div>' +
-    '<div><b class="num">' + (t.kwh || 0) + '</b><span>kWh used</span></div>' +
-    '<div><b class="num">' + (t.chg_kwh || 0) + '</b><span>kWh charged</span></div></div>');
+    '<div class="caltot">' + calStat(t.km || 0, 'km driven') + calStat(t.kwh || 0, 'kWh used') +
+      calStat(t.chg_kwh || 0, 'kWh charged') + '</div>' +
+    '<div class="caltot mid">' + calStat(t.eff != null ? t.eff : '—', 'kWh/100km') +
+      calStat(t.chg_cost ? money(t.chg_cost) : '—', 'charging cost') +
+      calStat(per != null ? per : '—', 'km per driving day') + '</div>' +
+    (t.days_driven ? '<div class="calsub">' + t.days_driven + (t.days_driven === 1 ? ' day' : ' days') +
+      ' driven · ' + (t.trips || 0) + (t.trips === 1 ? ' trip' : ' trips') + ' · ' +
+      (t.charges || 0) + (t.charges === 1 ? ' charge' : ' charges') + '</div>' : '') +
+    '<div id="calDay"></div>');
+  const paint = () => {
+    const x = d.days.find(v => v.d === calSel);
+    $('calDay').innerHTML = x ? calDay(x, cy, cm) : '';
+  };
+  paint();
+  g.querySelectorAll('.calday.on, .calday.cg').forEach(b => b.onclick = () => {
+    calSel = Number(b.dataset.d);
+    g.querySelectorAll('.calday.sel').forEach(n => n.classList.remove('sel'));
+    b.classList.add('sel');
+    paint();
+  });
 }
 function shiftMonth(dir){
   const [y, m] = calMonth.split('-').map(Number);
   const n = new Date(y, m - 1 + dir, 1);
   calMonth = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+  calSel = null;
   renderDist();
 }
 

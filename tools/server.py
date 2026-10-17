@@ -466,6 +466,7 @@ def chg_eff(soc_end):
     if soc_end <= 85: return 0.91
     return 0.91 + (0.855 - 0.91) * (soc_end - 85) / 10.0
 TRIP_GAP = 180          # parked >3 min => a trip ends (merges short red-light stops)
+OUTING_GAP = 1200       # month_history folds trips parked <20 min apart into one outing
 MAX_PAIR_GAP = 1800     # >30 min between two logged frames = a hole in the log (service down, car
                         # offline, TBox asleep). The odo/SoC delta across a hole covers driving we
                         # never saw, so it can't be attributed to a day/week/trip -- skip the pair.
@@ -1090,16 +1091,39 @@ def month_history(month):
     for t in trips:
         k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
         km_day[k] = km_day.get(k, 0) + t["km"]
+    # build_trips() splits on every >3 min stop and the log is sparse, so a day is 20+ fragments
+    # (some "0 min" at 2000 km/h -- late cloud catch-ups). For the day view, stops under
+    # OUTING_GAP are folded into one outing. Per-outing energy is deliberately left out: the
+    # SoC drop often lands while parked (see day_energy), so summing trip kWh disagrees with
+    # the day's figure.
+    trips_day = {}                                      # day -> outings, oldest first
+    for t in sorted(trips, key=lambda t: t["start_ts"]):
+        k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
+        lst = trips_day.setdefault(k, [])
+        if lst and t["start_ts"] - lst[-1]["end_ts"] <= OUTING_GAP:
+            lst[-1]["end_ts"] = max(lst[-1]["end_ts"], t["end_ts"]); lst[-1]["km"] += t["km"]
+        else:
+            lst.append({"start_ts": t["start_ts"], "end_ts": t["end_ts"], "km": t["km"]})
+    for k, lst in trips_day.items():
+        trips_day[k] = [{"from": time.strftime("%H:%M", time.localtime(o["start_ts"])),
+                         "to": time.strftime("%H:%M", time.localtime(o["end_ts"])),
+                         "km": o["km"], "min": round((o["end_ts"] - o["start_ts"]) / 60)}
+                        for o in lst]
     fr = [(ts, d2.get("battery"), d2.get("odometer")) for ts, dt2, d2 in data
           if d2.get("battery") is not None and d2.get("odometer") is not None]
     sess = build_sessions(fr, t1)
     chg = {}                                            # day -> aggregated charging (in + metered cost)
     for s in sess:
         k = time.strftime("%Y-%m-%d", time.localtime(s["start"]))
-        d = chg.setdefault(k, {"kwh": 0.0, "cost": 0, "n": 0})
+        d = chg.setdefault(k, {"kwh": 0.0, "cost": 0, "n": 0, "list": []})
+        cost = s["kwh"] / chg_eff(s["soc1"]) * TARIFF_IDR
         d["kwh"] += s["kwh"]
-        d["cost"] += s["kwh"] / chg_eff(s["soc1"]) * TARIFF_IDR
+        d["cost"] += cost
         d["n"] += 1
+        d["list"].append({"at": time.strftime("%H:%M", time.localtime(s["start"])),
+                          "kwh": round(s["kwh"], 1), "cost": round(cost),
+                          "soc0": s["soc0"], "soc1": s["soc1"],
+                          "min": round(s["dur_h"] * 60), "avg_kw": round(s["avg"], 1)})
     days = []
     for day in range(1, ndays + 1):
         k = f"{y:04d}-{m:02d}-{day:02d}"
@@ -1110,12 +1134,21 @@ def month_history(month):
         c = chg.get(k)
         days.append({"d": day, "km": km, "kwh": round(u, 1), "eff": eff,
                      "chg_kwh": round(c["kwh"], 1) if c else 0,
-                     "chg_cost": round(c["cost"]) if c else 0})
+                     "chg_cost": round(c["cost"]) if c else 0,
+                     "trips": trips_day.get(k, []),
+                     "charges": c["list"] if c else []})
+    # month efficiency only over days that pass the same gate, so one bad day cannot skew it
+    ok = [x for x in days if x["eff"] is not None]
+    ok_km = sum(x["km"] for x in ok)
     return {"month": f"{y:04d}-{m:02d}", "days": days,
             "totals": {"km": sum(x["km"] for x in days),
                        "kwh": round(sum(x["kwh"] for x in days), 1),
                        "chg_kwh": round(sum(x["chg_kwh"] for x in days), 1),
-                       "chg_cost": round(sum(x["chg_cost"] for x in days))},
+                       "chg_cost": round(sum(x["chg_cost"] for x in days)),
+                       "days_driven": sum(1 for x in days if x["km"] > 0),
+                       "trips": sum(len(x["trips"]) for x in days),
+                       "charges": sum(len(x["charges"]) for x in days),
+                       "eff": round(sum(x["kwh"] for x in ok) / ok_km * 100, 1) if ok_km else None},
             "resync_km": "skip" if resync_skip else "count"}
 
 # ---- long-trip planner: geocode (Nominatim) + route (OSRM) + SPKLU (Overpass/OSM), all keyless ----
