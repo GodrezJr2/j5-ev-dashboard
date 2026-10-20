@@ -868,7 +868,7 @@ const MAP_ID={
   "Specifications":"Spesifikasi","Performance":"Performa","Dimensions":"Dimensi",
   "Power":"Tenaga","Torque":"Torsi","Drivetrain":"Penggerak","Battery":"Baterai","Range NEDC":"Jangkauan NEDC",
   "Length":"Panjang","Width":"Lebar","Height":"Tinggi","Wheelbase":"Jarak sumbu roda","Ground clearance":"Jarak ke tanah",
-  "Recent trips":"Perjalanan terakhir","Charging":"Pengisian","This session":"Sesi ini","Time left":"Sisa waktu",
+  "Recent trips":"Perjalanan terakhir","avg":"rata2","Charging":"Pengisian","This session":"Sesi ini","Time left":"Sisa waktu",
   "Lifetime":"Sepanjang waktu","kWh charged":"kWh diisi","Rp spent":"Rp terpakai","km driven":"km ditempuh","Rp saved":"Rp hemat",
   "Charge planner":"Perencana isi","Charge to":"Isi sampai",
   "Into battery":"Masuk baterai","Buy at meter":"Beli di meteran","Range +km":"Tambah jangkauan",
@@ -1903,12 +1903,14 @@ async function load(live){
       hh.append(r); });
   } else { $('chgChart').style.display='none'; $('chgToggle').classList.remove('open'); }
   // trips
-  const tl=$('tripList'); tl.replaceChildren(); const trips=d.trips||[];
+  // outings (fragments parked <20 min apart folded server-side, same as v2's day card);
+  // no per-trip kWh: the SoC drop often lands while parked, so it only matches per day
+  const tl=$('tripList'); tl.replaceChildren(); const trips=d.outings||[];
   trips.forEach(t=>{ const row=document.createElement('div'); row.className='trip';
-    const parts=[t.start_dt, t.min+' min']; if(t.avg_kmh!=null)parts.push(t.avg_kmh+' km/h');
+    const parts=[t.day, t.from+(t.to!==t.from?'–'+t.to:'')];
     row.innerHTML=`<div><div class="km num">${t.km}<u>km</u></div><div class="when">${parts.join(' · ')}</div></div>`+
-      `<div class="r"><div class="eff num">${t.kwh100!=null?t.kwh100:'—'}<u>${t.kwh100!=null?'kWh/100':''}</u></div>`+
-      `<div class="sub2">${t.kwh!=null?t.kwh+' '+T('kWh used'):''}</div></div>`;
+      `<div class="r"><div class="eff num">${t.min||'<1'}<u>min</u></div>`+
+      `<div class="sub2">${t.avg_kmh!=null?T('avg')+' '+t.avg_kmh+' km/h':''}</div></div>`;
     tl.append(row); });
   $('tripCount').textContent = trips.length? trips.length+' '+T('shown'):'';
   if(!trips.length) tl.innerHTML='<div class="cap" style="text-align:left">'+T('No trips yet — drive and they appear here.')+'</div>';

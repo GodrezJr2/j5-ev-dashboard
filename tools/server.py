@@ -536,6 +536,32 @@ def build_trips(data, resync_skip=True):
                     "kwh": round(kwh, 1) if kwh else None, "kwh100": eff})
     return out[::-1]                                    # newest first
 
+def fold_outings(trips):
+    """build_trips() splits on every >3 min stop and the log is sparse, so one drive is many
+    fragments (some "0 min" at 2000 km/h -- late cloud catch-ups). Fragments parked under
+    OUTING_GAP apart are folded into one outing. No per-outing energy: the SoC drop often lands
+    while parked (see day_energy), so outing kWh would disagree with the day's figure.
+    avg_kmh = km / outing span (red lights and short stops included), only for outings of 3+ min:
+    the log is too sparse for a moving-time figure. Oldest first."""
+    outs = []
+    for t in sorted(trips, key=lambda t: t["start_ts"]):
+        if outs and t["start_ts"] - outs[-1]["end_ts"] <= OUTING_GAP:
+            o = outs[-1]
+            o["end_ts"] = max(o["end_ts"], t["end_ts"]); o["km"] += t["km"]; o["legs"] += 1
+        else:
+            outs.append({"start_ts": t["start_ts"], "end_ts": t["end_ts"], "km": t["km"], "legs": 1})
+    res = []
+    for o in outs:
+        lt0, lt1 = time.localtime(o["start_ts"]), time.localtime(o["end_ts"])
+        span = o["end_ts"] - o["start_ts"]
+        res.append({"start_ts": o["start_ts"], "end_ts": o["end_ts"],
+                    "day": time.strftime("%a %d %b", lt0),
+                    "from": time.strftime("%H:%M", lt0), "to": time.strftime("%H:%M", lt1),
+                    "km": o["km"], "min": round(span / 60),
+                    "avg_kmh": round(o["km"] / (span / 3600.0)) if span >= 180 else None,
+                    "legs": o["legs"]})
+    return res
+
 def day_energy(data, resync_skip):
     """kWh used per day from EVERY SoC drop observed between consecutive frames, not just drops
     inside trips -- a drop often lands while parked (e.g. the BMS settles a minute after you
@@ -731,6 +757,7 @@ def analyze(data, trips, kwh_day):
         out["charging"]["session"] = session_detail(detail)
     trips_all = trips
     out["trips"] = trips_all[:8]
+    out["outings"] = fold_outings(trips_all)[::-1][:8]   # newest first, what the UIs list
     # Overall average speed = total distance / total time, not the mean of per-trip averages
     # (one short burst trip would dominate -- a cloud catch-up of a few km in ~10 s reads as
     # 700+ km/h). Only trips that actually lasted a minute count; sub-minute "trips" are
@@ -846,6 +873,12 @@ def demo_summary():
                                  "dur_min": 47, "kwh": 41.2, "soc0": 18, "soc1": 88, "avg_kw": 52.6,
                                  "peak_kw": 61.3, "kwh_billed": 45.6, "cost": 115800, "series": series}},
         "trips": trips,
+        "outings": [{"day": time.strftime("%a %d %b", time.localtime(now - h * 3600)),
+                     "from": time.strftime("%H:%M", time.localtime(now - h * 3600)),
+                     "to": time.strftime("%H:%M", time.localtime(now - h * 3600 + mn * 60)),
+                     "km": km, "min": mn, "avg_kmh": v, "legs": lg}
+                    for h, km, mn, v, lg in ((5, 52, 78, 44, 3), (29, 27, 46, 39, 2),
+                                             (54, 63, 85, 48, 4), (78, 18, 33, 33, 1))],
         "tpms": [{"pos": p, "psi": None, "temp": None, "valid": False} for p in TPMS_POS],
         "tpms_updated": None, "tpms_age_min": None, "tpms_live": False, "tpms_raw": None,
         "tyre_status": "Normal", "tyre_indirect": True,
@@ -1032,6 +1065,7 @@ def _summary():
         out["charging"]["rate_source"] = "soc-estimate"
     out["wltc_range_km"] = dec.get("wltc_range_km")
     out["trips"] = res.get("trips", [])
+    out["outings"] = res.get("outings", [])
     out["avg_speed"] = res.get("avg_speed")
     out["health"] = res.get("health", {})
     out["lifetime"] = res.get("lifetime", {})
@@ -1091,24 +1125,10 @@ def month_history(month):
     for t in trips:
         k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
         km_day[k] = km_day.get(k, 0) + t["km"]
-    # build_trips() splits on every >3 min stop and the log is sparse, so a day is 20+ fragments
-    # (some "0 min" at 2000 km/h -- late cloud catch-ups). For the day view, stops under
-    # OUTING_GAP are folded into one outing. Per-outing energy is deliberately left out: the
-    # SoC drop often lands while parked (see day_energy), so summing trip kWh disagrees with
-    # the day's figure.
-    trips_day = {}                                      # day -> outings, oldest first
-    for t in sorted(trips, key=lambda t: t["start_ts"]):
-        k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
-        lst = trips_day.setdefault(k, [])
-        if lst and t["start_ts"] - lst[-1]["end_ts"] <= OUTING_GAP:
-            lst[-1]["end_ts"] = max(lst[-1]["end_ts"], t["end_ts"]); lst[-1]["km"] += t["km"]
-        else:
-            lst.append({"start_ts": t["start_ts"], "end_ts": t["end_ts"], "km": t["km"]})
-    for k, lst in trips_day.items():
-        trips_day[k] = [{"from": time.strftime("%H:%M", time.localtime(o["start_ts"])),
-                         "to": time.strftime("%H:%M", time.localtime(o["end_ts"])),
-                         "km": o["km"], "min": round((o["end_ts"] - o["start_ts"]) / 60)}
-                        for o in lst]
+    trips_day = {}                                      # day -> outings (fold_outings), oldest first
+    for o in fold_outings(trips):
+        k = time.strftime("%Y-%m-%d", time.localtime(o["start_ts"]))
+        trips_day.setdefault(k, []).append({x: o[x] for x in ("from", "to", "km", "min")})
     fr = [(ts, d2.get("battery"), d2.get("odometer")) for ts, dt2, d2 in data
           if d2.get("battery") is not None and d2.get("odometer") is not None]
     sess = build_sessions(fr, t1)
