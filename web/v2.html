@@ -500,6 +500,12 @@
     padding-top:var(--s4);border-top:1px solid var(--line)}
   .fgrid2 b{display:block;font-size:18px;font-weight:750;font-variant-numeric:tabular-nums}
   .fgrid2 span{display:block;font-size:11px;color:var(--fnt);margin-top:3px}
+  .fgrid2 b small{font-size:11px;font-weight:600;color:var(--mut)}
+  .flexc .fsub{font-size:11.5px;color:var(--fnt);margin-top:3px}
+  .flexc .fbig u{letter-spacing:0}
+  .flexc .fbeat{margin-top:var(--s4);padding:10px;border-radius:var(--r2);text-align:center;
+    font-size:12.5px;font-weight:700;color:var(--acc-ink);background:var(--acc-sf)}
+  .flexc .ffoot{margin-top:var(--s4);font-size:11px;line-height:1.5;color:var(--fnt);text-align:center}
 
   .seg{display:inline-flex;border-radius:var(--r1);overflow:hidden;flex:none;background:var(--card-2)}
   .seg button{padding:7px 12px;font-size:12px;font-weight:700;color:var(--mut);
@@ -1659,22 +1665,39 @@ function shiftMonth(dir){
 }
 
 // ---- flex / share card ----
+// Same facts as v1's card (range, efficiency, lifetime km, saved, CO2, battery, WLTP beat),
+// with this month's km as the hero number.
+function compactMoney(n){
+  const c = S.currency || {};
+  if(c.code === 'IDR' && n >= 1e6) return (c.symbol || 'Rp') + (n / 1e6).toFixed(1) + 'jt';
+  return money(n);
+}
 function renderFlex(){
   const el = $('pgFlexBody');
-  const lf = S.lifetime || {}, e = S.energy || {};
+  const lf = S.lifetime || {}, e = S.energy || {}, h = S.health || {}, ins = S.insights || {};
+  const cons = ins.consumption != null ? ins.consumption : e.consumption;
+  const wltp = S.wltp_kwh_100;
+  const beat = cons && wltp ? Math.round((wltp - cons) / wltp * 100) : null;
+  const D = '—';
+  const cell = (v, k) => '<div><b class="num">' + v + '</b><span>' + k + '</span></div>';
   el.innerHTML =
     '<div class="flexc"><div class="fm">' + ((S.vehicle && S.vehicle.model) || 'My EV') + '</div>' +
-    '<div class="fbig num">' + (S.km && S.km.month != null ? S.km.month : '—') +
+    '<div class="fsub">Self-hosted telematics</div>' +
+    '<div class="fbig num">' + (S.km && S.km.month != null ? S.km.month.toLocaleString() : D) +
       '<u>km this month</u></div>' +
     '<div class="fgrid2">' +
-    '<div><b class="num">' + (S.battery != null ? S.battery + '%' : '—') + '</b><span>battery now</span></div>' +
-    '<div><b class="num">' + (e.consumption != null ? e.consumption : '—') + '</b><span>kWh/100km</span></div>' +
-    '<div><b class="num">' + (lf.saved != null ? (S.currency ? S.currency.symbol : '') +
-      (lf.saved / 1000000).toFixed(1) + 'jt' : '—') + '</b><span>saved vs petrol</span></div>' +
-    '<div><b class="num">' + (lf.co2_saved != null ? lf.co2_saved.toLocaleString() + ' kg' : '—') +
-      '</b><span>CO2 avoided</span></div>' +
-    '</div></div>' +
-    '<div class="note">Screenshot to share. Generated locally from your own logged data.</div>';
+    cell(S.range_km != null ? Math.round(S.range_km) + ' km' : D, 'range now') +
+    cell(cons != null ? cons : D, 'kWh/100km') +
+    cell(lf.km != null ? Math.round(lf.km).toLocaleString() + ' km' : D, 'driven in total') +
+    cell(lf.saved != null ? compactMoney(lf.saved) : D, 'saved vs petrol') +
+    cell(lf.co2_saved != null ? lf.co2_saved.toLocaleString() + ' kg' : D, 'CO2 avoided') +
+    cell((S.battery != null ? S.battery + '%' : D) +
+      (h.usable_kwh != null ? ' <small>of ' + h.usable_kwh + ' kWh</small>' : ''), 'battery now') +
+    '</div>' +
+    (beat > 0 ? '<div class="fbeat">Beating WLTP by ' + beat + '% · ' + cons + ' vs ' + wltp + ' kWh/100km</div>' : '') +
+    '<div class="ffoot">Reverse-engineered from the CarLinko cloud: live data the official app won’t show you.</div>' +
+    '</div>' +
+    '<div class="note">Screenshot to share. Plate and VIN are never shown here. Generated locally from your own logged data.</div>';
 }
 
 // ---- account tab ----
