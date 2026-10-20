@@ -507,6 +507,31 @@
     font-size:12.5px;font-weight:700;color:var(--acc-ink);background:var(--acc-sf)}
   .flexc .ffoot{margin-top:var(--s4);font-size:11px;line-height:1.5;color:var(--fnt);text-align:center}
 
+  /* charge calculator */
+  .cpto{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s3)}
+  .cpto .pval u{font-size:22px;font-weight:650;color:var(--mut);text-decoration:none;margin-left:2px}
+  .cpfrom{font-size:13px;color:var(--mut);padding-bottom:4px}
+  .cpfrom b{color:var(--ink);font-weight:700}
+  .cprange{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:var(--rf);
+    margin:var(--s5) 0 var(--s2);background:var(--card-2);outline:none}
+  .cprange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+    background:var(--card);border:2px solid var(--acc);box-shadow:var(--sh-1);cursor:pointer}
+  .cprange::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--card);
+    border:2px solid var(--acc);box-shadow:var(--sh-1);cursor:pointer}
+  .cpchips{display:flex;gap:var(--s2);margin-top:var(--s3)}
+  .cpchips button{flex:1;padding:8px 0;border-radius:var(--r1);background:var(--card-2);
+    font-size:12.5px;font-weight:700;color:var(--mut);font-variant-numeric:tabular-nums}
+  .cpchips button.on{background:var(--btn);color:var(--btn-ink)}
+  .cpchips button:disabled{opacity:.35}
+  .cpmode{display:flex;justify-content:space-between;align-items:center;gap:var(--s3)}
+  .cpcost{display:flex;justify-content:space-between;align-items:center;gap:var(--s3);margin-top:var(--s4);
+    padding-top:var(--s3);border-top:1px solid var(--line)}
+  .cpcost label{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)}
+  .cpcost input{width:84px;border-radius:var(--r1);padding:7px 9px;background:var(--card-2);color:var(--ink);
+    font:inherit;font-size:14px;font-weight:650;text-align:right;border:0;font-variant-numeric:tabular-nums}
+  .cpcost input::-webkit-outer-spin-button,.cpcost input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .cpcost .pval{font-size:26px;margin:0}
+
   .seg{display:inline-flex;border-radius:var(--r1);overflow:hidden;flex:none;background:var(--card-2)}
   .seg button{padding:7px 12px;font-size:12px;font-weight:700;color:var(--mut);
     transition:background var(--t-mid) linear,color var(--t-mid) linear}
@@ -640,6 +665,8 @@ MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduc
   <div class="pbody" id="pgDistBody"></div></div>
 <div class="page" id="pgFlex" data-k="flex"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Share card</h2></div>
   <div class="pbody" id="pgFlexBody"></div></div>
+<div class="page" id="pgPlan" data-k="plan"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Charge calculator</h2></div>
+  <div class="pbody" id="pgPlanBody"></div></div>
 
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true">
@@ -1517,7 +1544,9 @@ function renderChg(){
   const hist = (c.history || []).map(x =>
     '<div class="hrow2"><span>' + x.dt + '</span><span><b class="num">' + x.kwh + ' kWh</b> · ' +
     x.dur_min + ' min · ' + cur + Number(x.cost).toLocaleString() + '</span></div>').join('');
-  el.innerHTML = top + curveHtml +
+  const calc = '<div class="rowcard" style="margin-top:var(--s3)">' +
+    row('plug', 'Charge calculator', 'Cost to a target %', '', 'plan') + '</div>';
+  el.innerHTML = top + calc + curveHtml +
     sech('This month') +
     '<div class="panel"><div class="stats" style="border-top:0;padding-top:0;margin-top:0">' +
       '<div><b class="num">' + (c.month_kwh || 0) + '</b><span>kWh in</span></div>' +
@@ -1526,6 +1555,7 @@ function renderChg(){
       '</div></div>' +
     sech('History') +
     '<div class="panel">' + (hist || '<div class="plbl">No sessions logged yet</div>') + '</div>';
+  el.querySelector('[data-page="plan"]').onclick = () => openPage('plan');
   if(s) drawChgCurve(s);
 }
 
@@ -1700,6 +1730,85 @@ function renderFlex(){
     '<div class="note">Screenshot to share. Plate and VIN are never shown here. Generated locally from your own logged data.</div>';
 }
 
+// ---- charge calculator ----
+// Same model as v1's planner, but DC efficiency follows the server's receipt-calibrated curve
+// (chg_eff in tools/server.py: 0.91 up to 85%, 0.855 from 95%). AC is the onboard-charger guess.
+const CP = {target: 80, mode: 'DC'};
+function cpPrices(){
+  let p = {}; try{ p = JSON.parse(localStorage.getItem('cpPrice') || '{}'); }catch(e){}
+  return {DC: p.DC != null ? p.DC : (S.tariff || 2540), AC: p.AC != null ? p.AC : 1445};
+}
+function cpEff(mode, end){
+  if(mode === 'AC') return 0.88;
+  if(end >= 95) return 0.855;
+  if(end <= 85) return 0.91;
+  return 0.91 + (0.855 - 0.91) * (end - 85) / 10;
+}
+function renderPlan(){
+  const el = $('pgPlanBody');
+  const now = S.battery != null ? S.battery : 0;
+  CP.target = Math.max(now, CP.target);
+  el.innerHTML =
+    '<div class="panel"><div class="cpto"><div><div class="plbl">Charge to</div>' +
+      '<div class="pval num"><span id="cpT"></span><u>%</u></div></div>' +
+      '<div class="cpfrom">from <b class="num">' + now + '%</b> now</div></div>' +
+      '<input type="range" class="cprange" id="cpR" min="' + now + '" max="100" step="1" aria-label="Target charge">' +
+      '<div class="cpchips">' + [60, 80, 90, 100].map(v =>
+        '<button data-t="' + v + '"' + (v < now ? ' disabled' : '') + '>' + v + '%</button>').join('') +
+      '</div></div>' +
+    '<div class="panel"><div class="cpmode"><span class="plbl">Charger</span><span class="seg">' +
+      '<button data-m="DC">DC · SPKLU</button><button data-m="AC">AC · home</button></span></div>' +
+      '<div class="stats">' +
+        '<div><b class="num" id="cpIn"></b><span>kWh into battery</span></div>' +
+        '<div><b class="num" id="cpBuy"></b><span>kWh at meter</span></div>' +
+        '<div><b class="num" id="cpKm"></b><span>range added</span></div>' +
+        '<div><b class="num" id="cpMin"></b><span>time</span></div></div>' +
+      '<div class="cpcost"><label>' + ((S.currency && S.currency.symbol) || '') +
+        ' <input id="cpP" type="number" inputmode="decimal" min="0"> / kWh</label>' +
+        '<span class="pval num" id="cpCost"></span></div></div>' +
+    '<div class="note" id="cpNote"></div>';
+  $('cpR').oninput = ev => { CP.target = +ev.target.value; cpUpdate(); };
+  el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { CP.target = Math.max(now, +b.dataset.t); cpUpdate(); });
+  el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { CP.mode = b.dataset.m; cpUpdate(); });
+  $('cpP').oninput = ev => {
+    const p = cpPrices(); p[CP.mode] = +ev.target.value || 0;
+    try{ localStorage.setItem('cpPrice', JSON.stringify(p)); }catch(e){}
+    cpUpdate(true);
+  };
+  cpUpdate();
+}
+// fromPrice: the user is typing in the price box, so don't rewrite it under the cursor
+function cpUpdate(fromPrice){
+  const now = S.battery != null ? S.battery : 0, t = CP.target, D = '—';
+  const cap = S.battery_kwh || 58.9;
+  const ins = S.insights || {}, e = S.energy || {};
+  const cons = ins.consumption != null ? ins.consumption : e.consumption;
+  const eff = cpEff(CP.mode, t);
+  const into = (t - now) / 100 * cap, buy = into / eff;
+  const price = cpPrices()[CP.mode];
+  // DC time from your own logged sessions (median avg kW); AC has no logged rate to lean on
+  const kws = ((S.charging && S.charging.history) || []).map(x => x.avg_kw).filter(v => v > 0).sort((a, b) => a - b);
+  const kw = CP.mode === 'DC' && kws.length ? kws[kws.length >> 1] : null;
+  const pct = now >= 100 ? 100 : (t - now) / (100 - now) * 100;
+  $('cpR').value = t;
+  $('cpR').style.background = 'linear-gradient(90deg,var(--acc) ' + pct + '%,var(--card-2) ' + pct + '%)';
+  $('cpT').textContent = t;
+  document.querySelectorAll('#pgPlanBody [data-t]').forEach(b => b.classList.toggle('on', +b.dataset.t === t));
+  document.querySelectorAll('#pgPlanBody [data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === CP.mode));
+  $('cpIn').textContent = into.toFixed(1);
+  $('cpBuy').textContent = buy.toFixed(1);
+  $('cpKm').textContent = cons ? '+' + Math.round(into / cons * 100) + ' km' : D;
+  $('cpMin').textContent = kw && into > 0 ? '~' + Math.round(into / kw * 60) + ' min' : D;
+  if(!fromPrice) $('cpP').value = price;
+  $('cpCost').textContent = money(buy * price);
+  $('cpNote').textContent = CP.mode === 'DC'
+    ? 'DC loss rises when you charge past 85% (taper and cell balancing), so the meter reads about ' +
+      Math.round((1 / eff - 1) * 100) + '% more than goes into the pack. Calibrated to real PLN Mobile receipts.' +
+      (kw ? ' Time uses your median logged DC rate, ' + kw + ' kW, and stretches near 100%.' : '')
+    : 'AC assumes about 12% onboard-charger loss. Set your home tariff above; it is kept on this device.' +
+      ' No time estimate: the car does not report your wallbox rate.';
+}
+
 // ---- account tab ----
 let vinShown = false;
 function renderAcct(){
@@ -1719,6 +1828,7 @@ function renderAcct(){
 
   const linkRows = [
     {ic: 'gauge',  t: 'Classic dashboard', s: 'Trips, SPKLU planner, full stats', fn: () => location.href = '/index.html'},
+    {ic: 'plug',   t: 'Charge calculator', s: 'Cost and kWh to any target %',     fn: () => openPage('plan')},
     {ic: 'chart',  t: 'Share card',        s: 'Month stats as a shareable card',  fn: () => openPage('flex')},
     {ic: 'camera', t: 'Update car photo',  s: 'Re-fetch the render from CarLinko', fn: async () => {
         const d = await api('/api/photorefresh', {method: 'POST'});
@@ -1750,7 +1860,8 @@ function renderAcct(){
 const PAGES = {ac: ['pgAc', renderAc], doors: ['pgDoors', renderDoors],
                tyres: ['pgTyres', renderTyres], energy: ['pgEnergy', renderEnergy],
                batt: ['pgBatt', renderBatt], chg: ['pgChg', renderChg],
-               dist: ['pgDist', renderDist], flex: ['pgFlex', renderFlex]};
+               dist: ['pgDist', renderDist], flex: ['pgFlex', renderFlex],
+               plan: ['pgPlan', renderPlan]};
 let openKey = null;
 
 function openPage(k, fromHistory){
