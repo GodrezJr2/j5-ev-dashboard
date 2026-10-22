@@ -100,3 +100,28 @@ find car → windows vent → A/C on/off → lock/unlock → (engine on/off last
 Full runtime capture (all labels at once) = mitm the app tapping each control — see
 `D:\android-mitm\README.md` (emulator + mitmproxy stack is built; the last mile is a TUN redirect
 because Flutter ignores the system proxy).
+
+## Live confirmation (automated, since 2026-10) — the server reads the result back
+The dashboard polls over REST, so it never saw CarLinko's async control-result frame (the app gets
+that over its WebSocket). `server.control_and_confirm()` closes the loop a different way: it
+snapshots the car's own **body-state** (`decode()`: `unlocked`, `trunk_open`, `windows`,
+`sunroof_open`, `ac_on`, `defrost_front`, `charge_state`) *before* the command, fires (wake `77` →
+op), then polls `/user/vehicle/state` for up to ~18 s and reports **what actually moved**.
+
+`POST /api/control {data, timeOut, confirm:true, wake:true}` →
+`{ok, code, state_before, state_after, changed:[fields], expect:{field,to}, confirmed}`.
+The Control tab now sends `confirm:true`, so a button says *"Locked ✓"* / *"A/C on ✓"* instead of
+just *"ok"* — which answers "did it actually lock?" directly.
+
+**This doubles as the opcode-label confirmation.** `server._OPCODE_EFFECT` maps each *confirmed*
+opcode above to the body-state field it should move; firing `740100` and seeing `unlocked`
+flip `true→false` both confirms the car locked **and** re-proves `740100 = Lock`. Opcodes whose
+effect isn't visible in telemetry (seat heat/vent on a J5, steering heat, A/C set-temp) report the
+raw `changed` set, and a mapped no-state action (find car) is confirmed by the ack alone. Work
+through the Control tab once, watch `changed`, and flip the remaining **static decode, pending**
+rows to confirmed.
+
+Status at wiring time: opcode CONSTANT POOL re-checked against CarLinko **v1.14.0** (versionCode
+178) — unchanged from 1.12.0, so the table above is still complete; only the **pending** labels
+await the one-tap confirmation this mechanism now automates. (See
+`docs/feature-parity-carlinko-v1.14.0.md`.)
