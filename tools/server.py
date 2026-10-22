@@ -18,6 +18,18 @@ import known_cars          # per-model constants the telemetry never carries (pa
 # than guess, and should treat a missing api_version as version 0 (any build before 2026-09-11).
 API_VERSION = 1
 
+# Stable operation IDs advertised by /api/status. These describe server code,
+# not whether a particular vehicle or CarLinko account supports an operation.
+CAPABILITIES = (
+    "settings_read",
+    "target_soc",
+    "charge_schedule",
+    "scheduled_travel",
+    "vehicle_alerts",
+    "climate_settings",
+    "climate_seats",
+)
+
 _poll_lock = threading.Lock()
 
 def live_poll():
@@ -1697,7 +1709,10 @@ class H(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if path == "/api/status":
             self._send(200, json.dumps({"configured": is_configured(), "gated": _gated(),
-                                        "authed": self._authed()}).encode(), "application/json")
+                                        "authed": self._authed(),
+                                        "api_version": API_VERSION,
+                                        "capabilities": [] if DEMO else CAPABILITIES}).encode(),
+                       "application/json")
             return
         if _gated() and not self._authed() and path not in self._PUBLIC:
             if path in ("/", "/index.html", "/v2.html"):  # gated + locked -> show the unlock page

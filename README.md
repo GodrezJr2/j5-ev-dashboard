@@ -347,6 +347,13 @@ No Docker? Install **Python 3.10+** ([python.org](https://www.python.org/downloa
 
 ### Updating a self-hosted box
 
+When a client asks for a newer dashboard, update this server's checkout and restart its service.
+The public `/api/status` response reports the same `api_version` as `/api/summary`,
+plus supported `capabilities`. See the
+[status contract](docs/api-map.md#public-status-and-capabilities--apistatus) for their meanings.
+After updating, reopen the client or use its retry action to check again. Maintainers can use
+the [release flow](docs/releasing.md) to prepare and check a tagged source release.
+
 **Docker:** `git pull && docker compose up -d --build`.
 
 **systemd** (the layout `tools/install.sh` sets up: the units run out of a git checkout). Push your
@@ -363,6 +370,12 @@ compares them with the repo. So "deployed" means "being served", not just "a fil
 `CARLINKO_DIR` (default `~/j5-ev-dashboard`), `CARLINKO_PORT`, `CARLINKO_BRANCH` or
 `CARLINKO_SERVICES` if your layout differs. Or run `tools/apply.sh` on the box itself. The
 maintainer's push-to-deploy pipeline is described in [docs/ci-cd.md](docs/ci-cd.md).
+
+**Hosted Docker deployments (Railway, Render, Fly.io):** update the connected repository to the
+desired upstream release and trigger a fresh image build/deploy in the host's dashboard. Keep the
+existing data volume and environment configuration attached. Hosts that track a branch may
+redeploy automatically after a push; verify the running `/api/status` response instead of assuming
+that a completed source update restarted the container.
 
 ### Set it up with an AI coding agent
 If the terminal isn't your thing, paste this into an AI coding agent (Claude Code, Cursor, etc.)
