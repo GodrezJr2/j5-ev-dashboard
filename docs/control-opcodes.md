@@ -64,13 +64,13 @@ on a live car (that's what the Control tab tester is for).
 | Lock / unlock | `740100` / `740200` | ✅ runtime-confirmed (J5 EV, ID, 2026-08-30) |
 | Windows close / vent / open | `740500` / `740E00` / `740600` | close/open ✅ (J5, 2026-08-30); vent pending |
 | Trunk open / close | `740300` / `740A00` | ✅ runtime-confirmed (J5 EV, ID, 2026-08-30) |
-| Find car | `740400` | static decode, pending one-tap |
+| Find car | `740400` | ✅ runtime-confirmed, acked `74040000` (Tiggo 7 CSH, 2026-10-22). It is the app's **Search** button (`vehicle_locate`), not a map lookup |
 | Sunroof close / open / tilt | `740F00` / `740F01` / `740F02` | static decode (no sunroof on J5 — needs Omoda 9 / Noble) |
 | Engine on / off | `740700` / `740800` | static decode, pending |
 | A/C on / off | `741001` / `741000` | ✅ runtime-confirmed (J5 EV Noble, IL, 2026-09-04 — @idoeilon, [#6](https://github.com/GodrezJr2/j5-ev-dashboard/issues/6)) |
-| A/C set temperature | `7411` + temp payload | encoding TBD — °C raw or half-degrees? |
+| A/C set temperature | `7411` + one byte = `0x80 + 2×°C` (`7411AC` = 22.0, `7411AD` = 22.5, `7411AE` = 23.0) | ✅ app capture + plain-opcode replay acked `7411AC00` (Tiggo 7 CSH, 2026-10-22). The app's first try was acked `7411AD44`; it then sent `7801` and retried to get `…00`, so a non-`00` trailing byte means "not applied" |
 | Front defog on / off | `741201` / `741200` | static decode, pending |
-| Seat heat L1–L3 / off — left, right, left-rear, right-rear | `741501–03`/`00`, `741601–03`/`00`, `741701–03`/`00`, `741901–03`/`00` | static decode (no seat heat on J5) |
+| Seat heat L1–L3 / off — left, right, left-rear, right-rear | `741501–03`/`00`, `741601–03`/`00`, `741701–03`/`00`, `741901–03`/`00` | `741501` (left, level I) + `741500` (off) ✅ app capture + replay (Tiggo 7 CSH, 2026-10-22); rest static decode (no seat heat on J5) |
 | Seat vent L1–L3 / off — left, right, left-rear, right-rear | `741A01–03`/`00`, `741B01–03`/`00`, `741C01–03`/`00`, `741E01–03`/`00` | static decode (no seat vent on J5) |
 | Quick heat on / off | `741F01` / `741F00` | static decode, pending |
 | Quick cool on / off | `742001` / `742000` | static decode, pending |
