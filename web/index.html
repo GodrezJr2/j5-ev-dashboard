@@ -1622,14 +1622,34 @@ function ctrlMap(){ try{
 function ctrlSetOp(k,op){ const m=ctrlMap(); if(op) m[k]=op.trim(); else delete m[k]; localStorage.setItem('ctrlMap',JSON.stringify(m)); }
 function ctrlLog(msg){ const el=$('ctrlLog'); if(!el)return; const t=new Date().toLocaleTimeString();
   el.insertAdjacentHTML('afterbegin','<div>'+t+' &mdash; '+msg+'</div>'); }
-async function fireOpcode(op,to){
+function ctrlStateMsg(d){
+  // Turn the server's before/after body-state diff into a plain-language result.
+  const f=(d.expect&&d.expect.field)||null, a=d.state_after||{};
+  const names={unlocked:['Unlocked','Locked'], trunk_open:['Tailgate open','Tailgate closed'],
+    sunroof_open:['Sunroof open','Sunroof closed'], ac_on:['A/C on','A/C off'],
+    defrost_front:['Defog on','Defog off']};
+  if(f && names[f]) return (a[f]?names[f][0]:names[f][1])+' &#10003;';
+  if(f==='windows') return 'Windows moved &#10003;';
+  if(f==='charge_state') return 'Charge command applied &#10003;';
+  return 'confirmed &#10003;';
+}
+async function fireOpcode(op,to,opts){
+  opts=opts||{};
   op=(op||'').trim(); if(!op){ ctrlLog('no opcode'); return; }
-  ctrlLog('&rarr; '+op+' &hellip;');
+  ctrlLog('&rarr; '+op+(opts.confirm?' &hellip; (confirming)':' &hellip;'));
   try{
+    const body={data:op,timeOut:parseInt(to)||20};
+    if(opts.confirm){ body.confirm=true; body.wake=true; }   // server wakes (77), fires, reads state back
     const r=await fetch('api/control',{method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({data:op,timeOut:parseInt(to)||20})});
+      body:JSON.stringify(body)});
     const d=await r.json();
-    if(d.ok) ctrlLog('&#10003; '+op+' ok');
+    if(d.ok){
+      if(opts.confirm){
+        if(d.confirmed) ctrlLog('&#10003; '+op+' &mdash; '+ctrlStateMsg(d));
+        else ctrlLog('&#10003; '+op+' sent &mdash; '+((d.changed&&d.changed.length)
+          ?('state moved: '+d.changed.join(', ')):'no state change seen yet (car may be asleep)'));
+      } else ctrlLog('&#10003; '+op+' ok');
+    }
     else if(String(d.code)==='50043') ctrlLog('&#10007; '+op+' &mdash; car unreachable (asleep / weak signal &mdash; use Bluetooth)');
     else ctrlLog('&#10007; '+op+' &mdash; '+(d.msg||d.error||d.code||'failed'));
     setTimeout(()=>load(),1500);   // pull fresh status after a command
@@ -1649,7 +1669,7 @@ function renderControls(){
       if(!code){ const nv=(prompt('Opcode (hex) for "'+a.lbl+'"','')||'').trim(); if(!nv) return; ctrlSetOp(a.k,nv); renderControls(); return; }
       if(a.confirm && !confirm(a.lbl+' — send now?')) return;
       b.classList.add('busy');
-      try{ await fireOpcode('77',20); await new Promise(r=>setTimeout(r,600)); await fireOpcode(code,20); }
+      try{ await fireOpcode(code,20,{confirm:true}); }   // server wakes (77) + fires + reads state back
       finally{ b.classList.remove('busy'); }
     });
     let lp; b.addEventListener('pointerdown',()=>{ lp=setTimeout(()=>{ const nv=prompt('Opcode for "'+a.lbl+'" (mismatch? fix it here)',ctrlMap()[a.k]||a.op||''); if(nv!==null){ ctrlSetOp(a.k,nv.trim()); renderControls(); } },600); });

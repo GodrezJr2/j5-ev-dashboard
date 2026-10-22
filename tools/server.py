@@ -239,6 +239,112 @@ def send_control(opcode, timeout=20):
         except Exception as e: d = {"code": "-1", "msg": f"relogin failed: {e}"}
     return d
 
+# ---- control-state confirmation: fire, then read the car's ACTUAL state back ----
+# The dashboard reads over REST, so it never saw CarLinko's async control-result
+# frame (the app gets that over its WebSocket). Instead we snapshot the car's own
+# body-state before and after the command and report what actually moved -- which
+# answers "did it lock?" and, over a few uses, live-VERIFIES the opcode->label map
+# that docs/control-opcodes.md still marks as guesses.
+
+# Full opcode -> (body-state field it should move, expected value | None).
+# Keyed by the WHOLE opcode, not a CMD/STATE split: the authoritative #11 jump-table
+# decode (docs/control-opcodes.md) shows on/off is often a different opcode, not a
+# state bit (lock 740100 / unlock 740200; A/C on 741001 / off 741000). `None` value =
+# "report any change" (no stable boolean to assert). field None = no observable
+# body-state (find car) -> confirmed by the command ack, not the diff.
+_OPCODE_EFFECT = {
+    "740100": ("unlocked",      False),  # lock
+    "740200": ("unlocked",      True),   # unlock
+    "740300": ("trunk_open",    True),   # trunk open
+    "740a00": ("trunk_open",    False),  # trunk close
+    "740500": ("windows",       None),   # windows close
+    "740600": ("windows",       None),   # windows open
+    "740e00": ("windows",       None),   # windows vent
+    "740f00": ("sunroof_open",  False),  # sunroof close
+    "740f01": ("sunroof_open",  True),   # sunroof open
+    "740f02": ("sunroof_open",  None),   # sunroof tilt
+    "740400": (None,            None),   # find car (no body-state change)
+    "741001": ("ac_on",         True),   # A/C on
+    "741000": ("ac_on",         False),  # A/C off
+    "741201": ("defrost_front", True),   # front defog on
+    "741200": ("defrost_front", False),  # front defog off
+    "742701": ("charge_state",  None),   # stop charging
+}
+_STATE_KEYS = ("unlocked", "doors", "trunk_open", "windows", "sunroof_open",
+               "ac_on", "ac_temp_c", "defrost_front", "charge_state", "charge_mode")
+
+def _latest_body_state():
+    """Most recent decoded body-state from the DB (same fields summary() surfaces).
+    None when there is no fresh frame to read."""
+    try:
+        if not os.path.exists(DB):
+            return None
+        conn = sqlite3.connect(DB)
+        try:
+            row = conn.execute("SELECT raw FROM telemetry WHERE online=1 AND raw IS NOT NULL "
+                               "ORDER BY ts DESC LIMIT 1").fetchone()
+        finally:
+            conn.close()
+        if not row or not row[0]:
+            return None
+        d = decode(row[0])
+        return {k: d.get(k) for k in _STATE_KEYS}
+    except Exception:
+        return None
+
+def _opcode_expect(op):
+    """{field, to} an opcode should produce, from the authoritative opcode map.
+    A UI hint -- the live diff is the source of truth. None = opcode not mapped."""
+    eff = _OPCODE_EFFECT.get((op or "").lower())
+    if eff is None:
+        return None
+    field, to = eff
+    return {"field": field, "to": to}
+
+def control_and_confirm(op, timeout=20, wake=True, settle=18.0):
+    """Fire an opcode, then poll the car until the affected field changes (or
+    `settle` seconds elapse) and report before/after. `wake` sends the benign 0x77
+    init first (the app's own wake-then-command sequence) so an asleep car actuates."""
+    before = _latest_body_state()
+    if wake and not DEMO:
+        try:
+            send_control("77", 10); time.sleep(0.6)
+        except Exception:
+            pass
+    d = send_control(op, timeout)
+    res = {"ok": str(d.get("code")) == "0000", "code": d.get("code"), "msg": d.get("msg"),
+           "state_before": before, "expect": _opcode_expect(op)}
+    if not res["ok"]:
+        res.update(state_after=before, changed=[], confirmed=False)
+        return res
+    exp = res["expect"]                       # None=unmapped opcode; else {field,to}
+    # A mapped opcode with no body-state field (find car) can't be seen in telemetry --
+    # a successful ack is the only confirmation there is, so don't poll.
+    if exp is not None and exp.get("field") is None:
+        res.update(state_after=before, changed=[], confirmed=True)
+        return res
+    field = exp.get("field") if exp else None   # None here = unmapped -> watch for ANY change
+    deadline = time.time() + max(4.0, settle)
+    after = before
+    while time.time() < deadline:
+        if not DEMO:
+            live_poll()
+        after = _latest_body_state()
+        if after and before:
+            if field and after.get(field) != before.get(field):
+                break
+            if field is None and after != before:
+                break
+        time.sleep(3.5)
+    changed = [k for k in (after or {}) if (before or {}).get(k) != (after or {}).get(k)]
+    res.update(state_after=after, changed=changed)
+    if field and after:
+        want = exp.get("to") if exp else None
+        res["confirmed"] = (after.get(field) == want) if want is not None else (field in changed)
+    else:
+        res["confirmed"] = bool(changed)
+    return res
+
 # ---- optional dashboard auth (off by default; set a dashboard_password to gate public hosting) ----
 SESSION_TTL = 30 * 86400
 
@@ -1619,6 +1725,32 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(),
                            "application/json")
             return
+        # CarLinko extended reads (notifications, operation log, car GPS, maintenance,
+        # alert config, charge schedule, geofences) -- see tools/carlinko_api.py.
+        if path in ("/api/notifications", "/api/noticecount", "/api/oplog", "/api/carloc",
+                    "/api/maintenance", "/api/alertconfig", "/api/chargeschedule", "/api/geofences"):
+            if not self._authed():
+                self._send(401, b'{"error":"auth"}', "application/json"); return
+            if DEMO:
+                self._send(200, json.dumps({"ok": True, "demo": True, "data": []}).encode(),
+                           "application/json"); return
+            import carlinko_api as clx
+            q = urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
+            g1 = lambda k, d=None: (q.get(k) or [d])[0]
+            pg = lambda: (int(g1("page", "1")), int(g1("size", "20")))
+            try:
+                if   path == "/api/notifications":  res = clx.notifications(*pg())
+                elif path == "/api/noticecount":    res = clx.notice_unread()
+                elif path == "/api/oplog":          res = clx.operation_log(*pg())
+                elif path == "/api/carloc":         res = clx.car_location()
+                elif path == "/api/maintenance":    res = clx.maintenance(*pg())
+                elif path == "/api/alertconfig":    res = clx.alert_config()
+                elif path == "/api/chargeschedule": res = clx.charge_schedule()
+                elif path == "/api/geofences":      res = clx.geofences(*pg())
+            except Exception as e:
+                res = {"ok": False, "error": str(e)[:180]}
+            self._send(200, json.dumps(res).encode(), "application/json")
+            return
         if path == "/":
             if not is_configured():
                 path = "/login.html"                          # first run -> login page
@@ -1701,12 +1833,42 @@ class H(BaseHTTPRequestHandler):
                 if not op or not all(ch in "0123456789abcdefABCDEF" for ch in op) or len(op) > 16:
                     self._send(200, json.dumps({"ok": False, "error": "opcode must be short hex"}).encode(),
                                "application/json"); return
+                # confirm:true -> fire, then read the car's actual state back and report what
+                # moved (lock/doors/windows/sunroof/AC). Default off = old fire-and-ack behaviour.
+                if body.get("confirm"):
+                    res = control_and_confirm(op, body.get("timeOut") or 20,
+                                              wake=body.get("wake", True))
+                    self._send(200, json.dumps(res).encode(), "application/json"); return
                 d = send_control(op, body.get("timeOut") or 20)
                 self._send(200, json.dumps({"ok": str(d.get("code")) == "0000",
                                             "code": d.get("code"), "msg": d.get("msg")}).encode(),
                            "application/json")
             except Exception as e:
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(), "application/json")
+            return
+        # CarLinko extended writes. Bodies are RE-inferred, so these default to a safe
+        # PREVIEW (return the exact request without sending); pass confirm:true to send.
+        if path in ("/api/targetsoc", "/api/airduration", "/api/alertconfig", "/api/chargeschedule"):
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            if DEMO:
+                self._send(200, json.dumps({"ok": False, "error": "not available in demo"}).encode(),
+                           "application/json"); return
+            import carlinko_api as clx
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n).decode() or "{}")
+                confirm = bool(body.get("confirm"))
+                if   path == "/api/targetsoc":      res = clx.set_target_soc(int(body.get("targetSoc")), confirm)
+                elif path == "/api/airduration":    res = clx.set_air_duration(int(body.get("minutes")), confirm)
+                elif path == "/api/alertconfig":    res = clx.set_alert_config(body.get("changes") or {}, confirm)
+                elif path == "/api/chargeschedule": res = clx.set_charge_schedule(
+                    bool(body.get("enabled")), int(body.get("hour", 0)),
+                    int(body.get("minute", 0)), int(body.get("duration", 1)),
+                    body.get("week"), confirm)
+            except Exception as e:
+                res = {"ok": False, "error": str(e)[:180]}
+            self._send(200, json.dumps(res).encode(), "application/json")
             return
         if path == "/api/photorefresh":                # re-grab this car's render from CarLinko
             if not self._authed():

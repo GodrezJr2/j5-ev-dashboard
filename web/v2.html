@@ -839,16 +839,28 @@ function opText(op){
   if(m){ const c = parseInt(m[1], 16); return ['A/C set to ' + c + '°C', 'set the A/C to ' + c + '°C']; }
   return ['Done', 'do that'];
 }
+// Turn the server's before/after body-state diff into a plain-language result.
+function ctrlStateMsg(d, fallback){
+  const f = d.expect && d.expect.field, a = d.state_after || {};
+  const names = {unlocked:['Unlocked','Locked'], trunk_open:['Tailgate open','Tailgate closed'],
+    sunroof_open:['Sunroof open','Sunroof closed'], ac_on:['A/C on','A/C off'],
+    defrost_front:['Defog on','Defog off']};
+  if(f && names[f]) return a[f] ? names[f][0] : names[f][1];
+  return fallback;
+}
 async function fire(op, btn){
   const [done, doing] = opText(op);
   if(btn) btn.classList.add('busy');
   try{
-    await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
-      body: JSON.stringify({data: '77', timeOut: 20})});
-    await new Promise(r => setTimeout(r, 600));
+    // confirm:true -> the server wakes the car (77), fires, then reads the
+    // body-state back, so the toast reports what actually happened.
     const d = await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
-      body: JSON.stringify({data: op, timeOut: 20})});
-    if(d.ok){ toast(done); setTimeout(load, 1800); }
+      body: JSON.stringify({data: op, timeOut: 20, confirm: true, wake: true})});
+    if(d.ok){
+      if(d.confirmed) toast(ctrlStateMsg(d, done));
+      else toast(done + ((d.changed && d.changed.length) ? '' : ' — sent (car may be asleep)'));
+      setTimeout(load, 1800);
+    }
     else if(String(d.code) === '50043') toast('Car is asleep or out of signal');
     else if(String(d.code) === '9997') toast('CarLinko login expired');
     else toast('Could not ' + doing);
