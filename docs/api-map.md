@@ -154,7 +154,7 @@ careless field rename becomes somebody else's outage rather than just ours.
 | `odometer` | bytes 18–20 (BE u24) | 882 |
 | `fuel_pct` **(PHEV)** | byte 21 | 58 % — `0` on every BEV frame |
 | `ac_on` | byte 23 | `0`=off, `!=0`=on (climate). **Live-verified on the E5**: a manual A/C toggle moved exactly this byte; fan/temp/seat/defrost changes leave it alone |
-| `ac_temp_c` | byte 24 | A/C target temp, **raw °C, no scaling** (E5, #5 — fits the Tiggo 8's `23` as a set point). ⚠️ On the J5 the byte reads 159–169, so treat as model-specific |
+| `ac_temp_c` | byte 24 | A/C target temp, **raw °C, no scaling** (E5, #5 — fits the Tiggo 8's `23` as a set point). ⚠️ On the J5 this byte is unverified: it read 159–169 in earlier logs, and as of 2026-09-20 it sits nearly static at 47–51 regardless of A/C on/off or time of day — neither is a plausible cabin-air reading, so the dashboard refuses it on a J5 rather than show it as fact. A full scan of every byte in the 73-byte blob (3,000 frames, on vs A/C off) found no other candidate that tracks A/C state or time of day, so **no verified cabin-air-temperature byte is currently known on the J5** — it may simply not be in this `action:6` packet |
 | `battery_pct` | byte 28 | 49 |
 | `range_km` (EV) | bytes 29–30 (BE u16) | 248 |
 | `seat_heat` | bytes 32–33 | L, R (0 = off) |
@@ -213,7 +213,7 @@ What held up:
 | 57 | `0` idle / `1` charging / `2` complete / `5` stop | exactly the 1,392 charging frames read 1, `2` appears right after each session, `5` seen in a 14-frame burst after a session start (stop/replug); `3`/`4` never seen |
 | 58–59 | minutes to done | counts 37 → 10 → 1 min through a real session; idle reads `0x3FF` = CarLinko's own `chargingTimeInvalidValue` sentinel |
 | 62–63 | instant power ×0.1 kW | 29.5–63.7 kW on DC, 3.9 kW on the Tiggo 8's AC charge, taper to 6.0 kW at 99 %, `0` when idle; consistent with the SoC-derived rate (51.8 kW avg vs 63.7 kW instant) |
-| 68–69 | **WLTC rated range, not an EV-range mirror** | on the J5 it differs from EV range in **72,482 of 72,507 frames** — e.g. EV 334 vs WLTC 302 at 66 %, and 302/0.66 = 457.6 ≈ the car's 461 km NEDC rating. The Omoda owner cross-checked live against the app (304 vs 329, digit-for-digit). The Tiggo 8's 90/81/38 coincidences were exactly that — a PHEV's EV estimate *is* the rated one |
+| 68–69 | **WLTC rated range, historically not an EV-range mirror** | on the J5 it differed from EV range in **137,553 of 183,885 logged frames** — e.g. EV 334 vs WLTC 302 at 66 %, and 302/0.66 = 457.6 ≈ the car's 461 km NEDC rating. The Omoda owner cross-checked live against the app (304 vs 329, digit-for-digit). The Tiggo 8's 90/81/38 coincidences were exactly that — a PHEV's EV estimate *is* the rated one. **Update 2026-09-20:** on this J5 the two fields have read identical on every frame since 2026-09-04 (0 diffs across 4,000+ recent frames, 100%→28% SoC), live-verified against the dash (455 km at 99 %) — likely an OTA made b68–69 track b29–30. The dashboard still surfaces both separately and uses `range_km` (b29–30) for the hero display, which has tracked the dash correctly throughout |
 | 5 | HV state `>=2` = on | only provable on the Omoda E5 (live-verified by its owner). On the J5 the byte takes 0–3 without tracking ignition — kept raw, treated as model-specific |
 | 23 | A/C `!=0` = on | `{0,1}` on the J5; 1 in 98.8 % of driving frames, toggles while parked. Consistent, not contradicted |
 

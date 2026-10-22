@@ -67,7 +67,7 @@ on a live car (that's what the Control tab tester is for).
 | Find car | `740400` | static decode, pending one-tap |
 | Sunroof close / open / tilt | `740F00` / `740F01` / `740F02` | static decode (no sunroof on J5 — needs Omoda 9 / Noble) |
 | Engine on / off | `740700` / `740800` | static decode, pending |
-| A/C on / off | `741001` / `741000` | static decode, pending |
+| A/C on / off | `741001` / `741000` | ✅ runtime-confirmed (J5 EV Noble, IL, 2026-09-04 — @idoeilon, [#6](https://github.com/GodrezJr2/j5-ev-dashboard/issues/6)) |
 | A/C set temperature | `7411` + temp payload | encoding TBD — °C raw or half-degrees? |
 | Front defog on / off | `741201` / `741200` | static decode, pending |
 | Seat heat L1–L3 / off — left, right, left-rear, right-rear | `741501–03`/`00`, `741601–03`/`00`, `741701–03`/`00`, `741901–03`/`00` | static decode (no seat heat on J5) |

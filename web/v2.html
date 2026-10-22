@@ -341,6 +341,36 @@
   .topcap{text-align:center;font-size:12px;line-height:1.5;color:var(--fnt);
     margin:0 auto var(--s4);max-width:290px}
   .topcap b{color:var(--mut);font-weight:650}
+  /* remote actions on the Doors page: one row per part, small pill buttons on the right */
+  .rrow{display:flex;align-items:center;gap:var(--s3);padding:12px var(--s4);min-height:56px}
+  .rrow+.rrow{border-top:1px solid var(--line)}
+  .rrow .ri{width:22px;height:22px;flex:none;color:var(--mut)}
+  .rrow .ri svg{width:100%;height:100%;display:block}
+  .rrow .rl{flex:1;min-width:0;font-size:14.5px;font-weight:650}
+  .racts{display:flex;gap:var(--s2);flex:none}
+  .racts button{padding:8px 13px;border-radius:var(--rf);background:var(--card-2);color:var(--ink);
+    font-size:12.5px;font-weight:700;transition:transform var(--t-fast) var(--eo),opacity var(--t-mid) linear}
+  .racts button:active{transform:scale(.93)}
+  .racts button.busy{opacity:.4;pointer-events:none}
+  /* low-poly 3D car (car3d.js). Replaces the flat diagram when WebGL loads; labels and the lock
+     badge are DOM so they stay crisp and selectable. */
+  .car3d{position:relative;width:100%;aspect-ratio:5/4;margin:var(--s2) 0 var(--s2);opacity:0;
+    border-radius:var(--r4);overflow:hidden;transition:opacity var(--t-slow) linear}
+  .car3d.ready{opacity:1}
+  .car3d .c3d{display:block;width:100%;height:100%;cursor:grab}
+  .car3d .c3d:active{cursor:grabbing}
+  .c3l{position:absolute;left:0;top:0;pointer-events:none;display:flex;flex-direction:column;
+    align-items:center;gap:1px;font-size:10px;line-height:1.1;color:var(--fnt);will-change:transform;
+    transition:opacity var(--t-mid) linear}
+  .c3l b{font-weight:650;letter-spacing:.12em;font-size:9px}
+  .c3l span{font-weight:700;font-variant-numeric:tabular-nums}
+  .c3l.ok span{color:var(--acc-ink)} .c3l.warn span{color:var(--warn)} .c3l.bad span{color:var(--bad)}
+  .c3lock{position:absolute;top:var(--s3);right:var(--s3);display:inline-flex;align-items:center;gap:6px;
+    padding:6px 11px;border-radius:var(--rf);background:var(--card);box-shadow:var(--sh-1);
+    font-size:11.5px;font-weight:650;color:var(--acc-ink)}
+  .c3lock.un{color:var(--warn)}
+  .c3lock svg{width:13px;height:13px}
+  .car3d-hint{text-align:center;font-size:11px;color:var(--fnt);margin:-2px 0 var(--s3)}
   .ckc{display:inline-flex;align-items:center;gap:6px}
   .ckc svg{width:13px;height:13px;flex:none}
 
@@ -433,6 +463,15 @@
     border-top:1px solid var(--line);text-align:center}
   .caltot b{display:block;font-size:16.5px;font-weight:750;font-variant-numeric:tabular-nums}
   .caltot span{display:block;font-size:10.5px;color:var(--fnt);margin-top:3px}
+  .caltot.mid{margin-top:var(--s4);padding-top:0;border-top:0}
+  .calsub{text-align:center;font-size:12px;color:var(--fnt);margin-top:var(--s4)}
+  .calday.off.cg{opacity:.75;pointer-events:auto;background:var(--card);box-shadow:var(--sh-1)}
+  .calday.sel{box-shadow:inset 0 0 0 1.5px var(--acc)}
+  .calcard{margin:var(--s5) 0 0}
+  .calch{padding:var(--s4) var(--s4) 0;font-size:13.5px;font-weight:700}
+  .calcard .caltot{margin:0;border-top:0;padding:var(--s3) var(--s4) var(--s4)}
+  .calcard .row{min-height:54px;padding:11px var(--s4)}
+  .calcard .caltot + .row{border-top:1px solid var(--line)}
 
   /* account header + share card */
   .vveh{background:linear-gradient(140deg,var(--heroA),var(--card));border-radius:var(--r3);
@@ -461,6 +500,37 @@
     padding-top:var(--s4);border-top:1px solid var(--line)}
   .fgrid2 b{display:block;font-size:18px;font-weight:750;font-variant-numeric:tabular-nums}
   .fgrid2 span{display:block;font-size:11px;color:var(--fnt);margin-top:3px}
+  .fgrid2 b small{font-size:11px;font-weight:600;color:var(--mut)}
+  .flexc .fsub{font-size:11.5px;color:var(--fnt);margin-top:3px}
+  .flexc .fbig u{letter-spacing:0}
+  .flexc .fbeat{margin-top:var(--s4);padding:10px;border-radius:var(--r2);text-align:center;
+    font-size:12.5px;font-weight:700;color:var(--acc-ink);background:var(--acc-sf)}
+  .flexc .ffoot{margin-top:var(--s4);font-size:11px;line-height:1.5;color:var(--fnt);text-align:center}
+
+  /* charge calculator */
+  .cpto{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s3)}
+  .cpto .pval u{font-size:22px;font-weight:650;color:var(--mut);text-decoration:none;margin-left:2px}
+  .cpfrom{font-size:13px;color:var(--mut);padding-bottom:4px}
+  .cpfrom b{color:var(--ink);font-weight:700}
+  .cprange{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:var(--rf);
+    margin:var(--s5) 0 var(--s2);background:var(--card-2);outline:none}
+  .cprange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+    background:var(--card);border:2px solid var(--acc);box-shadow:var(--sh-1);cursor:pointer}
+  .cprange::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--card);
+    border:2px solid var(--acc);box-shadow:var(--sh-1);cursor:pointer}
+  .cpchips{display:flex;gap:var(--s2);margin-top:var(--s3)}
+  .cpchips button{flex:1;padding:8px 0;border-radius:var(--r1);background:var(--card-2);
+    font-size:12.5px;font-weight:700;color:var(--mut);font-variant-numeric:tabular-nums}
+  .cpchips button.on{background:var(--btn);color:var(--btn-ink)}
+  .cpchips button:disabled{opacity:.35}
+  .cpmode{display:flex;justify-content:space-between;align-items:center;gap:var(--s3)}
+  .cpcost{display:flex;justify-content:space-between;align-items:center;gap:var(--s3);margin-top:var(--s4);
+    padding-top:var(--s3);border-top:1px solid var(--line)}
+  .cpcost label{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)}
+  .cpcost input{width:84px;border-radius:var(--r1);padding:7px 9px;background:var(--card-2);color:var(--ink);
+    font:inherit;font-size:14px;font-weight:650;text-align:right;border:0;font-variant-numeric:tabular-nums}
+  .cpcost input::-webkit-outer-spin-button,.cpcost input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .cpcost .pval{font-size:26px;margin:0}
 
   .seg{display:inline-flex;border-radius:var(--r1);overflow:hidden;flex:none;background:var(--card-2)}
   .seg button{padding:7px 12px;font-size:12px;font-weight:700;color:var(--mut);
@@ -595,6 +665,8 @@ MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduc
   <div class="pbody" id="pgDistBody"></div></div>
 <div class="page" id="pgFlex" data-k="flex"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Share card</h2></div>
   <div class="pbody" id="pgFlexBody"></div></div>
+<div class="page" id="pgPlan" data-k="plan"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Charge calculator</h2></div>
+  <div class="pbody" id="pgPlanBody"></div></div>
 
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true">
@@ -667,6 +739,8 @@ const IC = {
   fuel:    '<path d="M4 20V6a2 2 0 012-2h5a2 2 0 012 2v14"/><path d="M3 20h11"/><path d="M13 11h3a2 2 0 012 2v3.4a1.6 1.6 0 003.2 0V9.2L17.6 5.6"/><rect x="6.2" y="6.4" width="4.6" height="3.4" rx="1" fill="currentColor" stroke="none"/>',
   plug:    '<path d="M9 3v5M15 3v5"/><path d="M6.5 8h11v3.2a5.5 5.5 0 01-5.5 5.5 5.5 5.5 0 01-5.5-5.5Z"/><path d="M12 16.7V21"/>',
   moon:    '<path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>',
+  trunk:   '<path d="M3 18.5v-5.2a2 2 0 01.7-1.5L7 9h9.5a2 2 0 011.8 1.1L21 14.5v4"/><path d="M3 18.5h18"/><path d="M7 9l-1.8-4.2h-2"/><circle cx="7.5" cy="18.5" r="1.6" fill="currentColor" stroke="none"/><circle cx="16.5" cy="18.5" r="1.6" fill="currentColor" stroke="none"/>',
+  window:  '<path d="M5 20V9.5C5 6.5 8 4.5 12 4.5s7 2 7 5V20"/><path d="M5 11.5h14"/><path d="M12 11.5V17M9.5 14.5L12 17l2.5-2.5"/>',
 };
 function icon(k, w){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) +
   '" stroke-linecap="round" stroke-linejoin="round">' + (IC[k] || '') + '</svg>'; }
@@ -711,7 +785,7 @@ function flash(el, key, next){
 // first-paint rise, one small stagger, never on a re-poll
 function stagger(nodes, step, base){
   if(REDUCED()) return;
-  nodes.forEach((n, i) => {
+  nodes.filter(Boolean).forEach((n, i) => {
     n.style.animationDelay = ((base || 0) + i * (step || 34)) + 'ms';
     n.classList.add('rise');
   });
@@ -736,7 +810,37 @@ function ago(dt){ if(!dt) return ''; const s = (Date.now() - new Date(dt.replace
   if(s < 86400) return Math.round(s / 3600) + ' h ago'; return Math.round(s / 86400) + ' d ago'; }
 
 // ---- remote control: same pipe as v1 (init 77, then fire) ----
+// What the toast says per opcode: [result when the car accepted it, the thing we tried to do].
+// Opcodes themselves stay out of the UI; unknown ones fall back to a generic line.
+const OP_TEXT = {
+  '740100': ['Car locked', 'lock the car'],
+  '740200': ['Car unlocked', 'unlock the car'],
+  '741001': ['A/C is on', 'turn the A/C on'],
+  '741000': ['A/C is off', 'turn the A/C off'],
+  '741F01': ['Heat is on', 'turn the heat on'],
+  '741F00': ['Heat is off', 'turn the heat off'],
+  '742001': ['Cooling is on', 'turn cooling on'],
+  '742000': ['Cooling is off', 'turn cooling off'],
+  '740400': ['Car is signalling', 'find the car'],
+  '740300': ['Trunk opening', 'open the trunk'],
+  '740A00': ['Trunk closing', 'close the trunk'],
+  '740500': ['Windows closing', 'close the windows'],
+  '740E00': ['Windows venting', 'vent the windows'],
+  '740600': ['Windows opening', 'open the windows'],
+  '740F00': ['Sunroof closing', 'close the sunroof'],
+  '740F02': ['Sunroof tilting', 'tilt the sunroof'],
+  '740F01': ['Sunroof opening', 'open the sunroof'],
+  '742701': ['Charging stopped', 'stop charging'],
+};
+function opText(op){
+  const k = String(op).toUpperCase();
+  if(OP_TEXT[k]) return OP_TEXT[k];
+  const m = /^7411([0-9A-F]{2})$/.exec(k);       // A/C target temp, one hex byte of degC
+  if(m){ const c = parseInt(m[1], 16); return ['A/C set to ' + c + '°C', 'set the A/C to ' + c + '°C']; }
+  return ['Done', 'do that'];
+}
 async function fire(op, btn){
+  const [done, doing] = opText(op);
   if(btn) btn.classList.add('busy');
   try{
     await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
@@ -744,10 +848,11 @@ async function fire(op, btn){
     await new Promise(r => setTimeout(r, 600));
     const d = await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
       body: JSON.stringify({data: op, timeOut: 20})});
-    if(d.ok){ toast('Sent ' + op); setTimeout(load, 1800); }
+    if(d.ok){ toast(done); setTimeout(load, 1800); }
     else if(String(d.code) === '50043') toast('Car is asleep or out of signal');
-    else toast(d.msg || d.error || ('Failed: ' + d.code));
-  }catch(e){ toast('Network error'); }
+    else if(String(d.code) === '9997') toast('CarLinko login expired');
+    else toast('Could not ' + doing);
+  }catch(e){ toast('Could not reach the dashboard server'); }
   if(btn) btn.classList.remove('busy');
 }
 
@@ -799,6 +904,12 @@ function renderQA(){
     {k: 'ac',   label: acOn ? 'A/C off' : 'A/C on', op: acOn ? '741000' : '741001', active: acOn},
     {k: 'find', label: 'Find', op: '740400'},
   ];
+  // trunk sits on the home row because it is the one you reach for with full hands; it asks first
+  // so a pocket-tap cannot pop the boot. 740300 / 740A00 runtime-confirmed on a J5 (docs/control-opcodes.md).
+  if(!CAPS || CAPS.liftgate || CAPS.trunk)
+    defs.push(S.trunk_open
+      ? {k: 'trunk', label: 'Close trunk', op: '740A00', active: true}
+      : {k: 'trunk', label: 'Trunk', op: '740300', ask: true, askNote: 'Opens the rear trunk now.'});
   if(S.charging && S.charging.active)
     defs.push({k: 'power', label: 'Stop', op: '742701', ask: true, askNote: 'Ends the charging session on the car.'});
   defs.forEach(d => {
@@ -828,6 +939,16 @@ function windowsOpen(){
   if(S.windows == null) return null;
   if(isJ5()) return null;
   return S.windows !== 0;
+}
+
+// ac_temp_c (byte 24): a raw degC reading, validated against the Omoda E5's A/C target temp.
+// The J5 has read wildly different things under this same byte over time -- 159-169 in earlier
+// logs, and a near-static 47-51 now that barely moves with A/C on/off or the hour of day. Neither
+// is a plausible cabin-air temperature, so on a J5 this byte is unverified and refused rather than
+// shown as if it were a real reading (see #5 for the E5 validation this was carried over from).
+function cabinTemp(){
+  if(isJ5()) return null;
+  return (S.ac_temp_c && S.ac_temp_c < 60) ? S.ac_temp_c : null;
 }
 
 function doorSummary(){
@@ -885,7 +1006,8 @@ function renderCards(){
   const tyreSub = S.tyre_indirect === false
     ? (S.tyre_status === 'Normal' ? 'Normal' : 'Check tyres')
     : (S.tyre_status || 'Status only');
-  const cabin = S.ac_temp_c && S.ac_temp_c < 60 ? S.ac_temp_c + '\u00b0C Cabin Temp' : 'Not turned on';
+  const ct = cabinTemp();
+  const cabin = ct != null ? ct + '\u00b0C Cabin Temp' : (S.ac_on ? 'On' : 'Not turned on');
   const seatsKnown = (S.seat_heat && (S.seat_heat[0] || S.seat_heat[1])) ||
                      (S.seat_vent && (S.seat_vent[0] || S.seat_vent[1]));
   const chgSub = (S.charging && S.charging.active)
@@ -954,7 +1076,8 @@ function renderAc(){
   const caps = (CAPS && CAPS.ac) || {};
   const mn = caps.min != null ? Math.ceil(caps.min) : 16;
   const mx = caps.max != null ? Math.floor(caps.max) : 30;
-  const cabin = S.ac_temp_c && S.ac_temp_c < 60 ? S.ac_temp_c + '°C' : null;
+  const ct = cabinTemp();
+  const cabin = ct != null ? ct + '°C' : null;
   el.innerHTML =
     '<div class="acsub ov">' + (cabin ? 'Cabin now ' + cabin : 'Set a target, then power on') + '</div>' +
     '<div class="acbig"><span class="side">' + Math.max(mn, acTarget - 1) + '</span>' +
@@ -968,14 +1091,47 @@ function renderAc(){
     '<button data-ac="cool"><span class="cic">' + icon('cool') + '</span>Cool</button>' +
     '<button data-ac="pwr"><span class="cic">' + icon('power') + '</span><span id="acPwrLbl">' +
       (S.ac_on ? 'Turn off' : 'Turn on') + '</span></button></div>' +
-    '<div class="note">Temperature command (7411 + hex) comes from the jump-table decode and is pending ' +
-    'on-car verification. Power and quick heat/cool use the verified map.</div>';
+    '<div class="note">Setting a target temperature is not confirmed on the car yet. Power and quick ' +
+    'heat/cool are.</div>';
   $('acMinus').onclick = () => { acTarget = Math.max(mn, acTarget - 1); renderAc(); sendTemp(); };
   $('acPlus').onclick  = () => { acTarget = Math.min(mx, acTarget + 1); renderAc(); sendTemp(); };
   el.querySelector('[data-ac="heat"]').onclick = () => fire(S.ac_on ? '741F00' : '741F01');
   el.querySelector('[data-ac="cool"]').onclick = () => fire(S.ac_on ? '742000' : '742001');
   el.querySelector('[data-ac="pwr"]').onclick  = () => fire(S.ac_on ? '741000' : '741001');
   el.querySelector('[data-ac="pwr"]').classList.toggle('on', !!S.ac_on);
+}
+
+/* ---- 3D car ----
+   car3d.js (low-poly clay SUV, three.js) is loaded on demand the first time a page needs it. If
+   the module, WebGL or the dynamic import is unavailable, the flat diagram below simply stays. */
+const CAR3D = {};
+function isDark(){
+  const t = document.documentElement.getAttribute('data-theme');
+  return t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+}
+function mount3d(key, wrapId, view, state, labels){
+  if(CAR3D[key]){ CAR3D[key].dispose(); delete CAR3D[key]; }
+  const wrap = $(wrapId);
+  if(!wrap) return;
+  import('./car3d.js').then(m => {
+    if(!wrap.isConnected) return;                        // page was re-rendered meanwhile
+    const host = document.createElement('div');
+    host.className = 'car3d';
+    wrap.parentNode.insertBefore(host, wrap);
+    const hint = document.createElement('div');
+    hint.className = 'car3d-hint'; hint.textContent = 'Drag to turn the car';
+    try{
+      CAR3D[key] = m.createCar3D(host, {view: view, dark: isDark(), labels: labels || null,
+        lockIcon: icon('lock', 2),
+        onFail: () => {                                   // car_parts.* did not load: back to the flat diagram
+          if(CAR3D[key]){ CAR3D[key].dispose(); delete CAR3D[key]; }
+          host.remove(); hint.remove(); wrap.hidden = false;
+        }});
+    }catch(e){ host.remove(); return; }
+    wrap.hidden = true;
+    CAR3D[key].set(state);
+    host.after(hint);
+  }).catch(() => {});
 }
 
 /* ---- shared top-view diagram ----
@@ -1094,6 +1250,8 @@ function renderDoors(){
   // plays the movement rather than showing a car that was already hanging open.
   el.innerHTML = '<div class="topwrap" id="doorCar">' + carTop({unlocked: !!S.unlocked}) + '</div>' +
     '<div class="rowcard">' + rows.join('') + '</div>';
+  mount3d('doors', 'doorCar', 'doors', {doors: open, trunk: !!S.trunk_open, sunroof: !!S.sunroof_open,
+    unlocked: !!S.unlocked});
   const paint = () => {
     const svg = $('doorCar');
     if(!svg) return;
@@ -1105,11 +1263,49 @@ function renderDoors(){
     svg.querySelectorAll('.chole')[1].classList.toggle('on', !!S.trunk_open);
   };
   if(REDUCED()) paint(); else requestAnimationFrame(() => requestAnimationFrame(paint));
-  if(winOpen === true && CAPS && CAPS.windows && CAPS.windows.close){
-    const b = document.createElement('button');
-    b.className = 'bigbtn'; b.textContent = 'Close windows remotely';
-    b.onclick = () => fire('740500', b);
-    el.appendChild(b);
+  // remote actions, only for what vehicleControlConfig says this car has. Window state is unknown
+  // on a J5, so windows are plain Close / Vent / Open rather than a toggle that guesses.
+  const acts = [];
+  if(!CAPS || CAPS.liftgate || CAPS.trunk)
+    acts.push({ic: 'trunk', label: 'Rear trunk', btns: [
+      {t: 'Open', op: '740300', ask: 'Open the rear trunk?'}, {t: 'Close', op: '740A00'}]});
+  const wc = (CAPS && CAPS.windows) || {};
+  const wbtns = [];
+  if(wc.close) wbtns.push({t: 'Close', op: '740500'});
+  if(wc.vent)  wbtns.push({t: 'Vent',  op: '740E00'});
+  if(wc.open)  wbtns.push({t: 'Open',  op: '740600', ask: 'Open all windows?'});
+  if(wbtns.length) acts.push({ic: 'window', label: 'Windows', btns: wbtns});
+  if(CAPS && CAPS.sunroof && (CAPS.sunroof.open || CAPS.sunroof.tilt)){
+    const sb = [{t: 'Close', op: '740F00'}];
+    if(CAPS.sunroof.tilt) sb.push({t: 'Tilt', op: '740F02'});
+    if(CAPS.sunroof.open) sb.push({t: 'Open', op: '740F01', ask: 'Open the sunroof?'});
+    acts.push({ic: 'car', label: 'Sunroof', btns: sb});
+  }
+  if(!CAPS || CAPS.find) acts.push({ic: 'find', label: 'Find car', btns: [{t: 'Flash', op: '740400'}]});
+  if(acts.length){
+    const h = document.createElement('div');
+    h.className = 'sech'; h.style.padding = 'var(--s5) 0 var(--s2)';
+    h.innerHTML = '<span class="ov">Remote</span>';
+    const card = document.createElement('div');
+    card.className = 'rowcard'; card.style.margin = '0';
+    acts.forEach(a => {
+      const r = document.createElement('div');
+      r.className = 'rrow';
+      r.innerHTML = '<span class="ri">' + icon(a.ic) + '</span><span class="rl">' + a.label + '</span>';
+      const box = document.createElement('div'); box.className = 'racts';
+      a.btns.forEach(bt => {
+        const b = document.createElement('button');
+        b.textContent = bt.t;
+        b.setAttribute('aria-label', a.label + ' ' + bt.t.toLowerCase());
+        b.onclick = async () => {
+          if(bt.ask && !(await ask(bt.ask, 'The command is sent to the car now.'))) return;
+          fire(bt.op, b);
+        };
+        box.appendChild(b);
+      });
+      r.appendChild(box); card.appendChild(r);
+    });
+    el.appendChild(h); el.appendChild(card);
   }
   const note = document.createElement('div');
   note.className = 'note';
@@ -1141,13 +1337,18 @@ function renderTyres(){
       ? 'All four reading <b>normal</b>. This car reports one status for the whole vehicle, not four pressures.'
       : 'The car is reporting <b>a problem</b> but cannot say which wheel. Check all four by hand.';
   } else {
-    wheels = t.map(w => w.psi == null ? '' : ((w.psi < 28 || w.psi > 40) ? 'bad' : 'ok'));
-    vals = t.map(w => w.psi == null ? '' : Math.round(w.psi) + ' ' + unit);
+    // the server sends "psi" in the configured display unit (psi | bar | kpa); judge in PSI, print in that unit
+    const toPsi = v => unit === 'bar' ? v * 14.5038 : unit === 'kpa' ? v * .145038 : v;
+    const dec = unit === 'bar' ? 1 : 0, uLabel = unit === 'kpa' ? 'kPa' : unit;
+    wheels = t.map(w => { if(w.psi == null) return '';
+      const p = toPsi(w.psi);
+      return (p < 28 || p > 40) ? 'bad' : (p < 30 || p > 38) ? 'warn' : 'ok'; });       // bad matches the server's "Check tyres"
+    vals = t.map(w => w.psi == null ? '' : w.psi.toFixed(dec) + ' ' + uLabel);
     const known = t.filter(w => w.psi != null).length;
     cap = known ? 'Live pressure from each wheel sensor.' : 'No wheel sensor has reported yet.';
   }
 
-  el.innerHTML = '<div class="topwrap">' +
+  el.innerHTML = '<div class="topwrap" id="tyreCar">' +
       carTop({wheels: wheels, wheelVals: vals, codes: true, unlocked: !!S.unlocked}) + '</div>' +
     '<div class="topcap">' + cap + '</div>' +
     '<div class="rowcard"><div class="row"><span class="rl">Status</span><span class="rv ' +
@@ -1161,6 +1362,9 @@ function renderTyres(){
         'sensors, so it can only report normal or not. Per-wheel pressures appear here on cars with real ' +
         'sensors.'
       : 'Pressures from the last frame that carried live sensors.') + '</div>';
+  mount3d('tyres', 'tyreCar', 'tyres', {
+    wheels: Array.isArray(wheels) ? wheels : [wheels, wheels, wheels, wheels],
+    values: vals || [], unlocked: !!S.unlocked}, WHEEL_POS);
 }
 
 function renderEnergy(){
@@ -1340,7 +1544,9 @@ function renderChg(){
   const hist = (c.history || []).map(x =>
     '<div class="hrow2"><span>' + x.dt + '</span><span><b class="num">' + x.kwh + ' kWh</b> · ' +
     x.dur_min + ' min · ' + cur + Number(x.cost).toLocaleString() + '</span></div>').join('');
-  el.innerHTML = top + curveHtml +
+  const calc = '<div class="rowcard" style="margin-top:var(--s3)">' +
+    row('plug', 'Charge calculator', 'Cost to a target %', '', 'plan') + '</div>';
+  el.innerHTML = top + calc + curveHtml +
     sech('This month') +
     '<div class="panel"><div class="stats" style="border-top:0;padding-top:0;margin-top:0">' +
       '<div><b class="num">' + (c.month_kwh || 0) + '</b><span>kWh in</span></div>' +
@@ -1349,6 +1555,7 @@ function renderChg(){
       '</div></div>' +
     sech('History') +
     '<div class="panel">' + (hist || '<div class="plbl">No sessions logged yet</div>') + '</div>';
+  el.querySelector('[data-page="plan"]').onclick = () => openPage('plan');
   if(s) drawChgCurve(s);
 }
 
@@ -1382,14 +1589,43 @@ function drawChgCurve(s){
 }
 
 // ---- distance page: monthly calendar (same /api/history as v1's calendar view) ----
+// Grid + month summary on top, and a card for the selected day (trips, energy, charging) below.
 let calMonth = null;   // 'YYYY-MM'
+let calSel = null;     // selected day of calMonth; null = newest day with activity
+let distSeq = 0;       // renderDist can be entered twice (deep link + tap, fast month flips)
 const MON = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function money(n){
+  const c = S.currency || {};
+  return (c.symbol || '') + Math.round(n).toLocaleString(c.locale || undefined);
+}
+function calStat(v, u){ return '<div><b class="num">' + v + '</b><span>' + u + '</span></div>'; }
+function calDay(x, cy, cm){
+  const when = new Date(cy, cm - 1, x.d).toLocaleDateString('en-GB',
+    {weekday: 'long', day: 'numeric', month: 'long'});
+  let h = '<div class="rowcard calcard"><div class="calch">' + when + '</div>' +
+    '<div class="caltot">' + calStat(x.km, 'km driven') + calStat(x.kwh || '—', 'kWh used') +
+    calStat(x.eff != null ? x.eff : '—', 'kWh/100km') + '</div>';
+  (x.trips || []).forEach(t => {
+    h += '<div class="row"><span class="rl">' + t.from + (t.to !== t.from ? ' – ' + t.to : '') +
+      (t.min >= 1 ? '<small>' + t.min + ' min</small>' : '') + '</span>' +
+      '<span class="rv">' + t.km + ' km</span></div>';
+  });
+  (x.charges || []).forEach(c => {
+    h += '<div class="row"><span class="rl">Charged ' + c.at + ' · +' + c.kwh + ' kWh<small>' +
+      c.soc0 + '% → ' + c.soc1 + '% · ' + c.min + ' min · avg ' + c.avg_kw + ' kW</small></span>' +
+      '<span class="rv">' + money(c.cost) + '</span></div>';
+  });
+  if(!(x.trips || []).length && !(x.charges || []).length)
+    h += '<div class="row"><span class="rl">Nothing logged<small>The car was not seen on the road or on a charger.</small></span></div>';
+  return h + '</div>';
+}
 async function renderDist(){
   const el = $('pgDistBody');
   if(!calMonth){
     const n = new Date();
     calMonth = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
   }
+  const mine = ++distSeq;
   const [cy, cm] = calMonth.split('-').map(Number);
   const nav = d => '<svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="1.9" ' +
     'stroke-linecap="round" stroke-linejoin="round"><path d="' + (d < 0 ? 'M7 1L1 7l6 6' : 'M1 1l6 6-6 6') + '"/></svg>';
@@ -1401,16 +1637,24 @@ async function renderDist(){
   $('calP').onclick = () => { shiftMonth(-1); };
   $('calN').onclick = () => { shiftMonth(1); };
   const d = await api('/api/history?month=' + calMonth);
+  if(mine !== distSeq) return;                     // a newer render started while this was loading
   const g = $('calG');
   const lead = (new Date(cy, cm - 1, 1).getDay() + 6) % 7;   // Monday-first
   const maxKm = Math.max(1, ...d.days.map(x => x.km));
+  const active = x => x.km > 0 || x.chg_kwh > 0;
+  if(calSel == null || !d.days.some(x => x.d === calSel && active(x))){
+    const last = d.days.filter(active).pop();
+    calSel = last ? last.d : null;
+  }
   let cells = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(x =>
     '<div class="caldow">' + x + '</div>').join('');
   for(let i = 0; i < lead; i++) cells += '<div></div>';
   d.days.forEach(x => {
     const has = x.km > 0;
     const op = has ? (0.35 + 0.65 * x.km / maxKm) : 0;
-    cells += '<button class="calday ' + (has ? 'on' : 'off') + '" data-d="' + x.d + '">' +
+    // a day with only a charge is dim but still tappable, so its session is reachable
+    cells += '<button class="calday ' + (has ? 'on' : 'off') + (!has && x.chg_kwh > 0 ? ' cg' : '') +
+      (x.d === calSel ? ' sel' : '') + '" data-d="' + x.d + '">' +
       (op ? '<span class="calwash" style="opacity:' + (op * 0.16).toFixed(2) + '"></span>' : '') +
       '<span class="cd">' + x.d + '</span>' +
       '<span class="ck" style="opacity:' + (has ? 1 : 0.4) + '">' + (has ? x.km : '·') + '</span>' +
@@ -1418,42 +1662,151 @@ async function renderDist(){
       '</button>';
   });
   g.innerHTML = cells;
-  g.querySelectorAll('.calday.on').forEach(b => b.onclick = () => {
-    const x = d.days.find(v => v.d == b.dataset.d);
-    if(x) toast(MON[cm - 1] + ' ' + x.d + ': ' + x.km + ' km · ' + x.kwh + ' kWh' +
-      (x.chg_kwh ? ' · +' + x.chg_kwh + ' kWh charged' : ''));
-  });
   const t = d.totals || {};
+  const per = t.days_driven ? Math.round(t.km / t.days_driven) : null;
   el.insertAdjacentHTML('beforeend',
-    '<div class="caltot">' +
-    '<div><b class="num">' + (t.km || 0) + '</b><span>km driven</span></div>' +
-    '<div><b class="num">' + (t.kwh || 0) + '</b><span>kWh used</span></div>' +
-    '<div><b class="num">' + (t.chg_kwh || 0) + '</b><span>kWh charged</span></div></div>');
+    '<div class="caltot">' + calStat(t.km || 0, 'km driven') + calStat(t.kwh || 0, 'kWh used') +
+      calStat(t.chg_kwh || 0, 'kWh charged') + '</div>' +
+    '<div class="caltot mid">' + calStat(t.eff != null ? t.eff : '—', 'kWh/100km') +
+      calStat(t.chg_cost ? money(t.chg_cost) : '—', 'charging cost') +
+      calStat(per != null ? per : '—', 'km per driving day') + '</div>' +
+    (t.days_driven ? '<div class="calsub">' + t.days_driven + (t.days_driven === 1 ? ' day' : ' days') +
+      ' driven · ' + (t.trips || 0) + (t.trips === 1 ? ' trip' : ' trips') + ' · ' +
+      (t.charges || 0) + (t.charges === 1 ? ' charge' : ' charges') + '</div>' : '') +
+    '<div id="calDay"></div>');
+  const paint = () => {
+    const x = d.days.find(v => v.d === calSel);
+    $('calDay').innerHTML = x ? calDay(x, cy, cm) : '';
+  };
+  paint();
+  g.querySelectorAll('.calday.on, .calday.cg').forEach(b => b.onclick = () => {
+    calSel = Number(b.dataset.d);
+    g.querySelectorAll('.calday.sel').forEach(n => n.classList.remove('sel'));
+    b.classList.add('sel');
+    paint();
+  });
 }
 function shiftMonth(dir){
   const [y, m] = calMonth.split('-').map(Number);
   const n = new Date(y, m - 1 + dir, 1);
   calMonth = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+  calSel = null;
   renderDist();
 }
 
 // ---- flex / share card ----
+// Same facts as v1's card (range, efficiency, lifetime km, saved, CO2, battery, WLTP beat),
+// with this month's km as the hero number.
+function compactMoney(n){
+  const c = S.currency || {};
+  if(c.code === 'IDR' && n >= 1e6) return (c.symbol || 'Rp') + (n / 1e6).toFixed(1) + 'jt';
+  return money(n);
+}
 function renderFlex(){
   const el = $('pgFlexBody');
-  const lf = S.lifetime || {}, e = S.energy || {};
+  const lf = S.lifetime || {}, e = S.energy || {}, h = S.health || {}, ins = S.insights || {};
+  const cons = ins.consumption != null ? ins.consumption : e.consumption;
+  const wltp = S.wltp_kwh_100;
+  const beat = cons && wltp ? Math.round((wltp - cons) / wltp * 100) : null;
+  const D = '—';
+  const cell = (v, k) => '<div><b class="num">' + v + '</b><span>' + k + '</span></div>';
   el.innerHTML =
     '<div class="flexc"><div class="fm">' + ((S.vehicle && S.vehicle.model) || 'My EV') + '</div>' +
-    '<div class="fbig num">' + (S.km && S.km.month != null ? S.km.month : '—') +
+    '<div class="fsub">Self-hosted telematics</div>' +
+    '<div class="fbig num">' + (S.km && S.km.month != null ? S.km.month.toLocaleString() : D) +
       '<u>km this month</u></div>' +
     '<div class="fgrid2">' +
-    '<div><b class="num">' + (S.battery != null ? S.battery + '%' : '—') + '</b><span>battery now</span></div>' +
-    '<div><b class="num">' + (e.consumption != null ? e.consumption : '—') + '</b><span>kWh/100km</span></div>' +
-    '<div><b class="num">' + (lf.saved != null ? (S.currency ? S.currency.symbol : '') +
-      (lf.saved / 1000000).toFixed(1) + 'jt' : '—') + '</b><span>saved vs petrol</span></div>' +
-    '<div><b class="num">' + (lf.co2_saved != null ? lf.co2_saved.toLocaleString() + ' kg' : '—') +
-      '</b><span>CO2 avoided</span></div>' +
-    '</div></div>' +
-    '<div class="note">Screenshot to share. Generated locally from your own logged data.</div>';
+    cell(S.range_km != null ? Math.round(S.range_km) + ' km' : D, 'range now') +
+    cell(cons != null ? cons : D, 'kWh/100km') +
+    cell(lf.km != null ? Math.round(lf.km).toLocaleString() + ' km' : D, 'driven in total') +
+    cell(lf.saved != null ? compactMoney(lf.saved) : D, 'saved vs petrol') +
+    cell(lf.co2_saved != null ? lf.co2_saved.toLocaleString() + ' kg' : D, 'CO2 avoided') +
+    cell((S.battery != null ? S.battery + '%' : D) +
+      (h.usable_kwh != null ? ' <small>of ' + h.usable_kwh + ' kWh</small>' : ''), 'battery now') +
+    '</div>' +
+    (beat > 0 ? '<div class="fbeat">Beating WLTP by ' + beat + '% · ' + cons + ' vs ' + wltp + ' kWh/100km</div>' : '') +
+    '<div class="ffoot">Reverse-engineered from the CarLinko cloud: live data the official app won’t show you.</div>' +
+    '</div>' +
+    '<div class="note">Screenshot to share. Plate and VIN are never shown here. Generated locally from your own logged data.</div>';
+}
+
+// ---- charge calculator ----
+// Same model as v1's planner, but DC efficiency follows the server's receipt-calibrated curve
+// (chg_eff in tools/server.py: 0.91 up to 85%, 0.855 from 95%). AC is the onboard-charger guess.
+const CP = {target: 80, mode: 'DC'};
+function cpPrices(){
+  let p = {}; try{ p = JSON.parse(localStorage.getItem('cpPrice') || '{}'); }catch(e){}
+  return {DC: p.DC != null ? p.DC : (S.tariff || 2540), AC: p.AC != null ? p.AC : 1445};
+}
+function cpEff(mode, end){
+  if(mode === 'AC') return 0.88;
+  if(end >= 95) return 0.855;
+  if(end <= 85) return 0.91;
+  return 0.91 + (0.855 - 0.91) * (end - 85) / 10;
+}
+function renderPlan(){
+  const el = $('pgPlanBody');
+  const now = S.battery != null ? S.battery : 0;
+  CP.target = Math.max(now, CP.target);
+  el.innerHTML =
+    '<div class="panel"><div class="cpto"><div><div class="plbl">Charge to</div>' +
+      '<div class="pval num"><span id="cpT"></span><u>%</u></div></div>' +
+      '<div class="cpfrom">from <b class="num">' + now + '%</b> now</div></div>' +
+      '<input type="range" class="cprange" id="cpR" min="' + now + '" max="100" step="1" aria-label="Target charge">' +
+      '<div class="cpchips">' + [60, 80, 90, 100].map(v =>
+        '<button data-t="' + v + '"' + (v < now ? ' disabled' : '') + '>' + v + '%</button>').join('') +
+      '</div></div>' +
+    '<div class="panel"><div class="cpmode"><span class="plbl">Charger</span><span class="seg">' +
+      '<button data-m="DC">DC · SPKLU</button><button data-m="AC">AC · home</button></span></div>' +
+      '<div class="stats">' +
+        '<div><b class="num" id="cpIn"></b><span>kWh into battery</span></div>' +
+        '<div><b class="num" id="cpBuy"></b><span>kWh at meter</span></div>' +
+        '<div><b class="num" id="cpKm"></b><span>range added</span></div>' +
+        '<div><b class="num" id="cpMin"></b><span>time</span></div></div>' +
+      '<div class="cpcost"><label>' + ((S.currency && S.currency.symbol) || '') +
+        ' <input id="cpP" type="number" inputmode="decimal" min="0"> / kWh</label>' +
+        '<span class="pval num" id="cpCost"></span></div></div>' +
+    '<div class="note" id="cpNote"></div>';
+  $('cpR').oninput = ev => { CP.target = +ev.target.value; cpUpdate(); };
+  el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { CP.target = Math.max(now, +b.dataset.t); cpUpdate(); });
+  el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { CP.mode = b.dataset.m; cpUpdate(); });
+  $('cpP').oninput = ev => {
+    const p = cpPrices(); p[CP.mode] = +ev.target.value || 0;
+    try{ localStorage.setItem('cpPrice', JSON.stringify(p)); }catch(e){}
+    cpUpdate(true);
+  };
+  cpUpdate();
+}
+// fromPrice: the user is typing in the price box, so don't rewrite it under the cursor
+function cpUpdate(fromPrice){
+  const now = S.battery != null ? S.battery : 0, t = CP.target, D = '—';
+  const cap = S.battery_kwh || 58.9;
+  const ins = S.insights || {}, e = S.energy || {};
+  const cons = ins.consumption != null ? ins.consumption : e.consumption;
+  const eff = cpEff(CP.mode, t);
+  const into = (t - now) / 100 * cap, buy = into / eff;
+  const price = cpPrices()[CP.mode];
+  // DC time from your own logged sessions (median avg kW); AC has no logged rate to lean on
+  const kws = ((S.charging && S.charging.history) || []).map(x => x.avg_kw).filter(v => v > 0).sort((a, b) => a - b);
+  const kw = CP.mode === 'DC' && kws.length ? kws[kws.length >> 1] : null;
+  const pct = now >= 100 ? 100 : (t - now) / (100 - now) * 100;
+  $('cpR').value = t;
+  $('cpR').style.background = 'linear-gradient(90deg,var(--acc) ' + pct + '%,var(--card-2) ' + pct + '%)';
+  $('cpT').textContent = t;
+  document.querySelectorAll('#pgPlanBody [data-t]').forEach(b => b.classList.toggle('on', +b.dataset.t === t));
+  document.querySelectorAll('#pgPlanBody [data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === CP.mode));
+  $('cpIn').textContent = into.toFixed(1);
+  $('cpBuy').textContent = buy.toFixed(1);
+  $('cpKm').textContent = cons ? '+' + Math.round(into / cons * 100) + ' km' : D;
+  $('cpMin').textContent = kw && into > 0 ? '~' + Math.round(into / kw * 60) + ' min' : D;
+  if(!fromPrice) $('cpP').value = price;
+  $('cpCost').textContent = money(buy * price);
+  $('cpNote').textContent = CP.mode === 'DC'
+    ? 'DC loss rises when you charge past 85% (taper and cell balancing), so the meter reads about ' +
+      Math.round((1 / eff - 1) * 100) + '% more than goes into the pack. Calibrated to real PLN Mobile receipts.' +
+      (kw ? ' Time uses your median logged DC rate, ' + kw + ' kW, and stretches near 100%.' : '')
+    : 'AC assumes about 12% onboard-charger loss. Set your home tariff above; it is kept on this device.' +
+      ' No time estimate: the car does not report your wallbox rate.';
 }
 
 // ---- account tab ----
@@ -1475,6 +1828,7 @@ function renderAcct(){
 
   const linkRows = [
     {ic: 'gauge',  t: 'Classic dashboard', s: 'Trips, SPKLU planner, full stats', fn: () => location.href = '/index.html'},
+    {ic: 'plug',   t: 'Charge calculator', s: 'Cost and kWh to any target %',     fn: () => openPage('plan')},
     {ic: 'chart',  t: 'Share card',        s: 'Month stats as a shareable card',  fn: () => openPage('flex')},
     {ic: 'camera', t: 'Update car photo',  s: 'Re-fetch the render from CarLinko', fn: async () => {
         const d = await api('/api/photorefresh', {method: 'POST'});
@@ -1506,7 +1860,8 @@ function renderAcct(){
 const PAGES = {ac: ['pgAc', renderAc], doors: ['pgDoors', renderDoors],
                tyres: ['pgTyres', renderTyres], energy: ['pgEnergy', renderEnergy],
                batt: ['pgBatt', renderBatt], chg: ['pgChg', renderChg],
-               dist: ['pgDist', renderDist], flex: ['pgFlex', renderFlex]};
+               dist: ['pgDist', renderDist], flex: ['pgFlex', renderFlex],
+               plan: ['pgPlan', renderPlan]};
 let openKey = null;
 
 function openPage(k, fromHistory){

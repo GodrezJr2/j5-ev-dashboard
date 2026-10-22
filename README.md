@@ -190,7 +190,16 @@ of the official app. Avoid the clash by giving the dashboard its **own** CarLink
 > auto-detect finds the vehicle, you're good). If it can't, the alternative is to just use one
 > account and accept the occasional re-login.
 
-### Quick start — Docker (recommended)
+### Quick start — Windows, no Docker (easiest)
+1. On this page click **Code → Download ZIP**, then extract it.
+2. Double-click **`start.bat`**. First run installs Python if you lack it (then double-click again)
+   and two small libraries.
+3. Your browser opens the login page. Enter your CarLinko email + password; it finds your car.
+
+Leave the window open — it runs the dashboard *and* the logger. Same limits as everywhere:
+the PC has to stay on to build history. Not on Windows? `python tools/run.py` does the same.
+
+### Quick start — Docker
 ```bash
 docker compose up -d        # then open http://localhost:8088
 ```
@@ -245,7 +254,7 @@ generates correct ones for your user and paths, so you shouldn't need to.
 | key | required | what |
 | --- | --- | --- |
 | `email`, `password` | ✅ | your CarLinko login (plaintext over TLS; stored locally only) |
-| `region` | | API region, default `sea` |
+| `region` | | API region, default `sea` (Southeast Asia). **Login fails with the wrong one** — an account made in Europe/Middle East/Africa needs `emea` (reported on a J5 Noble in Israel, [#6](https://github.com/GodrezJr2/j5-ev-dashboard/issues/6)). If a correct password is refused, try another region before anything else |
 | `vehicle_id`, `device_sn` | auto | your vehicle id + device serial — **`setup.py` fills these for you** |
 | `vehicle` | auto | `{plate, model, vin}` — auto-detected; UI hides plate+VIN by default |
 | `battery_kwh`, `wltp_kwh_100` | | usable pack size + WLTP reference. **The car never reports pack size**, so it comes from you or from the [known-cars table](#known-cars); an unrecognised model is asked at setup and labelled *assumed* in the UI until you set it. It scales every kWh, cost and efficiency figure |
@@ -338,15 +347,22 @@ No Docker? Install **Python 3.10+** ([python.org](https://www.python.org/downloa
 
 ### Updating a self-hosted box
 
-If you run it from systemd rather than Docker (files copied to the host, no git checkout there),
-`tools/deploy.sh` pushes the working tree, restarts the units, checks `/api/status`, and then
-diffs every file against the box so nothing silently stays behind:
+**Docker:** `git pull && docker compose up -d --build`.
+
+**systemd** (the layout `tools/install.sh` sets up: the units run out of a git checkout). Push your
+commits, then from your own machine:
 
 ```bash
-./tools/deploy.sh user@host          # or set CARLINKO_HOST
+./tools/deploy.sh user@host          # or set CARLINKO_HOST; an ssh alias works too
 ```
 
-Override paths with `CARLINKO_REMOTE` / `CARLINKO_WEB` / `CARLINKO_SERVICES` if your layout differs.
+It refuses if you have unpushed commits or dirty tracked files, fast-forwards the checkout on the
+box, then runs `tools/apply.sh` there: restarts only the units whose code changed (web-only edits
+need none), checks `/api/status`, then fetches the changed pages back from the running server and
+compares them with the repo. So "deployed" means "being served", not just "a file landed". Set
+`CARLINKO_DIR` (default `~/j5-ev-dashboard`), `CARLINKO_PORT`, `CARLINKO_BRANCH` or
+`CARLINKO_SERVICES` if your layout differs. Or run `tools/apply.sh` on the box itself. The
+maintainer's push-to-deploy pipeline is described in [docs/ci-cd.md](docs/ci-cd.md).
 
 ### Set it up with an AI coding agent
 If the terminal isn't your thing, paste this into an AI coding agent (Claude Code, Cursor, etc.)

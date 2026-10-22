@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
-# Push the working tree to a self-hosted instance, restart it, and verify it came back.
+# Manual / break-glass deploy from your own machine over ssh. The normal path is the CI/CD
+# pipeline (docs/ci-cd.md): push, and the box checks and deploys it by itself. This runs the same
+# tools/apply.sh on the box, so both paths restart and verify identically.
 #
-#   ./tools/deploy.sh                    # uses $CARLINKO_HOST
-#   ./tools/deploy.sh jay@192.168.1.7    # or pass the host
-#   CARLINKO_REMOTE=~/carlinko CARLINKO_WEB=~/web ./tools/deploy.sh user@host
+#   ./tools/deploy.sh user@host                       # or set CARLINKO_HOST (an ssh alias works too)
 #
-# Deployment here is plain scp, not a git checkout, so it is easy for the box to drift behind the
-# repo. This script also runs a drift check afterwards and prints any file that still differs.
+#   CARLINKO_DIR           checkout the units run from, on the box   (default ~/j5-ev-dashboard)
+#   CARLINKO_LOCAL_REMOTE  remote your commit must already be on     (default origin)
+#   CARLINKO_REMOTE / CARLINKO_BRANCH / CARLINKO_PORT / CARLINKO_TOKEN_FILE / CARLINKO_SERVICES
+#                          as in tools/apply.sh; the box fetches from CARLINKO_REMOTE (default origin)
+#
+# It refuses unpushed commits and dirty tracked files, because the box deploys commits, not your
+# working tree.
 set -euo pipefail
 
 HOST="${1:-${CARLINKO_HOST:-}}"
-REMOTE="${CARLINKO_REMOTE:-~/carlinko}"
-WEB="${CARLINKO_WEB:-~/web}"
-SERVICES="${CARLINKO_SERVICES:-carlinko-web carlinko-logger}"
+DIR="${CARLINKO_DIR:-~/j5-ev-dashboard}"
+LOCAL_REMOTE="${CARLINKO_LOCAL_REMOTE:-origin}"
+REMOTE="${CARLINKO_REMOTE:-origin}"
+BRANCH="${CARLINKO_BRANCH:-main}"
+TOKEN_FILE="${CARLINKO_TOKEN_FILE:-}"
 
 if [ -z "$HOST" ]; then
   echo "usage: $0 user@host   (or set CARLINKO_HOST)" >&2
@@ -20,36 +27,33 @@ if [ -z "$HOST" ]; then
 fi
 
 cd "$(dirname "$0")/.."
-PY_FILES=(tools/server.py tools/logger.py tools/auth.py tools/setup.py tools/query_service.py
-          tools/report.py tools/known_cars.py)
-WEB_FILES=(web/index.html web/v2.html web/login.html web/slot-text.js web/manifest.webmanifest web/icon.svg
-           web/car-front.png web/car-generic.svg web/car-charging-j5.png
-           web/leaflet.js web/leaflet.css)
 
-echo "==> syntax check"
-python -m py_compile "${PY_FILES[@]}"
+echo "==> local checks"
+python tools/ci_check.py
+if ! git diff --quiet HEAD -- . ; then
+  echo "!! tracked files have uncommitted changes; commit them first (the box deploys commits)" >&2
+  exit 1
+fi
+git fetch -q "$LOCAL_REMOTE" "$BRANCH"
+HEAD_SHA="$(git rev-parse HEAD)"
+if ! git merge-base --is-ancestor "$HEAD_SHA" "$LOCAL_REMOTE/$BRANCH"; then
+  echo "!! HEAD is not on $LOCAL_REMOTE/$BRANCH; run: git push $LOCAL_REMOTE $BRANCH" >&2
+  exit 1
+fi
 
-echo "==> copying to $HOST"
-scp -q "${PY_FILES[@]}" "$HOST:$REMOTE/"
-scp -q "${WEB_FILES[@]}" "$HOST:$WEB/"
+# settings apply.sh reads, forwarded only when you set them
+fwd="CARLINKO_REMOTE=$REMOTE CARLINKO_BRANCH=$BRANCH"
+[ -n "$TOKEN_FILE" ] && fwd="$fwd CARLINKO_TOKEN_FILE=$TOKEN_FILE"
+[ -n "${CARLINKO_PORT:-}" ] && fwd="$fwd CARLINKO_PORT=$CARLINKO_PORT"
+[ -n "${CARLINKO_SERVICES:-}" ] && fwd="$fwd CARLINKO_SERVICES='$CARLINKO_SERVICES'"
+auth=""
+[ -n "$TOKEN_FILE" ] && auth="-c http.extraHeader=\"Authorization: token \$(cat $TOKEN_FILE)\""
 
-echo "==> restarting: $SERVICES"
-# shellcheck disable=SC2029  # $SERVICES is meant to expand locally
-ssh "$HOST" "sudo systemctl restart $SERVICES && sleep 3 && systemctl is-active $SERVICES"
-
-echo "==> health"
-ssh "$HOST" "curl -fsS -m 60 http://127.0.0.1:8088/api/status" && echo
-
-echo "==> drift check"
-drift=0
-for f in "${PY_FILES[@]}" "${WEB_FILES[@]}"; do
-  case "$f" in web/*) dir="$WEB" ;; *) dir="$REMOTE" ;; esac
-  b="$(basename "$f")"
-  # strip CR so a CRLF working tree on Windows doesn't look like drift
-  l="$(tr -d '\r' < "$f" | sha256sum | cut -c1-16)"
-  r="$(ssh "$HOST" "tr -d '\r' < $dir/$b 2>/dev/null | sha256sum | cut -c1-16" || true)"
-  if [ "$l" != "$r" ]; then echo "   DRIFT: $f"; drift=1; fi
-done
-[ "$drift" -eq 0 ] && echo "   all files match" || { echo "!! some files differ" >&2; exit 1; }
+echo "==> deploying ${HEAD_SHA:0:7} to $HOST:$DIR"
+# Move HEAD here, then run apply.sh with --from: that way apply.sh is always the version that was
+# just pulled (it does not exist yet on a box that predates it), same as the CI workflow.
+# $DIR, $auth, $fwd, $REMOTE and $BRANCH expand locally on purpose.
+ssh "$HOST" "cd $DIR && old=\$(git rev-parse HEAD) && git $auth fetch -q $REMOTE $BRANCH && \
+  git merge --ff-only -q FETCH_HEAD && env $fwd tools/apply.sh --from \$old"
 
 echo "==> done"
