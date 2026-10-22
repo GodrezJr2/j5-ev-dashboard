@@ -134,6 +134,45 @@ than me" and degrade gracefully rather than guessing at the new shape.
 This exists because there are now clients this repo does not control — see issue #12 — so a
 careless field rename becomes somebody else's outage rather than just ours.
 
+### Public status and capabilities — `/api/status`
+
+`GET /api/status` is public, including when the dashboard password gate is locked. Its existing
+`configured`, `gated` and `authed` booleans remain unchanged. It also returns:
+
+```json
+{
+  "api_version": 1,
+  "capabilities": ["settings_read", "target_soc", "charge_schedule", "scheduled_travel", "vehicle_alerts", "climate_settings", "climate_seats"]
+}
+```
+
+`api_version` is the same integer contract stamped on `/api/summary`. It changes only for
+breaking summary payload changes. A new route or operation adds a capability ID without bumping
+that number. Git `release-X.Y.Z` tags identify source releases, not another HTTP version.
+
+Capability IDs are stable, lowercase strings. A claim means the **server implements** the route
+and its documented read/write behavior. It does not mean this owner's car exposes the control,
+that their CarLinko account has permission, or that a vendor request will succeed. Clients must
+still inspect vehicle control caps and operation results. Demo mode reports `capabilities: []`
+because its account settings are deliberately unavailable.
+
+| ID | Server behavior |
+|---|---|
+| `settings_read` | `GET /api/settings` parses current target SoC, charge schedule, scheduled travel, and alert switches from the vendor notice config. |
+| `target_soc` | `POST /api/targetsoc` writes charge limit; current value reads back through `/api/settings`. |
+| `charge_schedule` | `POST /api/chargeschedule` writes scheduled charging; current schedule reads back through `/api/settings`. |
+| `scheduled_travel` | `POST /api/scheduledtravel` writes advance travel; current schedule reads back through `/api/settings`. |
+| `vehicle_alerts` | `GET /api/alertconfig` and `POST /api/alertconfig` read/write the two supported alert switches; `/api/settings` also exposes them. |
+| `climate_settings` | `POST /api/actemp` sets a supported A/C temperature and `POST /api/airduration` sets 5, 10 or 15 minutes; current duration reads back through `/api/controls`. |
+| `climate_seats` | `POST /api/seat` applies a supported seat heat/vent level after checking the car's capabilities. |
+
+For older servers, either field can be absent. Clients should treat an absent or malformed
+capability list as **unknown**, not proof that the server is obsolete. A missing `api_version`
+means version 0, as on `/api/summary`. Clients should ignore IDs
+they do not know and use feature-specific errors if a claimed operation fails. Adding a new
+capability ID is additive and does not bump `api_version`; a breaking `/api/summary` shape change
+does. A release must record any new IDs in this table.
+
 ---
 
 ## Standalone access — VALIDATED ✅
