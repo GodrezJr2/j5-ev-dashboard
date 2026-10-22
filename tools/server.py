@@ -199,9 +199,29 @@ def control_caps():
         "ac": {"switch": bool(ac.get("Switch")), "temp": bool(ac.get("SetTemperature")),
                "min": ac.get("SetTemperatureMin"), "max": ac.get("SetTemperatureMax"),
                "step": ac.get("TemperatureStepValue"), "rapidCool": bool(ac.get("RapidCool")),
-               "rapidHeat": bool(ac.get("RapidHeat")), "defog": bool(ac.get("Defogging"))},
+               "rapidHeat": bool(ac.get("RapidHeat")), "defog": bool(ac.get("Defogging")),
+               "purify": bool(ac.get("AirPurification")), "gear": bool(ac.get("HighLowGear")),
+               # remote-climate run time: settable flag + current minutes (written via /api/airduration)
+               "duration": bool(ac.get("SetDuration")), "airDuration": v.get("airDuration")},
+        "seatHeat": _seat_caps(ac, "Heater"),
+        "seatVent": _seat_caps(ac, "Vent"),
+        "steeringHeat":   bool(cfg.get("SteeringWheelHeater")),
+        "windshieldHeat": bool(cfg.get("FrontWindshieldHeater")),
+        "scheduledCharging": bool(cfg.get("ScheduledCharging")),
+        "scheduledTravel":   bool(cfg.get("ScheduledTravel")),
         "plate": v.get("licenseNumber") or "",
     }
+
+def _seat_caps(ac, kind):
+    """Seat heat/vent support for one `kind` ("Heater" or "Vent"). CarLinko flags each seat
+    (Driver/Assistant/Rear) and lists the levels per side as [L1, L2, L3] bools. Sides keep
+    CarLinko's left/right naming -- which side the driver sits on depends on LHD/RHD, so the
+    UI must not assume driver == left."""
+    lv = lambda k: [i + 1 for i, on in enumerate(ac.get(k) or []) if on]
+    return {"driver": bool(ac.get("Driver" + kind)), "passenger": bool(ac.get("Assistant" + kind)),
+            "rear": bool(ac.get("Rear" + kind)),
+            "levels": {"left": lv("Left%sList" % kind), "right": lv("Right%sList" % kind),
+                       "rear": lv("Rear%sList" % kind)}}
 
 # opcodes we've actually seen the app POST (real, safe to replay). Labels unknown until the owner
 # fires each on an awake car and notes the effect -- the Control tab's tester exists for exactly that.
@@ -239,6 +259,66 @@ def send_control(opcode, timeout=20):
         try: d = _post(auth.login())
         except Exception as e: d = {"code": "-1", "msg": f"relogin failed: {e}"}
     return d
+
+def _ack_status(op, d):
+    """Status byte of a command ack. For a 74xx/78xx command CarLinko echoes the opcode and appends
+    one byte (`<sn>__7411AC00`); `00` = the car applied it. Every ack captured 2026-10-22 ends `00`
+    except one: the app's first `7411AD` came back `7411AD44`, and the app re-sent it (after `7801`)
+    until it got `00`. None when the reply is a data payload, not an echo (`77`, `24`, `2301`)."""
+    echo = str(d.get("data") or "").rsplit("__", 1)[-1].upper()
+    op = str(op).upper()
+    return echo[len(op):] if echo.startswith(op) and len(echo) == len(op) + 2 else None
+
+def control_result(op, d):
+    """{ok, code, msg[, status, error]} for one send_control reply. `ok` needs the gateway's `0000`
+    AND, for an echoed command, the car's `00` -- a `0000` carrying status `44` changed nothing."""
+    st = _ack_status(op, d)
+    res = {"ok": str(d.get("code")) == "0000" and st in (None, "00"),
+           "code": d.get("code"), "msg": d.get("msg")}
+    if st is not None:
+        res["status"] = st
+        if st != "00":
+            res["error"] = "the car did not apply it (status %s)" % st
+    return res
+
+# ---- climate opcodes: encoded and checked against the car's caps HERE, so no client builds bytes ----
+def ac_temp_opcode(celsius, ac):
+    """(opcode, error) for an A/C set-point. `7411` + one byte = 0x80 + 2 x degC -- captured
+    2026-10-22 (7411AC = 22.0, 7411AD = 22.5, 7411AE = 23.0). `ac` is control_caps()["ac"]; the byte
+    can't express finer than 0.5 degC, so the grid is the car's step or 0.5, whichever is coarser."""
+    if not ac.get("temp"):
+        return None, "this car has no remote A/C temperature"
+    if ac.get("min") is None or ac.get("max") is None:
+        return None, "the car reports no temperature range"
+    try: c = float(celsius)
+    except (TypeError, ValueError): return None, "celsius must be a number"
+    lo, hi, grid = float(ac["min"]), float(ac["max"]), max(float(ac.get("step") or 0.5), 0.5)
+    if not lo <= c <= hi or abs(c / grid - round(c / grid)) > 1e-6:
+        return None, "celsius must be %g-%g in %g degree steps" % (lo, hi, grid)
+    return "7411%02X" % (0x80 + round(c * 2)), None
+
+# Seat heat/vent opcode per seat; the level byte is 00 = off, 01-03 = I-III. Left heat (741501 /
+# 741500) is captured + replayed 2026-10-22; the rest is the static decode in docs/control-opcodes.md.
+# Seats keep CarLinko's left/right naming (see _seat_caps).
+_SEAT_OPCODES = {
+    "heat": {"left": "7415", "right": "7416", "rearLeft": "7417", "rearRight": "7419"},
+    "vent": {"left": "741A", "right": "741B", "rearLeft": "741C", "rearRight": "741E"},
+}
+
+def seat_opcode(kind, seat, level, caps):
+    """(opcode, error) for one seat's heat/vent level, checked against the levels this car lists
+    for that side (control_caps()["seatHeat" | "seatVent"])."""
+    ops = _SEAT_OPCODES.get(kind) or {}
+    if seat not in ops:
+        return None, "kind must be heat|vent and seat one of %s" % sorted(_SEAT_OPCODES["heat"])
+    try: level = int(level)
+    except (TypeError, ValueError): return None, "level must be 0-3"
+    levels = caps["seatHeat" if kind == "heat" else "seatVent"]["levels"]["rear" if seat.startswith("rear") else seat]
+    if not levels:
+        return None, "this car has no seat %s on the %s seat" % (kind, seat)
+    if level != 0 and level not in levels:
+        return None, "level must be 0 (off) or one of %s" % levels
+    return "%s%02X" % (ops[seat], level), None
 
 # ---- control-state confirmation: fire, then read the car's ACTUAL state back ----
 # The dashboard reads over REST, so it never saw CarLinko's async control-result
@@ -313,8 +393,7 @@ def control_and_confirm(op, timeout=20, wake=True, settle=18.0):
         except Exception:
             pass
     d = send_control(op, timeout)
-    res = {"ok": str(d.get("code")) == "0000", "code": d.get("code"), "msg": d.get("msg"),
-           "state_before": before, "expect": _opcode_expect(op)}
+    res = {**control_result(op, d), "state_before": before, "expect": _opcode_expect(op)}
     if not res["ok"]:
         res.update(state_after=before, changed=[], confirmed=False)
         return res
@@ -1727,9 +1806,10 @@ class H(BaseHTTPRequestHandler):
                            "application/json")
             return
         # CarLinko extended reads (notifications, operation log, car GPS, maintenance,
-        # alert config, charge schedule, geofences) -- see tools/carlinko_api.py.
+        # alert config, geofences) -- see tools/carlinko_api.py. /api/settings is the same
+        # notice config parsed for clients: charge limit + schedule, scheduled travel, alerts.
         if path in ("/api/notifications", "/api/noticecount", "/api/oplog", "/api/carloc",
-                    "/api/maintenance", "/api/alertconfig", "/api/chargeschedule", "/api/geofences"):
+                    "/api/maintenance", "/api/alertconfig", "/api/geofences", "/api/settings"):
             if not self._authed():
                 self._send(401, b'{"error":"auth"}', "application/json"); return
             if DEMO:
@@ -1746,8 +1826,8 @@ class H(BaseHTTPRequestHandler):
                 elif path == "/api/carloc":         res = clx.car_location()
                 elif path == "/api/maintenance":    res = clx.maintenance(*pg())
                 elif path == "/api/alertconfig":    res = clx.alert_config()
-                elif path == "/api/chargeschedule": res = clx.charge_schedule()
                 elif path == "/api/geofences":      res = clx.geofences(*pg())
+                elif path == "/api/settings":       res = clx.device_settings()
             except Exception as e:
                 res = {"ok": False, "error": str(e)[:180]}
             self._send(200, json.dumps(res).encode(), "application/json")
@@ -1841,15 +1921,31 @@ class H(BaseHTTPRequestHandler):
                                               wake=body.get("wake", True))
                     self._send(200, json.dumps(res).encode(), "application/json"); return
                 d = send_control(op, body.get("timeOut") or 20)
-                self._send(200, json.dumps({"ok": str(d.get("code")) == "0000",
-                                            "code": d.get("code"), "msg": d.get("msg")}).encode(),
-                           "application/json")
+                self._send(200, json.dumps(control_result(op, d)).encode(), "application/json")
             except Exception as e:
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(), "application/json")
             return
-        # CarLinko extended writes. Bodies are RE-inferred, so these default to a safe
-        # PREVIEW (return the exact request without sending); pass confirm:true to send.
-        if path in ("/api/targetsoc", "/api/airduration", "/api/alertconfig", "/api/chargeschedule"):
+        if path in ("/api/actemp", "/api/seat"):       # climate opcodes -- the server encodes + checks them
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n).decode() or "{}")
+                caps = control_caps()
+                if path == "/api/actemp":
+                    op, err = ac_temp_opcode(body.get("celsius"), caps["ac"])
+                else:
+                    op, err = seat_opcode(body.get("kind"), body.get("seat"), body.get("level"), caps)
+                res = ({"ok": False, "error": err} if err else
+                       {**control_result(op, send_control(op, body.get("timeOut") or 20)), "opcode": op})
+            except Exception as e:
+                res = {"ok": False, "error": str(e)[:180]}
+            self._send(200, json.dumps(res).encode(), "application/json")
+            return
+        # CarLinko extended writes (bodies captured from the app). They default to a PREVIEW
+        # (the exact request, unsent); pass confirm:true to send.
+        if path in ("/api/targetsoc", "/api/airduration", "/api/alertconfig", "/api/chargeschedule",
+                    "/api/scheduledtravel"):
             if not self._authed():
                 self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
             if DEMO:
@@ -1861,12 +1957,18 @@ class H(BaseHTTPRequestHandler):
                 body = json.loads(self.rfile.read(n).decode() or "{}")
                 confirm = bool(body.get("confirm"))
                 if   path == "/api/targetsoc":      res = clx.set_target_soc(int(body.get("targetSoc")), confirm)
-                elif path == "/api/airduration":    res = clx.set_air_duration(int(body.get("minutes")), confirm)
-                elif path == "/api/alertconfig":    res = clx.set_alert_config(body.get("changes") or {}, confirm)
+                elif path == "/api/airduration":
+                    res = clx.set_air_duration(int(body.get("minutes")), confirm)
+                    if res.get("ok"): _VEH_CACHE["t"] = 0.0     # caps carry airDuration -- re-read it
+                elif path == "/api/alertconfig":    res = clx.set_alert(body.get("configName"),
+                                                                        bool(body.get("enabled")), confirm)
                 elif path == "/api/chargeschedule": res = clx.set_charge_schedule(
                     bool(body.get("enabled")), int(body.get("hour", 0)),
                     int(body.get("minute", 0)), int(body.get("duration", 1)),
                     body.get("week"), confirm)
+                elif path == "/api/scheduledtravel": res = clx.set_scheduled_travel(
+                    bool(body.get("enabled")), int(body.get("hour", 0)),
+                    int(body.get("minute", 0)), body.get("week"), confirm)
             except Exception as e:
                 res = {"ok": False, "error": str(e)[:180]}
             self._send(200, json.dumps(res).encode(), "application/json")

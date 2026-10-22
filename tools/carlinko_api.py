@@ -12,11 +12,11 @@ Two signing variants exist in CarLinko and both are reproduced here:
     e.g. remoteControl's `timeOut`, targetSoc's `targetSoc`. Using the wrong
     one yields a signature the server rejects, so each writer picks explicitly.
 
-SAFETY: the write bodies below are RE-inferred, not yet confirmed against a
-captured request. Every writer therefore defaults to `confirm=False`, which
-returns the exact `{path, body}` it *would* POST **without sending it**, so you
-can eyeball/verify the shape (or diff it against one real capture) before it
-ever touches the car. Pass `confirm=True` to actually send. Reads always send.
+SAFETY: every write body below was captured from the app (tools/capture/,
+2026-10-22) and verified live. Writers still default to `confirm=False`, which
+returns the exact `{method, path, body}` it *would* send **without sending it**, so a
+client can show what is about to change before it touches the car or account.
+Pass `confirm=True` to actually send. Reads always send.
 """
 import json, time, hmac, hashlib, base64
 import auth
@@ -104,11 +104,19 @@ def _ok(d):
             "msg": d.get("msg"), "data": d.get("data")}
 
 
-def _preview(path, body, typed=True):
-    return {"ok": None, "preview": True, "would_send": {"method": "POST", "path": path,
+def _preview(method, path, body, typed=True):
+    return {"ok": None, "preview": True, "would_send": {"method": method, "path": path,
             "body": body, "signing": "typed" if typed else "stringified"},
-            "note": "RE-inferred body shape — pass confirm=true to send, or verify "
-                    "against a captured request first."}
+            "note": "preview only, nothing sent -- pass confirm=true to send."}
+
+
+def _put_setting(path, body, confirm):
+    """Preview or send one `/user/device/manage/*` setting. The preview and the real
+    request take their method from here, so a preview always shows what would really
+    go out. PUT, not POST -- confirmed live 2026-10-22 (POST -> 1003)."""
+    if not confirm:
+        return _preview("PUT", path, body)
+    return _ok(api_put(path, body, typed=True))
 
 
 # ---------------------------------------------------------------- reads (safe)
@@ -152,17 +160,44 @@ def maintenance(page=1, size=20):
 
 
 def alert_config():
-    """Current alert toggles — `/user/device/manage/terminalNoticeConfig/{id}`.
-    Returns the exact object shape; writes below echo it back (read-modify-write)."""
+    """The vehicle's notice config — `/user/device/manage/terminalNoticeConfig/{id}`.
+    One object per vehicle (owner and sub-users see the same `id`): the alert switches
+    (ALERT_SWITCHES) and scheduled travel (`startupAppointment` + `extra`). The writers
+    below change one item each."""
     vid, _ = _ids()
     return _ok(api_get("/user/device/manage/terminalNoticeConfig/" + vid))
 
 
-def charge_schedule():
-    """Current scheduled-charging config — `/user/device/manage/batterySchedule`.
-    1003 here is state ('no schedule set' / device state), not a param error."""
-    vid, dsn = _ids()
-    return _ok(api_get("/user/device/manage/batterySchedule", {"vehicleId": vid, "deviceSn": dsn}))
+def _json_field(v):
+    """CarLinko nests some settings as JSON *strings* inside the notice config."""
+    if isinstance(v, dict):
+        return v
+    try:
+        return json.loads(v) if isinstance(v, str) and v else {}
+    except ValueError:
+        return {}
+
+
+def device_settings():
+    """The vehicle's settings, parsed from ONE notice-config read so clients don't unpack
+    CarLinko's JSON-in-a-string fields: charge limit (`targetSoc`), charge schedule
+    (`batterySchedule`), scheduled travel (`startupAppointment` + `extra`, hour/minute
+    sent as zero-padded strings) and the alert switches. A missing part is None."""
+    cur = alert_config()
+    if not cur.get("ok") or not isinstance(cur.get("data"), dict):
+        return cur
+    a = cur["data"]
+    cs, tr = _json_field(a.get("batterySchedule")), _json_field(a.get("extra"))
+    num = lambda v: int(v) if str(v).isdigit() else None
+    return {**cur, "data": {
+        "targetSoc": a.get("targetSoc"),
+        "chargeSchedule": {"enabled": bool(cs.get("enabled")), "hour": num(cs.get("hour")),
+                           "minute": num(cs.get("minute")), "duration": num(cs.get("duration")),
+                           "week": cs.get("week")} if cs else None,
+        "scheduledTravel": {"enabled": bool(a.get("startupAppointment")), "hour": num(tr.get("hour")),
+                            "minute": num(tr.get("minute")), "week": tr.get("week")} if tr else None,
+        "alerts": {name: a.get(field) for name, field in ALERT_SWITCHES.items()},
+    }}
 
 
 def geofences(page=1, size=20):
@@ -180,54 +215,65 @@ def set_target_soc(target_soc, confirm=False):
     Numeric field -> typed signing."""
     vid, dsn = _ids()
     body = {"vehicleId": vid, "deviceSn": dsn, "targetSoc": int(target_soc)}
-    path = "/user/device/manage/targetSoc"
-    if not confirm:
-        return _preview(path, body)
-    # PUT, not POST -- confirmed live 2026-10-22 (POST -> 1003).
-    return _ok(api_put(path, body, typed=True))
+    return _put_setting("/user/device/manage/targetSoc", body, confirm)
+
+
+AIR_DURATIONS = (5, 10, 15)    # the only choices the app's picker offers (capture 2026-10-22)
 
 
 def set_air_duration(minutes, confirm=False):
-    """Set remote-climate run duration (minutes). `/user/device/manage/airDuration`."""
-    vid, dsn = _ids()
-    body = {"vehicleId": vid, "deviceSn": dsn, "airDuration": int(minutes)}
-    path = "/user/device/manage/airDuration"
-    if not confirm:
-        return _preview(path, body)
-    # PUT like the other /device/manage/* settings (see set_target_soc).
-    return _ok(api_put(path, body, typed=True))
+    """Set the Smart A/C run time (the app's "Reservation Duration"), in minutes.
+    Body captured from the app 2026-10-22: `PUT /user/device/manage/airDuration`
+    `{"duration": 15, "vehicleId": "<vehicle id>"}` -- field is `duration`, vehicleId a string,
+    no deviceSn. The current value comes back as `airDuration` on `GET /user/vehicle`
+    (surfaced by server.control_caps)."""
+    minutes = int(minutes)
+    if minutes not in AIR_DURATIONS:
+        return {"ok": False, "error": "duration must be one of %s minutes" % (AIR_DURATIONS,)}
+    vid, _ = _ids()
+    return _put_setting("/user/device/manage/airDuration",
+                        {"duration": minutes, "vehicleId": vid}, confirm)
 
 
-def set_alert_config(changes, confirm=False):
-    """Read-modify-write the alert toggles. `changes` is a dict of the fields to
-    override (lowVoltage / illegalOpened / forgetToLock / targetSoc /
-    chargeComplete / highTemp / lowSoc / vibration). The full current object is
-    fetched first and merged, so we never guess the schema — only the overrides.
+def _set_notice_item(config_name, enabled, extra, confirm):
+    """Write ONE item of the vehicle's notice config -- `PUT .../terminalNoticeConfig`.
+    The app writes one item per call (captured 2026-10-22); the old whole-object body
+    got `1000 未知异常`. Works for sub-users even though the app hides the screen from
+    them. `extra` is a JSON *string* ("" when the item has no settings)."""
+    vid, _ = _ids()
+    return _put_setting("/user/device/manage/terminalNoticeConfig",
+                        {"configExtra": extra, "configName": config_name,
+                         "configStatus": bool(enabled), "vehicleId": vid}, confirm)
 
-    WRITE IS OWNER-ONLY (resolved by capture 2026-10-22): the alert settings
-    live under the app's Device screen, which a sub-user cannot open ("Operation
-    not supported by sub authorisation Device"). This dashboard authenticates as
-    a sub-user, so its terminalNoticeConfig PUT is permission-denied, returned by
-    the gateway as `1000 未知异常` -- not a body error. No body makes a sub-user's
-    write succeed; editing needs the dashboard logged in as the vehicle OWNER,
-    and then this writer works as-is. The READ works for sub-users, so the
-    client correctly shows the toggles read-only. (Old note kept below.)
-    The method is **PUT** (POST -> 1003 confirmed live
-    2026-10-22), but every body shape tried — full object, booleans-only,
-    path-param `/{vehicleId}` — returns `1000 未知异常` (a server-side
-    exception). The exact PUT body needs one captured request from the app
-    (Frida/mitm) to resolve; the READ (`alert_config`) works perfectly, so the
-    client can show current state read-only until then."""
-    cur = alert_config()
-    base = cur.get("data") if isinstance(cur.get("data"), dict) else {}
-    if not base:
-        return {"ok": False, "code": cur.get("code"),
-                "msg": "could not read current terminalNoticeConfig to modify", "data": cur}
-    merged = {**base, **(changes or {})}
-    path = "/user/device/manage/terminalNoticeConfig"
-    if not confirm:
-        return _preview(path, merged)
-    return _ok(api_put(path, merged, typed=True))
+
+# The app's only two alert switches (owner's Device -> Push setting), each covering several
+# reminders. configName -> the field that reads it back on GET terminalNoticeConfig/{id}.
+ALERT_SWITCHES = {
+    "VEHICLE_ANOMALY": "enableVehicleAnomalyWarning",   # anti-theft, tyre, door open, lights, unlocked
+    "BATTERY_ANOMALY": "enableBatteryAnomalyWarning",   # low battery, low battery voltage
+}
+
+
+def set_alert(config_name, enabled, confirm=False):
+    """Turn one alert switch on/off. `config_name` is a key of ALERT_SWITCHES."""
+    if config_name not in ALERT_SWITCHES:
+        return {"ok": False, "error": "configName must be one of %s" % sorted(ALERT_SWITCHES)}
+    return _set_notice_item(config_name, enabled, "", confirm)
+
+
+def set_scheduled_travel(enabled, hour, minute, week=None, confirm=False):
+    """Have the cabin ready by a departure time (the app's "Advance travel").
+    It is the `STARTUP_APPOINTMENT` notice item, not its own endpoint. `week` is the
+    repeat days as 7 bools (all false = one-time); hour and minute go out zero-padded
+    as strings, exactly as the app sends them. Reads back as `startupAppointment` +
+    `extra` on GET terminalNoticeConfig/{id}."""
+    hour, minute = int(hour), int(minute)
+    week = list(week) if week else [False] * 7
+    if not (0 <= hour <= 23 and 0 <= minute <= 59) or len(week) != 7:
+        return {"ok": False, "error": "need hour 0-23, minute 0-59 and 7 week flags"}
+    extra = json.dumps({"hour": "%02d" % hour, "minute": "%02d" % minute,
+                        "week": [bool(d) for d in week]}, separators=(",", ":"))
+    return _set_notice_item("STARTUP_APPOINTMENT", enabled, extra, confirm)
 
 
 def set_charge_schedule(enabled, hour=0, minute=0, duration=1, week=None,
@@ -238,9 +284,9 @@ def set_charge_schedule(enabled, hour=0, minute=0, duration=1, week=None,
     sent this exact shape to revert the account and got `0000`):
       `{vehicleId:int, enabled:bool, hour:0-23, minute:0-59, duration:<hours>,
         week:[7 bools]}`.
-    `week` is the Sun..Sat repeat flags; all-false = one-time. There is **no
-    working GET** (batterySchedule GET → 1003), so this is write-only — the UI
-    sets a schedule rather than reading the current one back."""
+    `week` is the Sun..Sat repeat flags; all-false = one-time. `GET batterySchedule`
+    answers 1003, but the current schedule reads back as the `batterySchedule` JSON
+    string on the notice config -- see device_settings()."""
     vid, _ = _ids()
     body = {
         "vehicleId": int(vid),
@@ -250,7 +296,4 @@ def set_charge_schedule(enabled, hour=0, minute=0, duration=1, week=None,
         "duration": int(duration),
         "week": list(week) if week else [False] * 7,
     }
-    path = "/user/device/manage/batterySchedule"
-    if not confirm:
-        return _preview(path, body)
-    return _ok(api_put(path, body, typed=True))
+    return _put_setting("/user/device/manage/batterySchedule", body, confirm)

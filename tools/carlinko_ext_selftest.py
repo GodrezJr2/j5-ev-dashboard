@@ -51,7 +51,6 @@ def main():
         ("operation_log",  lambda: clx.operation_log(1, 5)),
         ("maintenance",    lambda: clx.maintenance(1, 5)),
         ("alert_config",   clx.alert_config),
-        ("charge_schedule", clx.charge_schedule),
         ("geofences",      lambda: clx.geofences(1, 5)),
         ("car_location",   clx.car_location),
     ]:
@@ -60,6 +59,8 @@ def main():
     print("\nWRITE PREVIEWS (nothing sent):")
     print("  targetSoc   ->", json.dumps(clx.set_target_soc(80)["would_send"], ensure_ascii=False))
     print("  airDuration ->", json.dumps(clx.set_air_duration(15)["would_send"], ensure_ascii=False))
+    print("  alert       ->", json.dumps(clx.set_alert("VEHICLE_ANOMALY", True)["would_send"], ensure_ascii=False))
+    print("  travel      ->", json.dumps(clx.set_scheduled_travel(False, 7, 30)["would_send"], ensure_ascii=False))
     print("\nA read that returns code=0000 confirms the signing/param convention for your region.")
     print("A read with a non-0000 code = that endpoint's param/sign shape needs a tweak — "
           "capture one real request and compare.")
