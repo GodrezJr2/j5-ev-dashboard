@@ -6,6 +6,7 @@ import os, sys, json, time, sqlite3, threading, math, calendar, urllib.request, 
 import hmac, hashlib, base64, secrets, re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import known_cars          # per-model constants the telemetry never carries (pack size, tyre scale)
+import maintenance
 
 # Version of the /api/summary contract, stamped onto every payload as "api_version".
 #
@@ -1408,6 +1409,94 @@ def _g_post(url, body, fieldmask, timeout=9):
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode())
 
+def _service_centres(country, model, lat, lon):
+    """Nearby brand matches; the official locator remains the authority on service capability."""
+    brand = maintenance.brand_for(model)
+    locator = {"Chery": "https://www.chery.my/dealer-locator/",
+               "iCAUR": "https://www.icaur.com.my/dealers",
+               "OMODA JAECOO": "https://omodajaecoo.com.my/dealer-locator"}.get(brand, "")
+    result = {"country": country, "model": model, "source": locator,
+              "verified_for_model": False, "centres": []}
+    if country != "MY" or brand is None:
+        return result
+    # Official Malaysian service-centre directories, captured with their
+    # published coordinates. This works without a Google key and does not mix
+    # showroom-only branches into the service list.
+    try:
+        with open(os.path.join(HERE, "service_centres_my.json")) as f:
+            directory = json.load(f)
+        for centre in directory["centres"]:
+            if centre["brand"] != brand:
+                continue
+            distance = round(_haversine(lat, lon, centre["lat"], centre["lon"]), 1)
+            result["centres"].append({"name": centre["name"],
+                "address": centre["address"], "lat": centre["lat"],
+                "lon": centre["lon"], "distance_km": distance,
+                "maps_url": f"https://www.google.com/maps/dir/?api=1&destination={centre['lat']},{centre['lon']}"})
+        if result["centres"]:
+            result["centres"].sort(key=lambda place: place["distance_km"])
+            result["centres"] = result["centres"][:20]
+            result["directory_checked_at"] = directory["checked_at"]
+            return result
+    except (OSError, KeyError, ValueError):
+        pass
+    query = {"Chery": "Chery service centre",
+             "iCAUR": "iCAUR service centre",
+             "OMODA JAECOO": "OMODA JAECOO service centre"}[brand]
+    name_pattern = {"Chery": r"chery", "iCAUR": r"icaur|icar",
+                    "OMODA JAECOO": r"omoda|jaecoo"}[brand]
+    data = {}
+    if _gkey():
+        try:
+            data = _g_post("https://places.googleapis.com/v1/places:searchText",
+                {"textQuery": query, "regionCode": "MY", "maxResultCount": 20,
+                 "locationBias": {"circle": {"center": {
+                     "latitude": lat, "longitude": lon}, "radius": 50000.0}}},
+                "places.displayName,places.formattedAddress,places.location,places.googleMapsUri")
+        except Exception:
+            pass
+    for place in data.get("places", []):
+        name = place.get("displayName", {}).get("text", "")
+        loc = place.get("location") or {}
+        if not re.search(name_pattern, name, re.I) or not loc:
+            continue
+        p_lat, p_lon = loc.get("latitude"), loc.get("longitude")
+        if p_lat is None or p_lon is None:
+            continue
+        result["centres"].append({"name": name,
+            "address": place.get("formattedAddress", ""), "lat": p_lat, "lon": p_lon,
+            "distance_km": round(_haversine(lat, lon, p_lat, p_lon), 1),
+            "maps_url": place.get("googleMapsUri", "")})
+    result["centres"].sort(key=lambda place: place["distance_km"])
+    if not result["centres"]:
+        # OSM is a useful no-key fallback. Names do not prove authorisation;
+        # the client links to the manufacturer's locator for confirmation.
+        safe = {"Chery": "Chery", "iCAUR": "iCAUR|iCAR",
+                "OMODA JAECOO": "OMODA|JAECOO"}[brand]
+        overpass = (f'[out:json][timeout:20];nwr["name"~"{safe}",i]'
+                    f'(around:50000,{lat},{lon});out center tags;')
+        try:
+            elements = _http_post("https://overpass-api.de/api/interpreter",
+                                  {"data": overpass}, timeout=25).get("elements", [])
+        except Exception:
+            elements = []
+        for element in elements:
+            tags = element.get("tags") or {}
+            name = tags.get("name", "")
+            if not (tags.get("shop") == "car_repair" or
+                    re.search(r"service|servis|3s|4s", name, re.I)):
+                continue
+            loc = element.get("center") or element
+            p_lat, p_lon = loc.get("lat"), loc.get("lon")
+            if p_lat is None or p_lon is None:
+                continue
+            result["centres"].append({"name": name,
+                "address": tags.get("addr:full", ""), "lat": p_lat, "lon": p_lon,
+                "distance_km": round(_haversine(lat, lon, p_lat, p_lon), 1),
+                "maps_url": f"https://www.openstreetmap.org/?mlat={p_lat}&mlon={p_lon}#map=17/{p_lat}/{p_lon}"})
+        result["centres"].sort(key=lambda place: place["distance_km"])
+    return result
+
 def _g_suggest(q, limit=6):                            # Google Places (New) text search — has coords inline
     d = _g_post("https://places.googleapis.com/v1/places:searchText",
                 {"textQuery": q, "regionCode": "ID", "maxResultCount": limit},
@@ -1723,6 +1812,36 @@ class H(BaseHTTPRequestHandler):
             return
         if path == "/api/summary":
             self._send(200, json.dumps(summary()).encode(), "application/json")
+            return
+        if path == "/api/maintenance-guide":
+            q = urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
+            get = lambda key, default: (q.get(key) or [default])[0]
+            car = summary()
+            try:
+                completed = [int(value) for value in get("completed", "").split(",") if value]
+                model = get("model", (car.get("vehicle") or {}).get("model", ""))
+                result = maintenance.timetable(get("country", "MY"),
+                    model,
+                    int(car.get("odometer") or 0), completed)
+                result["odometer"] = car.get("odometer")
+                self._send(200, json.dumps(result).encode(), "application/json")
+            except ValueError:
+                self._send(400, b'{"error":"invalid completed milestones"}', "application/json")
+            return
+        if path == "/api/service-centres":
+            q = urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
+            get = lambda key, default: (q.get(key) or [default])[0]
+            try:
+                lat, lon = float(get("lat", "")), float(get("lon", ""))
+                if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+                    raise ValueError("coordinates out of range")
+                model = get("model", (summary().get("vehicle") or {}).get("model", ""))
+                result = _service_centres(get("country", "MY"), model, lat, lon)
+                self._send(200, json.dumps(result).encode(), "application/json")
+            except (ValueError, TypeError):
+                self._send(400, b'{"error":"invalid coordinates"}', "application/json")
+            except Exception:
+                self._send(502, b'{"error":"service centre search unavailable"}', "application/json")
             return
         if path == "/api/controls":                    # what this car supports + opcodes to test
             if not self._authed():
