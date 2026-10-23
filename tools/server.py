@@ -29,6 +29,8 @@ CAPABILITIES = (
     "vehicle_alerts",
     "climate_settings",
     "climate_seats",
+    "maintenance_guide",
+    "service_centres",
 )
 
 _poll_lock = threading.Lock()
@@ -1800,7 +1802,7 @@ class H(BaseHTTPRequestHandler):
             self._send(200, json.dumps({"configured": is_configured(), "gated": _gated(),
                                         "authed": self._authed(),
                                         "api_version": API_VERSION,
-                                        "capabilities": [] if DEMO else CAPABILITIES}).encode(),
+                                        "capabilities": ["maintenance_guide", "service_centres"] if DEMO else CAPABILITIES}).encode(),
                        "application/json")
             return
         if _gated() and not self._authed() and path not in self._PUBLIC:

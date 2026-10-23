@@ -142,7 +142,7 @@ careless field rename becomes somebody else's outage rather than just ours.
 ```json
 {
   "api_version": 1,
-  "capabilities": ["settings_read", "target_soc", "charge_schedule", "scheduled_travel", "vehicle_alerts", "climate_settings", "climate_seats"]
+  "capabilities": ["settings_read", "target_soc", "charge_schedule", "scheduled_travel", "vehicle_alerts", "climate_settings", "climate_seats", "maintenance_guide", "service_centres"]
 }
 ```
 
@@ -153,8 +153,9 @@ that number. Git `release-X.Y.Z` tags identify source releases, not another HTTP
 Capability IDs are stable, lowercase strings. A claim means the **server implements** the route
 and its documented read/write behavior. It does not mean this owner's car exposes the control,
 that their CarLinko account has permission, or that a vendor request will succeed. Clients must
-still inspect vehicle control caps and operation results. Demo mode reports `capabilities: []`
-because its account settings are deliberately unavailable.
+still inspect vehicle control caps and operation results. Demo mode reports only
+`maintenance_guide` and `service_centres`, which its fixture implements; its
+account settings remain unavailable.
 
 | ID | Server behavior |
 |---|---|
@@ -165,6 +166,8 @@ because its account settings are deliberately unavailable.
 | `vehicle_alerts` | `GET /api/alertconfig` and `POST /api/alertconfig` read/write the two supported alert switches; `/api/settings` also exposes them. |
 | `climate_settings` | `POST /api/actemp` sets a supported A/C temperature and `POST /api/airduration` sets 5, 10 or 15 minutes; current duration reads back through `/api/controls`. |
 | `climate_seats` | `POST /api/seat` applies a supported seat heat/vent level after checking the car's capabilities. |
+| `maintenance_guide` | `GET /api/maintenance-guide` returns the country and model timetable, completed milestones, and next due service. |
+| `service_centres` | `GET /api/service-centres` returns nearby brand service centres and an official locator link for the supplied coordinates. |
 
 For older servers, either field can be absent. Clients should treat an absent or malformed
 capability list as **unknown**, not proof that the server is obsolete. A missing `api_version`
