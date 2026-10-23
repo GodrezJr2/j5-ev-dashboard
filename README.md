@@ -250,6 +250,22 @@ Reference systemd units are in [`tools/`](tools/) if you'd rather write them you
 ([logger](tools/carlinko-logger.service), [web](tools/carlinko-web.service)) — but `install.sh`
 generates correct ones for your user and paths, so you shouldn't need to.
 
+### View backend logs
+
+The dashboard writes timestamped `INFO`, `WARNING`, and `ERROR` lines to stderr. Every HTTP
+response records its method, path and outcome; application failures returned with HTTP 200 are
+also marked as warnings. Caught errors record their exception type and source location. Query
+strings, cookies, request bodies, passwords and tokens are omitted. Set `CARLINKO_LOG_LEVEL=WARNING`
+to show only warnings and errors (the default is `INFO`). The telemetry logger runs separately
+and writes its poll output to its own service log.
+
+| Deployment | View live logs |
+| --- | --- |
+| Docker Compose | `docker compose logs -f web logger` |
+| systemd | `journalctl -fu carlinko-web -u carlinko-logger` |
+| Railway | Open the service's **Logs** tab |
+| `start.sh` or `tools/run.py` | Read the terminal where it is running |
+
 ### `creds.json` reference
 | key | required | what |
 | --- | --- | --- |
@@ -347,6 +363,13 @@ No Docker? Install **Python 3.10+** ([python.org](https://www.python.org/downloa
 
 ### Updating a self-hosted box
 
+When a client asks for a newer dashboard, update this server's checkout and restart its service.
+The public `/api/status` response reports the same `api_version` as `/api/summary`,
+plus supported `capabilities`. See the
+[status contract](docs/api-map.md#public-status-and-capabilities--apistatus) for their meanings.
+After updating, reopen the client or use its retry action to check again. Maintainers can use
+the [release flow](docs/releasing.md) to prepare and check a tagged source release.
+
 **Docker:** `git pull && docker compose up -d --build`.
 
 **systemd** (the layout `tools/install.sh` sets up: the units run out of a git checkout). Push your
@@ -363,6 +386,12 @@ compares them with the repo. So "deployed" means "being served", not just "a fil
 `CARLINKO_DIR` (default `~/j5-ev-dashboard`), `CARLINKO_PORT`, `CARLINKO_BRANCH` or
 `CARLINKO_SERVICES` if your layout differs. Or run `tools/apply.sh` on the box itself. The
 maintainer's push-to-deploy pipeline is described in [docs/ci-cd.md](docs/ci-cd.md).
+
+**Hosted Docker deployments (Railway, Render, Fly.io):** update the connected repository to the
+desired upstream release and trigger a fresh image build/deploy in the host's dashboard. Keep the
+existing data volume and environment configuration attached. Hosts that track a branch may
+redeploy automatically after a push; verify the running `/api/status` response instead of assuming
+that a completed source update restarted the container.
 
 ### Set it up with an AI coding agent
 If the terminal isn't your thing, paste this into an AI coding agent (Claude Code, Cursor, etc.)

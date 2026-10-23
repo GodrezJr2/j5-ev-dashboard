@@ -100,9 +100,19 @@ A green trace runs along the photograph's own cable — located by detecting its
 reads as energy flowing into the car. `?cable=1` previews it without a live session.
 
 **Navigation**: two tabs, right-slide detail pages, deep links at `#doors` `#tyres` `#energy`
-`#ac` `#batt` `#chg` `#dist` `#flex`, `history.pushState` so hardware and browser back close a
-page, an edge-swipe-back gesture, Escape, and a bottom confirm sheet in place of `window.confirm`
-(which blocks the whole PWA).
+`#ac` `#batt` `#chg` `#dist` `#flex` `#plan` `#alerts` `#activity`, `history.pushState` so
+hardware and browser back close a page, an edge-swipe-back gesture, Escape, and a bottom confirm
+sheet in place of `window.confirm` (which blocks the whole PWA).
+
+**Car settings** (Climate: set-point, Smart A/C run time, seat heat/vent, advance travel;
+Charging: charge limit, scheduled charging; Account > Vehicle alerts). One segmented-control
+vocabulary everywhere (`segHtml`): one pressed button, `aria-pressed`, a group label, and the
+selection moves only after the car or CarLinko accepted the change, with a toast either way. A
+value the car didn't report shows nothing selected, never a default dressed up as the car's state.
+Values come from one CarLinko read (`/api/settings`) each time a page opens: a skeleton while it is
+in flight, "Could not read the current …" if it fails. The two schedules share one editor (time,
+seven day toggles, Save / Turn off). Touch targets are 44px; the native time picker follows the
+theme because `color-scheme` tracks the manual override too.
 
 **Motion**: state-bearing only, transform and opacity, one ease. A first-paint rise with a stagger,
 a needle-style count-up on the range numeral, a brief accent warm on any value the poll changed,
@@ -112,7 +122,8 @@ CSS, and the JS helpers check the same query.
 
 **Honesty rules inherited**: the windows row stays hidden on the J5 (byte 8 quirk, #5); indirect
 TPMS reports status only; seats read "Not available" when the car reports none; the A/C
-temperature opcode is labelled as pending on-car verification; and the door-corner mapping is
-labelled as E5-derived and unverified on this car.
+set-point is labelled as the last one sent from this device, because the car never reports it;
+seat sides keep CarLinko's left/right naming instead of guessing the driver's side; and the
+door-corner mapping is labelled as E5-derived and unverified on this car.
 
 **Bans honored**: no gradient text, no glass, no neon, no decorative shadow, no em dashes.

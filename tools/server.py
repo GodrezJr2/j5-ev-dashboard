@@ -3,9 +3,24 @@ Serves the mobile PWA in ./web and a JSON API computed from carlinko.db.
 Run: python server.py [port]   (default 8088, binds 0.0.0.0 so Tailscale can reach it)
 """
 import os, sys, json, time, sqlite3, threading, math, calendar, urllib.request, urllib.parse
+import logging, traceback
 import hmac, hashlib, base64, secrets, re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import known_cars          # per-model constants the telemetry never carries (pack size, tyre scale)
+import maintenance
+
+logging.basicConfig(
+    level=os.environ.get("CARLINKO_LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+LOG = logging.getLogger("carlinko.server")
+
+def _log_exception(context, exc, level=logging.ERROR):
+    """Log the failure location without exception text, which may contain credentials."""
+    frames = traceback.extract_tb(exc.__traceback__)
+    where = "%s:%s in %s" % (os.path.basename(frames[-1].filename), frames[-1].lineno,
+                              frames[-1].name) if frames else "unknown location"
+    LOG.log(level, "%s: %s at %s", context, type(exc).__name__, where)
 
 # Version of the /api/summary contract, stamped onto every payload as "api_version".
 #
@@ -17,6 +32,20 @@ import known_cars          # per-model constants the telemetry never carries (pa
 # Clients should treat an api_version they do not recognise as "newer than me" and degrade rather
 # than guess, and should treat a missing api_version as version 0 (any build before 2026-09-11).
 API_VERSION = 1
+
+# Stable operation IDs advertised by /api/status. These describe server code,
+# not whether a particular vehicle or CarLinko account supports an operation.
+CAPABILITIES = (
+    "settings_read",
+    "target_soc",
+    "charge_schedule",
+    "scheduled_travel",
+    "vehicle_alerts",
+    "climate_settings",
+    "climate_seats",
+    "maintenance_guide",
+    "service_centres",
+)
 
 _poll_lock = threading.Lock()
 
@@ -34,6 +63,7 @@ def live_poll():
             conn.close()
         return (st is not None), ("ok" if st else "car offline")
     except Exception as e:
+        _log_exception("live poll failed", e)
         return False, repr(e)
     finally:
         _poll_lock.release()
@@ -48,7 +78,8 @@ WEB  = os.path.join(HERE, "..", "web")
 
 def _creds():
     try:
-        return json.load(open(os.path.join(_DATA, "creds.json")))
+        with open(os.path.join(_DATA, "creds.json")) as f:
+            return json.load(f)
     except Exception:
         return {}
 
@@ -66,17 +97,20 @@ def _ensure_db():
     try:
         import logger as L
         conn = sqlite3.connect(DB); conn.executescript(L.SCHEMA); conn.commit(); conn.close()
-    except Exception:
-        pass
-# Vehicle identity (plate/model/VIN) comes from creds.json; the client hides plate+VIN by
-# default (eye-toggle reveals). Falls back to generic labels so the app still runs unconfigured.
-_V = (_creds().get("vehicle") or {})
-VEHICLE = {"plate": _V.get("plate") or "—", "model": _V.get("model") or "EV", "vin": _V.get("vin") or "—"}
+    except Exception as e:
+        _log_exception("database initialization failed", e)
+def _vehicle():
+    """Vehicle identity (plate/model/VIN) from creds.json, read fresh so a web login, a setup.py
+    run or a restored creds.json shows up without a restart. The client hides plate+VIN by
+    default (eye-toggle reveals). Falls back to generic labels so the app still runs unconfigured."""
+    v = _creds().get("vehicle") or {}
+    return {"plate": v.get("plate") or "—", "model": v.get("model") or "EV", "vin": v.get("vin") or "—"}
+
 # CarLinko hosts a render of the exact car (model + colour) on its own CDN; setup.py saves the URL.
 # We proxy it through /car-photo and cache it on disk rather than pointing the browser at the
 # vendor's CDN -- keeps the dashboard self-hosted and offline-friendly, and leaks no referer.
-VEHICLE_IMG = (_V.get("img") or "").strip() or None
 _CAR_PHOTO = os.path.join(_DATA, "car-photo.img")
+_CAR_PHOTO_MAX = 8 * 1024 * 1024                       # same cap as the CarLinko fetch below
 TPMS_POS = ["FL", "FR", "RL", "RR"]
 
 def _vehicle_img():
@@ -97,7 +131,8 @@ def _vehicle_img_url(v):
     try:
         img = json.loads(v.get("vehicleImgConfig") or "{}")
         return img.get("Front") or img.get("Side") or img.get("Top")
-    except Exception:
+    except Exception as e:
+        _log_exception("vehicle image configuration is invalid", e, logging.WARNING)
         return None
 
 def is_configured():
@@ -135,7 +170,6 @@ def web_login(email, password, region="sea", gmaps_key=None, dashboard_password=
         json.dump(c, open(cpath, "w"), indent=2)
         try: os.chmod(cpath, 0o600)
         except Exception: pass
-        VEHICLE.update(c["vehicle"])                        # reflect immediately, no restart
     if dashboard_password and dashboard_password.strip():
         set_dashboard_password(dashboard_password.strip())  # gate the dashboard for public hosting
     _ensure_db()                                           # table exists before the dashboard first loads
@@ -198,9 +232,29 @@ def control_caps():
         "ac": {"switch": bool(ac.get("Switch")), "temp": bool(ac.get("SetTemperature")),
                "min": ac.get("SetTemperatureMin"), "max": ac.get("SetTemperatureMax"),
                "step": ac.get("TemperatureStepValue"), "rapidCool": bool(ac.get("RapidCool")),
-               "rapidHeat": bool(ac.get("RapidHeat")), "defog": bool(ac.get("Defogging"))},
+               "rapidHeat": bool(ac.get("RapidHeat")), "defog": bool(ac.get("Defogging")),
+               "purify": bool(ac.get("AirPurification")), "gear": bool(ac.get("HighLowGear")),
+               # remote-climate run time: settable flag + current minutes (written via /api/airduration)
+               "duration": bool(ac.get("SetDuration")), "airDuration": v.get("airDuration")},
+        "seatHeat": _seat_caps(ac, "Heater"),
+        "seatVent": _seat_caps(ac, "Vent"),
+        "steeringHeat":   bool(cfg.get("SteeringWheelHeater")),
+        "windshieldHeat": bool(cfg.get("FrontWindshieldHeater")),
+        "scheduledCharging": bool(cfg.get("ScheduledCharging")),
+        "scheduledTravel":   bool(cfg.get("ScheduledTravel")),
         "plate": v.get("licenseNumber") or "",
     }
+
+def _seat_caps(ac, kind):
+    """Seat heat/vent support for one `kind` ("Heater" or "Vent"). CarLinko flags each seat
+    (Driver/Assistant/Rear) and lists the levels per side as [L1, L2, L3] bools. Sides keep
+    CarLinko's left/right naming -- which side the driver sits on depends on LHD/RHD, so the
+    UI must not assume driver == left."""
+    lv = lambda k: [i + 1 for i, on in enumerate(ac.get(k) or []) if on]
+    return {"driver": bool(ac.get("Driver" + kind)), "passenger": bool(ac.get("Assistant" + kind)),
+            "rear": bool(ac.get("Rear" + kind)),
+            "levels": {"left": lv("Left%sList" % kind), "right": lv("Right%sList" % kind),
+                       "rear": lv("Rear%sList" % kind)}}
 
 # opcodes we've actually seen the app POST (real, safe to replay). Labels unknown until the owner
 # fires each on an awake car and notes the effect -- the Control tab's tester exists for exactly that.
@@ -239,6 +293,172 @@ def send_control(opcode, timeout=20):
         except Exception as e: d = {"code": "-1", "msg": f"relogin failed: {e}"}
     return d
 
+def _ack_status(op, d):
+    """Status byte of a command ack. For a 74xx/78xx command CarLinko echoes the opcode and appends
+    one byte (`<sn>__7411AC00`); `00` = the car applied it. Every ack captured 2026-10-22 ends `00`
+    except one: the app's first `7411AD` came back `7411AD44`, and the app re-sent it (after `7801`)
+    until it got `00`. None when the reply is a data payload, not an echo (`77`, `24`, `2301`)."""
+    echo = str(d.get("data") or "").rsplit("__", 1)[-1].upper()
+    op = str(op).upper()
+    return echo[len(op):] if echo.startswith(op) and len(echo) == len(op) + 2 else None
+
+def control_result(op, d):
+    """{ok, code, msg[, status, error]} for one send_control reply. `ok` needs the gateway's `0000`
+    AND, for an echoed command, the car's `00` -- a `0000` carrying status `44` changed nothing."""
+    st = _ack_status(op, d)
+    res = {"ok": str(d.get("code")) == "0000" and st in (None, "00"),
+           "code": d.get("code"), "msg": d.get("msg")}
+    if st is not None:
+        res["status"] = st
+        if st != "00":
+            res["error"] = "the car did not apply it (status %s)" % st
+    return res
+
+# ---- climate opcodes: encoded and checked against the car's caps HERE, so no client builds bytes ----
+def ac_temp_opcode(celsius, ac):
+    """(opcode, error) for an A/C set-point. `7411` + one byte = 0x80 + 2 x degC -- captured
+    2026-10-22 (7411AC = 22.0, 7411AD = 22.5, 7411AE = 23.0). `ac` is control_caps()["ac"]; the byte
+    can't express finer than 0.5 degC, so the grid is the car's step or 0.5, whichever is coarser."""
+    if not ac.get("temp"):
+        return None, "this car has no remote A/C temperature"
+    if ac.get("min") is None or ac.get("max") is None:
+        return None, "the car reports no temperature range"
+    try: c = float(celsius)
+    except (TypeError, ValueError): return None, "celsius must be a number"
+    lo, hi, grid = float(ac["min"]), float(ac["max"]), max(float(ac.get("step") or 0.5), 0.5)
+    if not lo <= c <= hi or abs(c / grid - round(c / grid)) > 1e-6:
+        return None, "celsius must be %g-%g in %g degree steps" % (lo, hi, grid)
+    return "7411%02X" % (0x80 + round(c * 2)), None
+
+# Seat heat/vent opcode per seat; the level byte is 00 = off, 01-03 = I-III. Left heat (741501 /
+# 741500) is captured + replayed 2026-10-22; the rest is the static decode in docs/control-opcodes.md.
+# Seats keep CarLinko's left/right naming (see _seat_caps).
+_SEAT_OPCODES = {
+    "heat": {"left": "7415", "right": "7416", "rearLeft": "7417", "rearRight": "7419"},
+    "vent": {"left": "741A", "right": "741B", "rearLeft": "741C", "rearRight": "741E"},
+}
+
+def seat_opcode(kind, seat, level, caps):
+    """(opcode, error) for one seat's heat/vent level, checked against the levels this car lists
+    for that side (control_caps()["seatHeat" | "seatVent"])."""
+    ops = _SEAT_OPCODES.get(kind) or {}
+    if seat not in ops:
+        return None, "kind must be heat|vent and seat one of %s" % sorted(_SEAT_OPCODES["heat"])
+    try: level = int(level)
+    except (TypeError, ValueError): return None, "level must be 0-3"
+    levels = caps["seatHeat" if kind == "heat" else "seatVent"]["levels"]["rear" if seat.startswith("rear") else seat]
+    if not levels:
+        return None, "this car has no seat %s on the %s seat" % (kind, seat)
+    if level != 0 and level not in levels:
+        return None, "level must be 0 (off) or one of %s" % levels
+    return "%s%02X" % (ops[seat], level), None
+
+# ---- control-state confirmation: fire, then read the car's ACTUAL state back ----
+# The dashboard reads over REST, so it never saw CarLinko's async control-result
+# frame (the app gets that over its WebSocket). Instead we snapshot the car's own
+# body-state before and after the command and report what actually moved -- which
+# answers "did it lock?" and, over a few uses, live-VERIFIES the opcode->label map
+# that docs/control-opcodes.md still marks as guesses.
+
+# Full opcode -> (body-state field it should move, expected value | None).
+# Keyed by the WHOLE opcode, not a CMD/STATE split: the authoritative #11 jump-table
+# decode (docs/control-opcodes.md) shows on/off is often a different opcode, not a
+# state bit (lock 740100 / unlock 740200; A/C on 741001 / off 741000). `None` value =
+# "report any change" (no stable boolean to assert). field None = no observable
+# body-state (find car) -> confirmed by the command ack, not the diff.
+_OPCODE_EFFECT = {
+    "740100": ("unlocked",      False),  # lock
+    "740200": ("unlocked",      True),   # unlock
+    "740300": ("trunk_open",    True),   # trunk open
+    "740a00": ("trunk_open",    False),  # trunk close
+    "740500": ("windows",       None),   # windows close
+    "740600": ("windows",       None),   # windows open
+    "740e00": ("windows",       None),   # windows vent
+    "740f00": ("sunroof_open",  False),  # sunroof close
+    "740f01": ("sunroof_open",  True),   # sunroof open
+    "740f02": ("sunroof_open",  None),   # sunroof tilt
+    "740400": (None,            None),   # find car (no body-state change)
+    "741001": ("ac_on",         True),   # A/C on
+    "741000": ("ac_on",         False),  # A/C off
+    "741201": ("defrost_front", True),   # front defog on
+    "741200": ("defrost_front", False),  # front defog off
+    "742701": ("charge_state",  None),   # stop charging
+}
+_STATE_KEYS = ("unlocked", "doors", "trunk_open", "windows", "sunroof_open",
+               "ac_on", "ac_temp_c", "defrost_front", "charge_state", "charge_mode")
+
+def _latest_body_state():
+    """Most recent decoded body-state from the DB (same fields summary() surfaces).
+    None when there is no fresh frame to read."""
+    try:
+        if not os.path.exists(DB):
+            return None
+        conn = sqlite3.connect(DB)
+        try:
+            row = conn.execute("SELECT raw FROM telemetry WHERE online=1 AND raw IS NOT NULL "
+                               "ORDER BY ts DESC LIMIT 1").fetchone()
+        finally:
+            conn.close()
+        if not row or not row[0]:
+            return None
+        d = decode(row[0])
+        return {k: d.get(k) for k in _STATE_KEYS}
+    except Exception as e:
+        _log_exception("reading latest vehicle state failed", e)
+        return None
+
+def _opcode_expect(op):
+    """{field, to} an opcode should produce, from the authoritative opcode map.
+    A UI hint -- the live diff is the source of truth. None = opcode not mapped."""
+    eff = _OPCODE_EFFECT.get((op or "").lower())
+    if eff is None:
+        return None
+    field, to = eff
+    return {"field": field, "to": to}
+
+def control_and_confirm(op, timeout=20, wake=True, settle=18.0):
+    """Fire an opcode, then poll the car until the affected field changes (or
+    `settle` seconds elapse) and report before/after. `wake` sends the benign 0x77
+    init first (the app's own wake-then-command sequence) so an asleep car actuates."""
+    before = _latest_body_state()
+    if wake and not DEMO:
+        try:
+            send_control("77", 10); time.sleep(0.6)
+        except Exception as e:
+            _log_exception("control wake command failed", e, logging.WARNING)
+    d = send_control(op, timeout)
+    res = {**control_result(op, d), "state_before": before, "expect": _opcode_expect(op)}
+    if not res["ok"]:
+        res.update(state_after=before, changed=[], confirmed=False)
+        return res
+    exp = res["expect"]                       # None=unmapped opcode; else {field,to}
+    # A mapped opcode with no body-state field (find car) can't be seen in telemetry --
+    # a successful ack is the only confirmation there is, so don't poll.
+    if exp is not None and exp.get("field") is None:
+        res.update(state_after=before, changed=[], confirmed=True)
+        return res
+    field = exp.get("field") if exp else None   # None here = unmapped -> watch for ANY change
+    deadline = time.time() + max(4.0, settle)
+    after = before
+    while time.time() < deadline:
+        if not DEMO:
+            live_poll()
+        after = _latest_body_state()
+        if after and before:
+            if field and after.get(field) != before.get(field):
+                break
+            if field is None and after != before:
+                break
+        time.sleep(3.5)
+    changed = [k for k in (after or {}) if (before or {}).get(k) != (after or {}).get(k)]
+    res.update(state_after=after, changed=changed)
+    if field and after:
+        want = exp.get("to") if exp else None
+        res["confirmed"] = (after.get(field) == want) if want is not None else (field in changed)
+    else:
+        res["confirmed"] = bool(changed)
+    return res
+
 # ---- optional dashboard auth (off by default; set a dashboard_password to gate public hosting) ----
 SESSION_TTL = 30 * 86400
 
@@ -247,7 +467,8 @@ def _gated():
 
 def _save_creds(c):
     cpath = os.path.join(_DATA, "creds.json")
-    json.dump(c, open(cpath, "w"), indent=2)
+    with open(cpath, "w") as f:
+        json.dump(c, f, indent=2)
     try: os.chmod(cpath, 0o600)
     except Exception: pass
 
@@ -378,7 +599,7 @@ _CC = _creds()          # per-model overrides; anything not set falls back to kn
 def match_model(table, model=None):
     """Value from `table` for this car. `model` is passed explicitly by demo mode, which has its
     own car rather than the one in creds.json."""
-    return known_cars.match(table, model if model is not None else VEHICLE.get("model"))
+    return known_cars.match(table, model if model is not None else _vehicle()["model"])
 
 KNOWN = match_model(known_cars.CARS) or {}
 
@@ -402,11 +623,6 @@ TPMS_SCALE = float(_CC.get("tpms_scale") or KNOWN.get("tpms_scale") or 1.373)
 # --- pack chemistry: decides the 100%-charge advice (LFP wants one regularly, NMC does not) ---
 CHEMISTRY = (_CC.get("chemistry") or KNOWN.get("chemistry") or "lfp").lower()   # lfp | nmc — J5 is LFP
 CHEMISTRY_KNOWN = bool(_CC.get("chemistry") or KNOWN.get("chemistry"))
-# Optional path/URL to a picture of YOUR car for the dashboard hero. The bundled render is a
-# Jaecoo J5; showing it to an Omoda/Chery/Tiggo owner is just wrong, so anything we don't have
-# a render for falls back to a neutral silhouette (see web/car-generic.svg) instead.
-#   your own picture  >  CarLinko's render of your actual car  >  (client picks J5 or silhouette)
-CAR_IMAGE = (_CC.get("car_image") or "").strip() or ("/car-photo" if VEHICLE_IMG else None)
 
 # Brochure specs. These are per-model facts nothing in the telemetry can tell us, so they can only
 # come from a table or from you. Showing the J5's numbers to a Tiggo owner is stating a falsehood,
@@ -917,7 +1133,7 @@ def summary():
 def _summary():
     if DEMO:
         return demo_summary()
-    out = {"vehicle": VEHICLE, "online": False, "battery": None, "range_km": None,
+    out = {"vehicle": _vehicle(), "online": False, "battery": None, "range_km": None,
            "odometer": None, "volt12": None, "unlocked": None, "speed": None,
            "moving": False, "avg_speed": None, "insights": {}, "health": {}, "drain": None,
            "volt12_min7d": None, "volt12_status": None,
@@ -926,7 +1142,7 @@ def _summary():
            "wltp_kwh_100": WLTP_KWH_100 if WLTP_KNOWN else None,
            "chemistry_known": CHEMISTRY_KNOWN, "powertrain": "bev", "fuel": None,
            "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
-           "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
+           "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": _car_image(),
            "specs": model_specs(),
            "energy": {"today_kwh": 0.0, "consumption": None, "rating": None,
                       "week_consumption": None},
@@ -1210,6 +1426,94 @@ def _g_post(url, body, fieldmask, timeout=9):
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode())
 
+def _service_centres(country, model, lat, lon):
+    """Nearby brand matches; the official locator remains the authority on service capability."""
+    brand = maintenance.brand_for(model)
+    locator = {"Chery": "https://www.chery.my/dealer-locator/",
+               "iCAUR": "https://www.icaur.com.my/dealers",
+               "OMODA JAECOO": "https://omodajaecoo.com.my/dealer-locator"}.get(brand, "")
+    result = {"country": country, "model": model, "source": locator,
+              "verified_for_model": False, "centres": []}
+    if country != "MY" or brand is None:
+        return result
+    # Official Malaysian service-centre directories, captured with their
+    # published coordinates. This works without a Google key and does not mix
+    # showroom-only branches into the service list.
+    try:
+        with open(os.path.join(HERE, "service_centres_my.json")) as f:
+            directory = json.load(f)
+        for centre in directory["centres"]:
+            if centre["brand"] != brand:
+                continue
+            distance = round(_haversine(lat, lon, centre["lat"], centre["lon"]), 1)
+            result["centres"].append({"name": centre["name"],
+                "address": centre["address"], "lat": centre["lat"],
+                "lon": centre["lon"], "distance_km": distance,
+                "maps_url": f"https://www.google.com/maps/dir/?api=1&destination={centre['lat']},{centre['lon']}"})
+        if result["centres"]:
+            result["centres"].sort(key=lambda place: place["distance_km"])
+            result["centres"] = result["centres"][:20]
+            result["directory_checked_at"] = directory["checked_at"]
+            return result
+    except (OSError, KeyError, ValueError):
+        pass
+    query = {"Chery": "Chery service centre",
+             "iCAUR": "iCAUR service centre",
+             "OMODA JAECOO": "OMODA JAECOO service centre"}[brand]
+    name_pattern = {"Chery": r"chery", "iCAUR": r"icaur|icar",
+                    "OMODA JAECOO": r"omoda|jaecoo"}[brand]
+    data = {}
+    if _gkey():
+        try:
+            data = _g_post("https://places.googleapis.com/v1/places:searchText",
+                {"textQuery": query, "regionCode": "MY", "maxResultCount": 20,
+                 "locationBias": {"circle": {"center": {
+                     "latitude": lat, "longitude": lon}, "radius": 50000.0}}},
+                "places.displayName,places.formattedAddress,places.location,places.googleMapsUri")
+        except Exception:
+            pass
+    for place in data.get("places", []):
+        name = place.get("displayName", {}).get("text", "")
+        loc = place.get("location") or {}
+        if not re.search(name_pattern, name, re.I) or not loc:
+            continue
+        p_lat, p_lon = loc.get("latitude"), loc.get("longitude")
+        if p_lat is None or p_lon is None:
+            continue
+        result["centres"].append({"name": name,
+            "address": place.get("formattedAddress", ""), "lat": p_lat, "lon": p_lon,
+            "distance_km": round(_haversine(lat, lon, p_lat, p_lon), 1),
+            "maps_url": place.get("googleMapsUri", "")})
+    result["centres"].sort(key=lambda place: place["distance_km"])
+    if not result["centres"]:
+        # OSM is a useful no-key fallback. Names do not prove authorisation;
+        # the client links to the manufacturer's locator for confirmation.
+        safe = {"Chery": "Chery", "iCAUR": "iCAUR|iCAR",
+                "OMODA JAECOO": "OMODA|JAECOO"}[brand]
+        overpass = (f'[out:json][timeout:20];nwr["name"~"{safe}",i]'
+                    f'(around:50000,{lat},{lon});out center tags;')
+        try:
+            elements = _http_post("https://overpass-api.de/api/interpreter",
+                                  {"data": overpass}, timeout=25).get("elements", [])
+        except Exception:
+            elements = []
+        for element in elements:
+            tags = element.get("tags") or {}
+            name = tags.get("name", "")
+            if not (tags.get("shop") == "car_repair" or
+                    re.search(r"service|servis|3s|4s", name, re.I)):
+                continue
+            loc = element.get("center") or element
+            p_lat, p_lon = loc.get("lat"), loc.get("lon")
+            if p_lat is None or p_lon is None:
+                continue
+            result["centres"].append({"name": name,
+                "address": tags.get("addr:full", ""), "lat": p_lat, "lon": p_lon,
+                "distance_km": round(_haversine(lat, lon, p_lat, p_lon), 1),
+                "maps_url": f"https://www.openstreetmap.org/?mlat={p_lat}&mlon={p_lon}#map=17/{p_lat}/{p_lon}"})
+        result["centres"].sort(key=lambda place: place["distance_km"])
+    return result
+
 def _g_suggest(q, limit=6):                            # Google Places (New) text search — has coords inline
     d = _g_post("https://places.googleapis.com/v1/places:searchText",
                 {"textQuery": q, "regionCode": "ID", "maxResultCount": limit},
@@ -1486,9 +1790,26 @@ def trip_plan(frm, to, soc, cons, reserve=10.0, target=80.0, derate=1.0, a=None,
             "src": "google" if _gkey() else "osm"}
 
 class H(BaseHTTPRequestHandler):
-    def log_message(self, *a):  # quiet
+    def log_message(self, format, *args):
+        # _send records the outcome; avoid BaseHTTPRequestHandler's duplicate line.
         pass
+    def send_error(self, code, message=None, explain=None):
+        # Parser-level failures bypass _send; the raw request line can contain secrets.
+        LOG.log(logging.ERROR if code >= 500 else logging.WARNING,
+                "HTTP request rejected -> %d", code)
+        super().send_error(code, message, explain)
     def _send(self, code, body, ctype, extra=None):
+        path = self.path.split("?", 1)[0]
+        failed = False
+        if path.startswith("/api/") and "json" in ctype:
+            try:
+                payload = json.loads(body)
+                failed = isinstance(payload, dict) and (payload.get("ok") is False or "error" in payload)
+            except (TypeError, ValueError):
+                pass
+        level = logging.ERROR if code >= 500 else logging.WARNING if code >= 400 or failed else logging.INFO
+        LOG.log(level, "%s %r -> %d%s", self.command, path, code,
+                " (application failure)" if failed and code < 400 else "")
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -1511,7 +1832,10 @@ class H(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if path == "/api/status":
             self._send(200, json.dumps({"configured": is_configured(), "gated": _gated(),
-                                        "authed": self._authed()}).encode(), "application/json")
+                                        "authed": self._authed(),
+                                        "api_version": API_VERSION,
+                                        "capabilities": ["maintenance_guide", "service_centres"] if DEMO else CAPABILITIES}).encode(),
+                       "application/json")
             return
         if _gated() and not self._authed() and path not in self._PUBLIC:
             if path in ("/", "/index.html", "/v2.html"):  # gated + locked -> show the unlock page
@@ -1523,6 +1847,37 @@ class H(BaseHTTPRequestHandler):
         if path == "/api/summary":
             self._send(200, json.dumps(summary()).encode(), "application/json")
             return
+        if path == "/api/maintenance-guide":
+            q = urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
+            get = lambda key, default: (q.get(key) or [default])[0]
+            car = summary()
+            try:
+                completed = [int(value) for value in get("completed", "").split(",") if value]
+                model = get("model", (car.get("vehicle") or {}).get("model", ""))
+                result = maintenance.timetable(get("country", "MY"),
+                    model,
+                    int(car.get("odometer") or 0), completed)
+                result["odometer"] = car.get("odometer")
+                self._send(200, json.dumps(result).encode(), "application/json")
+            except ValueError:
+                self._send(400, b'{"error":"invalid completed milestones"}', "application/json")
+            return
+        if path == "/api/service-centres":
+            q = urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
+            get = lambda key, default: (q.get(key) or [default])[0]
+            try:
+                lat, lon = float(get("lat", "")), float(get("lon", ""))
+                if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+                    raise ValueError("coordinates out of range")
+                model = get("model", (summary().get("vehicle") or {}).get("model", ""))
+                result = _service_centres(get("country", "MY"), model, lat, lon)
+                self._send(200, json.dumps(result).encode(), "application/json")
+            except (ValueError, TypeError):
+                self._send(400, b'{"error":"invalid coordinates"}', "application/json")
+            except Exception as e:
+                _log_exception("GET /api/service-centres failed", e)
+                self._send(502, b'{"error":"service centre search unavailable"}', "application/json")
+            return
         if path == "/api/controls":                    # what this car supports + opcodes to test
             if not self._authed():
                 self._send(401, b'{"error":"auth"}', "application/json"); return
@@ -1530,6 +1885,7 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps({"caps": control_caps(), "known": KNOWN_OPCODES}).encode(),
                            "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"error": str(e)[:180]}).encode(), "application/json")
             return
         if path == "/car-photo":     # cached proxy for CarLinko's own render of this exact car.
@@ -1548,6 +1904,7 @@ class H(BaseHTTPRequestHandler):
                 kind = "image/png" if blob[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
                 self._send(200, blob, kind)
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(502, ("car image fetch failed: %r" % (e,)).encode(), "text/plain")
             return
         if path == "/api/refresh":                     # manual button: poll the car live, then return
@@ -1559,7 +1916,8 @@ class H(BaseHTTPRequestHandler):
             q = urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
             try:
                 res = _suggest((q.get("q") or [""])[0])
-            except Exception:
+            except Exception as e:
+                _log_exception("GET /api/geocode failed", e)
                 res = []
             self._send(200, json.dumps(res).encode(), "application/json")
             return
@@ -1582,6 +1940,7 @@ class H(BaseHTTPRequestHandler):
                     res.sort(key=lambda x: x["dist"])
                     _trip_cache[key] = (time.time(), res)
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 res = {"error": repr(e)[:160]}
             self._send(200, json.dumps(res).encode(), "application/json")
             return
@@ -1604,6 +1963,7 @@ class H(BaseHTTPRequestHandler):
                 plan = trip_plan(g1("from", ""), g1("to", ""), soc, cons,
                                  float(g1("reserve", "15")), 80.0, float(g1("derate", "1.0")), a, b)
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 plan = {"error": repr(e)[:200]}
             if "error" not in plan:
                 _trip_cache["trip:" + qs] = (time.time(), plan)
@@ -1616,8 +1976,37 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps(month_history((q.get("month") or [""])[0])).encode(),
                            "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(),
                            "application/json")
+            return
+        # CarLinko extended reads (notifications, operation log, car GPS, maintenance,
+        # alert config, geofences) -- see tools/carlinko_api.py. /api/settings is the same
+        # notice config parsed for clients: charge limit + schedule, scheduled travel, alerts.
+        if path in ("/api/notifications", "/api/noticecount", "/api/oplog", "/api/carloc",
+                    "/api/maintenance", "/api/alertconfig", "/api/geofences", "/api/settings"):
+            if not self._authed():
+                self._send(401, b'{"error":"auth"}', "application/json"); return
+            if DEMO:
+                self._send(200, json.dumps({"ok": True, "demo": True, "data": []}).encode(),
+                           "application/json"); return
+            import carlinko_api as clx
+            q = urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
+            g1 = lambda k, d=None: (q.get(k) or [d])[0]
+            pg = lambda: (int(g1("page", "1")), int(g1("size", "20")))
+            try:
+                if   path == "/api/notifications":  res = clx.notifications(*pg())
+                elif path == "/api/noticecount":    res = clx.notice_unread()
+                elif path == "/api/oplog":          res = clx.operation_log(*pg())
+                elif path == "/api/carloc":         res = clx.car_location()
+                elif path == "/api/maintenance":    res = clx.maintenance(*pg())
+                elif path == "/api/alertconfig":    res = clx.alert_config()
+                elif path == "/api/geofences":      res = clx.geofences(*pg())
+                elif path == "/api/settings":       res = clx.device_settings()
+            except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
+                res = {"ok": False, "error": str(e)[:180]}
+            self._send(200, json.dumps(res).encode(), "application/json")
             return
         if path == "/":
             if not is_configured():
@@ -1656,6 +2045,7 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps({"ok": True, "vehicle": veh}).encode(),
                            "application/json", self._set_cookie())   # log them straight in
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 msg = str(e)
                 if "login failed" in msg.lower() or "code" in msg.lower():
                     m = re.search(r"'code': '(\d+)'", msg)
@@ -1677,6 +2067,7 @@ class H(BaseHTTPRequestHandler):
                 else:
                     self._send(200, json.dumps({"ok": False, "error": "Wrong password."}).encode(), "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(), "application/json")
             return
         if path == "/api/forcerefresh":                # poke the car with the benign init (0x77) so it
@@ -1689,6 +2080,7 @@ class H(BaseHTTPRequestHandler):
                                             "code": d.get("code"), "msg": d.get("msg")}).encode(),
                            "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(), "application/json")
             return
         if path == "/api/control":                     # fire a remote-control opcode at the car
@@ -1701,12 +2093,67 @@ class H(BaseHTTPRequestHandler):
                 if not op or not all(ch in "0123456789abcdefABCDEF" for ch in op) or len(op) > 16:
                     self._send(200, json.dumps({"ok": False, "error": "opcode must be short hex"}).encode(),
                                "application/json"); return
+                # confirm:true -> fire, then read the car's actual state back and report what
+                # moved (lock/doors/windows/sunroof/AC). Default off = old fire-and-ack behaviour.
+                if body.get("confirm"):
+                    res = control_and_confirm(op, body.get("timeOut") or 20,
+                                              wake=body.get("wake", True))
+                    self._send(200, json.dumps(res).encode(), "application/json"); return
                 d = send_control(op, body.get("timeOut") or 20)
-                self._send(200, json.dumps({"ok": str(d.get("code")) == "0000",
-                                            "code": d.get("code"), "msg": d.get("msg")}).encode(),
-                           "application/json")
+                self._send(200, json.dumps(control_result(op, d)).encode(), "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(), "application/json")
+            return
+        if path in ("/api/actemp", "/api/seat"):       # climate opcodes -- the server encodes + checks them
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n).decode() or "{}")
+                caps = control_caps()
+                if path == "/api/actemp":
+                    op, err = ac_temp_opcode(body.get("celsius"), caps["ac"])
+                else:
+                    op, err = seat_opcode(body.get("kind"), body.get("seat"), body.get("level"), caps)
+                res = ({"ok": False, "error": err} if err else
+                       {**control_result(op, send_control(op, body.get("timeOut") or 20)), "opcode": op})
+            except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
+                res = {"ok": False, "error": str(e)[:180]}
+            self._send(200, json.dumps(res).encode(), "application/json")
+            return
+        # CarLinko extended writes (bodies captured from the app). They default to a PREVIEW
+        # (the exact request, unsent); pass confirm:true to send.
+        if path in ("/api/targetsoc", "/api/airduration", "/api/alertconfig", "/api/chargeschedule",
+                    "/api/scheduledtravel"):
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            if DEMO:
+                self._send(200, json.dumps({"ok": False, "error": "not available in demo"}).encode(),
+                           "application/json"); return
+            import carlinko_api as clx
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n).decode() or "{}")
+                confirm = bool(body.get("confirm"))
+                if   path == "/api/targetsoc":      res = clx.set_target_soc(int(body.get("targetSoc")), confirm)
+                elif path == "/api/airduration":
+                    res = clx.set_air_duration(int(body.get("minutes")), confirm)
+                    if res.get("ok"): _VEH_CACHE["t"] = 0.0     # caps carry airDuration -- re-read it
+                elif path == "/api/alertconfig":    res = clx.set_alert(body.get("configName"),
+                                                                        bool(body.get("enabled")), confirm)
+                elif path == "/api/chargeschedule": res = clx.set_charge_schedule(
+                    bool(body.get("enabled")), int(body.get("hour", 0)),
+                    int(body.get("minute", 0)), int(body.get("duration", 1)),
+                    body.get("week"), confirm)
+                elif path == "/api/scheduledtravel": res = clx.set_scheduled_travel(
+                    bool(body.get("enabled")), int(body.get("hour", 0)),
+                    int(body.get("minute", 0)), body.get("week"), confirm)
+            except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
+                res = {"ok": False, "error": str(e)[:180]}
+            self._send(200, json.dumps(res).encode(), "application/json")
             return
         if path == "/api/photorefresh":                # re-grab this car's render from CarLinko
             if not self._authed():
@@ -1731,6 +2178,35 @@ class H(BaseHTTPRequestHandler):
                 except Exception: pass
                 self._send(200, json.dumps({"ok": True}).encode(), "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
+                self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(),
+                           "application/json")
+            return
+        if path == "/api/carphoto":                    # owner-supplied hero photo, uploaded as bytes
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                if not (0 < n <= _CAR_PHOTO_MAX):      # a cropped car photo, not a payload
+                    self._send(200, json.dumps({"ok": False,
+                                                "error": "body must be 1..%d bytes" % _CAR_PHOTO_MAX}).encode(),
+                               "application/json"); return
+                blob = self.rfile.read(n)
+                # Trust the magic bytes, not the Content-Type: /car-photo sniffs the same way
+                # when it serves the file back, and anything else would render as garbage.
+                if not (blob[:8] == b"\x89PNG\r\n\x1a\n" or blob[:3] == b"\xff\xd8\xff"):
+                    self._send(200, json.dumps({"ok": False,
+                                                "error": "only PNG or JPEG"}).encode(),
+                               "application/json"); return
+                tmp = _CAR_PHOTO + ".part"             # write-then-rename, so an interrupted
+                with open(tmp, "wb") as f: f.write(blob)    # upload can't leave a truncated photo
+                os.replace(tmp, _CAR_PHOTO)
+                c = _creds(); c["car_image"] = "/car-photo"  # override wins in _car_image()
+                _save_creds(c)
+                self._send(200, json.dumps({"ok": True, "car_image": "/car-photo",
+                                            "bytes": len(blob)}).encode(), "application/json")
+            except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(),
                            "application/json")
             return
@@ -1740,7 +2216,15 @@ class H(BaseHTTPRequestHandler):
             try:
                 n = int(self.headers.get("Content-Length") or 0)
                 body = json.loads(self.rfile.read(n).decode() or "{}")
-                if body.get("resync_km") not in ("skip", "count"):
+                # Every key is optional, but at least one has to be present: an empty POST that
+                # answered ok:true is how a client ends up believing a setting was saved when the
+                # server never understood the field (see the app's car-photo capability probe).
+                known = [k for k in ("resync_km", "car_image") if k in body]
+                if not known:
+                    self._send(200, json.dumps({"ok": False,
+                                                "error": "nothing to set"}).encode(),
+                               "application/json"); return
+                if "resync_km" in body and body["resync_km"] not in ("skip", "count"):
                     self._send(200, json.dumps({"ok": False,
                                                 "error": "resync_km must be skip or count"}).encode(),
                                "application/json"); return
@@ -1749,13 +2233,29 @@ class H(BaseHTTPRequestHandler):
                     c = json.load(open(cpath))
                 except Exception:
                     c = {}
-                c["resync_km"] = body["resync_km"]
+                if "resync_km" in body:
+                    c["resync_km"] = body["resync_km"]
+                if "car_image" in body:                # URL to your own picture; "" clears it and
+                    img = str(body["car_image"] or "").strip()   # falls back to CarLinko's render
+                    if img and not (img.startswith("http://") or img.startswith("https://")
+                                    or img.startswith("/")):
+                        self._send(200, json.dumps({"ok": False,
+                                                    "error": "car_image must be a URL or a /path"}).encode(),
+                                   "application/json"); return
+                    if img:
+                        c["car_image"] = img
+                    else:
+                        c.pop("car_image", None)
+                        try: os.remove(_CAR_PHOTO)     # drop an uploaded photo along with the override
+                        except Exception: pass
                 json.dump(c, open(cpath, "w"), indent=2)
                 try: os.chmod(cpath, 0o600)
                 except Exception: pass
-                self._send(200, json.dumps({"ok": True, "resync_km": c["resync_km"]}).encode(),
+                self._send(200, json.dumps({"ok": True, "resync_km": c.get("resync_km", "skip"),
+                                            "car_image": c.get("car_image", "")}).encode(),
                            "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(),
                            "application/json")
             return
@@ -1765,10 +2265,10 @@ def main():
     ports = [a for a in sys.argv[1:] if a.isdigit()]       # ignore flags like --demo
     port = int(ports[0]) if ports else 8088
     if DEMO:
-        print(f"CarLinko dashboard (DEMO — fake data) on http://0.0.0.0:{port}")
+        LOG.info("dashboard starting in demo mode on port %d", port)
     else:
         _ensure_db()                                       # so a brand-new install serves without crashing
-        print(f"CarLinko dashboard on http://0.0.0.0:{port}  (db={os.path.abspath(DB)})")
+        LOG.info("dashboard starting on port %d (db=%s)", port, os.path.abspath(DB))
     ThreadingHTTPServer(("0.0.0.0", port), H).serve_forever()
 
 if __name__ == "__main__":

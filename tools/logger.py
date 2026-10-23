@@ -7,9 +7,22 @@ Usage:
   python logger.py            # single poll (good for Windows Task Scheduler)
   python logger.py --loop 600 # poll every 600s forever (Ctrl-C to stop)
 """
-import sys, json, time, sqlite3, argparse, os, socket
+import sys, json, time, sqlite3, argparse, os, socket, logging, traceback
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 import websocket  # websocket-client
+
+logging.basicConfig(level=os.environ.get("CARLINKO_LOG_LEVEL", "INFO").upper(),
+                    format="%(asctime)s %(levelname)s %(name)s %(message)s")
+LOG = logging.getLogger("carlinko.telemetry")
+
+def _failure(context, exc):
+    frames = traceback.extract_tb(exc.__traceback__)
+    where = "%s:%s" % (os.path.basename(frames[-1].filename), frames[-1].lineno) if frames else "unknown"
+    LOG.error("%s: %s at %s", context, type(exc).__name__, where)
+
+def _vendor_code(reply):
+    code = str(reply.get("code", "?"))
+    return code if len(code) <= 12 and code.isalnum() else "?"
 
 # Force IPv4: some hosts resolve an AAAA record and hang on the WS handshake.
 _orig_gai = socket.getaddrinfo
@@ -117,7 +130,7 @@ def _store_guarded(conn, ts, dt, d, blob):
         if _confirms(pd, d):                             # stayed there -> the change was real
             _insert(conn, pts, pdt, pd, pblob)
         else:                                            # snapped back -> one-frame glitch
-            print(f"{pdt}  glitch frame dropped ({why})")
+            LOG.warning("%s glitch frame dropped (%s)", pdt, why)
     why = _suspect(d)
     if why:
         _pending = (ts, dt, d, blob, why)
@@ -174,16 +187,16 @@ def poll_once(conn, _retried=False):
             try: ws.close()
             except Exception: pass
             if not _retried:
-                print(f"token invalid ({login.get('code')}); self-logging in...")
+                LOG.warning("token invalid (code %s); retrying login", _vendor_code(login))
                 try:
                     import auth
                     TOKEN = auth.login()
-                    print("got fresh token, retrying poll")
+                    LOG.info("got fresh token, retrying poll")
                     return poll_once(conn, _retried=True)
                 except Exception as e:
-                    print("self-login FAILED:", e)
+                    _failure("self-login failed", e)
                     return None
-            print("LOGIN FAILED after refresh:", login)
+            LOG.error("login failed after refresh (code %s)", _vendor_code(login))
             return None
         ws.send(json.dumps({"action": 6}))
         ws.send(json.dumps({"action": 0, "data": {"sn": SN}}))
@@ -243,7 +256,7 @@ def adaptive_loop(conn):
             st = poll_once(conn)
             conn.commit()
         except Exception as e:
-            print("poll error:", repr(e)); st = None
+            _failure("poll failed", e); st = None
         now = time.time()
         if st:
             miss = 0
@@ -303,13 +316,13 @@ def _stream_session(conn):
         ws.send(json.dumps({"action": 1, "data": {"token": TOKEN, "vehicleId": VEHICLE}}))
         login = json.loads(ws.recv())
         if login.get("code") != "0000":                    # token expired -> self-login, as poll_once does
-            print(f"token invalid ({login.get('code')}); self-logging in...")
+            LOG.warning("token invalid (code %s); retrying login", _vendor_code(login))
             import auth
             TOKEN = auth.login()
             ws.send(json.dumps({"action": 1, "data": {"token": TOKEN, "vehicleId": VEHICLE}}))
             login = json.loads(ws.recv())
             if login.get("code") != "0000":
-                print("LOGIN FAILED after refresh:", login); return
+                LOG.error("login failed after refresh (code %s)", _vendor_code(login)); return
         ws.send(json.dumps({"action": 6}))                 # prime: pull the current frame immediately
         ws.send(json.dumps({"action": 0, "data": {"sn": SN}}))
         ws.settimeout(2)
@@ -354,7 +367,7 @@ def stream_loop(conn):
         try:
             _stream_session(conn)
         except Exception as e:
-            print("stream error, reconnecting:", repr(e))
+            _failure("stream failed; reconnecting", e)
         time.sleep(RECONNECT_WAIT)
 
 def main():
@@ -378,7 +391,7 @@ def main():
             try:
                 poll_once(conn); conn.commit()
             except Exception as e:
-                print("poll error:", repr(e))
+                _failure("poll failed", e)
             time.sleep(args.loop)
 
 if __name__ == "__main__":

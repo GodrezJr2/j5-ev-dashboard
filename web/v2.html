@@ -95,6 +95,9 @@
 
   *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
   html{background:var(--bg);color-scheme:light dark}
+  /* the manual theme override also drives native controls (time picker, scrollbars) */
+  :root[data-theme="light"]{color-scheme:light}
+  :root[data-theme="dark"]{color-scheme:dark}
   body{font:400 15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text",Inter,system-ui,sans-serif;
     color:var(--ink);background:var(--bg);max-width:430px;margin:0 auto;
     -webkit-font-smoothing:antialiased;overscroll-behavior-y:none;-webkit-touch-callout:none;
@@ -436,6 +439,13 @@
     font-variant-numeric:tabular-nums}
   .hrow2:first-child{border-top:0}
   .hrow2 b{color:var(--ink);font-weight:700}
+  /* activity log: name + who on the left, time on the right, which never wraps */
+  .act .hrow2{align-items:center;line-height:1.35}
+  .act .hrow2:first-child{padding-top:0} .act .hrow2:last-child{padding-bottom:0}
+  .act .hrow2>span:first-child{min-width:0}
+  .act .hrow2>span:last-child{flex:none;text-align:right}
+  .act .who{display:block;font-size:11.5px;color:var(--fnt);margin-top:2px;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
 
   /* calendar */
   .calhead{display:flex;align-items:center;justify-content:space-between;margin:var(--s2) 0 var(--s4)}
@@ -536,6 +546,36 @@
   .seg button{padding:7px 12px;font-size:12px;font-weight:700;color:var(--mut);
     transition:background var(--t-mid) linear,color var(--t-mid) linear}
   .seg button.on{background:var(--btn);color:var(--btn-ink)}
+  /* 44px targets (thumb on a phone); the row gives back the height so it stays 60px */
+  .seg button{min-height:44px;min-width:44px;touch-action:manipulation}
+  .row:has(.seg){padding-top:8px;padding-bottom:8px}
+  .seg button.busy,.bigbtn.busy{opacity:.4;pointer-events:none}
+  .acrow .step{width:44px;height:44px;touch-action:manipulation}
+
+  /* schedule editor, shared by scheduled charging and advance travel */
+  .cr2{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);margin-top:var(--s3);
+    font-size:14px;font-weight:650}
+  .tin{-webkit-appearance:none;appearance:none;min-height:44px;min-width:104px;padding:0 12px;
+    border-radius:var(--r1);background:var(--card-2);color:var(--ink);border:0;
+    font:inherit;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center}
+  .tin::-webkit-date-and-time-value{text-align:center}
+  .days{display:flex;gap:6px;margin-top:var(--s4)}
+  /* off days keep a hairline so they read as buttons on white in light mode, not as blank text */
+  .days button{flex:1;min-width:0;height:44px;border-radius:var(--r1);background:var(--card-2);
+    box-shadow:inset 0 0 0 1px var(--line);font-size:13px;font-weight:700;color:var(--mut);
+    touch-action:manipulation;transition:background var(--t-mid) linear,color var(--t-mid) linear}
+  .days button.on{background:var(--btn);color:var(--btn-ink);box-shadow:none}
+  .acts2{display:flex;gap:var(--s3)}
+  .acts2 .bigbtn{flex:1}
+  .bigbtn.alt{background:var(--card-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+
+  /* skeleton while a CarLinko read is in flight (DESIGN: skeleton, not spinner) */
+  .skel{display:block;height:12px;border-radius:6px;background:var(--card-2);margin:6px 0}
+  .skel+.skel{width:62%}
+  @media (prefers-reduced-motion: no-preference){
+    .skel{animation:skel 1.2s ease-in-out infinite alternate}
+    @keyframes skel{to{opacity:.45}}
+  }
 
   /* confirm sheet */
   .scrim{position:fixed;inset:0;z-index:88;background:var(--scrim);opacity:0;pointer-events:none;
@@ -667,6 +707,10 @@ MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduc
   <div class="pbody" id="pgFlexBody"></div></div>
 <div class="page" id="pgPlan" data-k="plan"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Charge calculator</h2></div>
   <div class="pbody" id="pgPlanBody"></div></div>
+<div class="page" id="pgAlerts" data-k="alerts"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Vehicle alerts</h2></div>
+  <div class="pbody" id="pgAlertsBody"></div></div>
+<div class="page" id="pgActivity" data-k="activity"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Activity</h2></div>
+  <div class="pbody" id="pgActivityBody"></div></div>
 
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true">
@@ -741,6 +785,9 @@ const IC = {
   moon:    '<path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>',
   trunk:   '<path d="M3 18.5v-5.2a2 2 0 01.7-1.5L7 9h9.5a2 2 0 011.8 1.1L21 14.5v4"/><path d="M3 18.5h18"/><path d="M7 9l-1.8-4.2h-2"/><circle cx="7.5" cy="18.5" r="1.6" fill="currentColor" stroke="none"/><circle cx="16.5" cy="18.5" r="1.6" fill="currentColor" stroke="none"/>',
   window:  '<path d="M5 20V9.5C5 6.5 8 4.5 12 4.5s7 2 7 5V20"/><path d="M5 11.5h14"/><path d="M12 11.5V17M9.5 14.5L12 17l2.5-2.5"/>',
+  bell:    '<path d="M6 16.5V11a6 6 0 0112 0v5.5l1.6 2H4.4z"/><path d="M10 20.5a2 2 0 004 0"/>',
+  list:    '<path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.8" cy="6.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.8" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.8" cy="17.5" r="1.1" fill="currentColor" stroke="none"/>',
+  clock:   '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
 };
 function icon(k, w){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) +
   '" stroke-linecap="round" stroke-linejoin="round">' + (IC[k] || '') + '</svg>'; }
@@ -835,23 +882,86 @@ const OP_TEXT = {
 function opText(op){
   const k = String(op).toUpperCase();
   if(OP_TEXT[k]) return OP_TEXT[k];
-  const m = /^7411([0-9A-F]{2})$/.exec(k);       // A/C target temp, one hex byte of degC
-  if(m){ const c = parseInt(m[1], 16); return ['A/C set to ' + c + '°C', 'set the A/C to ' + c + '°C']; }
+  const m = /^7411([0-9A-F]{2})$/.exec(k);       // A/C set-point: one byte = 0x80 + 2 x degC
+  if(m){ const c = fmtT((parseInt(m[1], 16) - 0x80) / 2); return ['A/C set to ' + c + '°C', 'set the A/C to ' + c + '°C']; }
   return ['Done', 'do that'];
+}
+function post(path, body){
+  return api(path, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
+}
+// What a failed command or setting says. `status` is the car's own ack byte: the gateway can
+// answer 0000 while the car reports it did not apply the command (server.control_result).
+function failText(d, doing){
+  if(d.status && d.status !== '00') return 'The car did not apply that, try again';
+  if(String(d.code) === '50043') return 'Car is asleep or out of signal';
+  if(String(d.code) === '9997') return 'CarLinko login expired';
+  return 'Could not ' + doing;
+}
+// One request, one toast. Resolves true once the car or CarLinko accepted it.
+async function send(path, body, done, doing, btn){
+  if(btn) btn.classList.add('busy');
+  let ok = false;
+  try{ const d = await post(path, body); ok = !!d.ok; toast(ok ? done : failText(d, doing)); }
+  catch(e){ toast('Could not reach the dashboard server'); }
+  if(btn) btn.classList.remove('busy');
+  return ok;
+}
+// A segmented control: one group, one pressed button. `opts` = [[value, label]]; `cur` = the
+// car's current value, or null when it is unknown (then nothing shows as selected).
+function segHtml(attr, opts, cur, label, id){
+  return '<span class="seg" role="group" aria-label="' + label + '"' + (id ? ' id="' + id + '"' : '') + '>' +
+    opts.map(([v, l]) => { const on = cur != null && String(cur) === String(v);
+      return '<button data-' + attr + '="' + v + '" aria-pressed="' + on + '"' + (on ? ' class="on"' : '') + '>' +
+        l + '</button>'; }).join('') + '</span>';
+}
+// A .seg that sends on tap. The selection only moves once the request was accepted.
+function bindSeg(seg, attr, fn){
+  if(!seg) return;
+  seg.querySelectorAll('[data-' + attr + ']').forEach(b => b.onclick = async () => {
+    if(b.classList.contains('on')) return;
+    if(await fn(b.dataset[attr], b)) seg.querySelectorAll('button').forEach(x => {
+      x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b);
+    });
+  });
+}
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]);
+const pad2 = n => String(n).padStart(2, '0');
+const sech = t => '<div class="sech" style="padding-left:0;padding-right:0"><span class="ov">' + t + '</span></div>';
+
+// CarLinko device settings (charge limit + schedule, advance travel, alerts) come from one read,
+// fetched again whenever a page that shows them opens. `fn` renders twice: at once (skeleton, or
+// the last read) and when the read lands. SET null after the read = it failed.
+let SET = null, SET_BUSY = false;
+async function withSettings(fn){
+  SET_BUSY = true; fn();
+  try{ const d = await api('/api/settings'); SET = (d.ok && d.data && !Array.isArray(d.data)) ? d.data : null; }
+  catch(e){ SET = null; }
+  SET_BUSY = false; fn();
+}
+const SKEL = '<span class="skel" style="width:96px"></span>';
+const notRead = what => SET_BUSY ? SKEL : 'Could not read the current ' + what;
+// Turn the server's before/after body-state diff into a plain-language result.
+function ctrlStateMsg(d, fallback){
+  const f = d.expect && d.expect.field, a = d.state_after || {};
+  const names = {unlocked:['Unlocked','Locked'], trunk_open:['Tailgate open','Tailgate closed'],
+    sunroof_open:['Sunroof open','Sunroof closed'], ac_on:['A/C on','A/C off'],
+    defrost_front:['Defog on','Defog off']};
+  if(f && names[f]) return a[f] ? names[f][0] : names[f][1];
+  return fallback;
 }
 async function fire(op, btn){
   const [done, doing] = opText(op);
   if(btn) btn.classList.add('busy');
   try{
-    await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
-      body: JSON.stringify({data: '77', timeOut: 20})});
-    await new Promise(r => setTimeout(r, 600));
-    const d = await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
-      body: JSON.stringify({data: op, timeOut: 20})});
-    if(d.ok){ toast(done); setTimeout(load, 1800); }
-    else if(String(d.code) === '50043') toast('Car is asleep or out of signal');
-    else if(String(d.code) === '9997') toast('CarLinko login expired');
-    else toast('Could not ' + doing);
+    // confirm:true -> the server wakes the car (77), fires, then reads the
+    // body-state back, so the toast reports what actually happened.
+    const d = await post('/api/control', {data: op, timeOut: 20, confirm: true, wake: true});
+    if(d.ok){
+      if(d.confirmed) toast(ctrlStateMsg(d, done));
+      else toast(done + ((d.changed && d.changed.length) ? '' : ' — sent (car may be asleep)'));
+      setTimeout(load, 1800);
+    }
+    else toast(failText(d, doing));
   }catch(e){ toast('Could not reach the dashboard server'); }
   if(btn) btn.classList.remove('busy');
 }
@@ -1021,7 +1131,7 @@ function renderCards(){
   $('cardGrid').innerHTML =
     '<div class="card clim">' +
       '<div class="cr"><button class="step" data-step="-1" aria-label="Cooler">&minus;</button>' +
-        '<span class="temp num" id="climTemp">' + acTarget + '\u00b0</span>' +
+        '<span class="temp num" id="climTemp">' + fmtT(acTarget) + '\u00b0</span>' +
         '<button class="step" data-step="1" aria-label="Warmer">+</button></div>' +
       '<div class="cr" style="margin-top:12px">' +
         '<span><span class="t">A/C</span><span class="s ' + (S.ac_on ? 'ok' : '') + '" id="climState">' +
@@ -1038,7 +1148,8 @@ function renderCards(){
   $('rowsHost').innerHTML = '<div class="rowcard">' +
     row('chart', 'Energy consumption', cons, '', 'energy') +
     row('car',   'Distance',  distSub, '', 'dist') +
-    row('seat',  'Seats', seatsKnown ? 'Active' : 'Not available', '', null) +
+    row('seat',  'Seats', seatsKnown ? 'Active' : (seatKinds() || 'Not available'), '', seatKinds() ? 'ac' : null) +
+    row('list',  'Activity', 'Commands and alerts', '', 'activity') +
     '</div>';
 
   const hosts = [$('cardGrid'), $('rowsHost')];
@@ -1046,12 +1157,8 @@ function renderCards(){
     b.onclick = ev => { ev.stopPropagation(); openPage(b.dataset.page); }));
   $('cardGrid').querySelectorAll('[data-step]').forEach(b => b.onclick = ev => {
     ev.stopPropagation();
-    const caps = (CAPS && CAPS.ac) || {};
-    const mn = caps.min != null ? Math.ceil(caps.min) : 16;
-    const mx = caps.max != null ? Math.floor(caps.max) : 30;
-    acTarget = Math.min(mx, Math.max(mn, acTarget + Number(b.dataset.step)));
-    $('climTemp').textContent = acTarget + '\u00b0';
-    sendTemp();
+    stepTemp(Number(b.dataset.step));
+    $('climTemp').textContent = fmtT(acTarget) + '\u00b0';
   });
 
   // warm any value the poll actually changed; rise once on the first paint only
@@ -1064,41 +1171,153 @@ function renderCards(){
 }
 
 // ---- subpages ----
-let acTarget = 24, acTimer = null;
-function sendTemp(){
-  // 7411 + temp as one hex byte (#11, jump table). Encoding is integer degC, pending runtime
-  // verification; debounced so stepping does not spam the car.
-  clearTimeout(acTimer);
-  acTimer = setTimeout(() => fire('7411' + Math.round(acTarget).toString(16).padStart(2, '0')), 800);
+// A/C set-point. The car never reports its set temperature (byte 24 is unverified, see cabinTemp),
+// so the target shown is the last one sent from this device. The server encodes and range-checks
+// it (POST /api/actemp): one byte = 0x80 + 2 x degC, so the car steps in half degrees.
+let acTarget = readAcTarget(), acTimer = null;
+function readAcTarget(){
+  try{ const v = parseFloat(localStorage.getItem('acTarget')); return isNaN(v) ? 22 : v; }catch(e){ return 22; }
 }
+function acRange(){
+  const c = (CAPS && CAPS.ac) || {};
+  return {mn: c.min != null ? c.min : 16, mx: c.max != null ? c.max : 30, st: Math.max(c.step || 1, 0.5)};
+}
+function fmtT(t){ return t % 1 ? t.toFixed(1) : String(t); }
+function stepTemp(dir){
+  const r = acRange();
+  acTarget = Math.min(r.mx, Math.max(r.mn, Math.round((acTarget + dir * r.st) / r.st) * r.st));
+  try{ localStorage.setItem('acTarget', acTarget); }catch(e){}
+  clearTimeout(acTimer);                         // debounced so stepping does not spam the car
+  acTimer = setTimeout(() => {
+    const t = fmtT(acTarget);
+    send('/api/actemp', {celsius: acTarget}, 'A/C set to ' + t + '°C', 'set the A/C to ' + t + '°C');
+  }, 800);
+}
+
+const RUN_TIMES = [5, 10, 15];                   // the only choices the CarLinko app offers
+const LVL = ['Off', 'I', 'II', 'III'];
+const SEAT_SIDES = [['left', 'Left seat'], ['right', 'Right seat']];
+const SEAT_KINDS = [['heat', 'seatHeat', 'Heat', 'seat_heat'], ['vent', 'seatVent', 'Vent', 'seat_vent']];
+function seatLevels(cap, side){ return (CAPS && CAPS[cap] && CAPS[cap].levels && CAPS[cap].levels[side]) || []; }
+function seatKinds(){                             // what this car's seats can do, '' for nothing
+  const has = cap => SEAT_SIDES.some(([side]) => seatLevels(cap, side).length);
+  const h = has('seatHeat'), v = has('seatVent');
+  return h && v ? 'Heat and vent' : h ? 'Heat' : v ? 'Vent' : '';
+}
+
 function renderAc(){
   const el = $('pgAcBody');
-  const caps = (CAPS && CAPS.ac) || {};
-  const mn = caps.min != null ? Math.ceil(caps.min) : 16;
-  const mx = caps.max != null ? Math.floor(caps.max) : 30;
-  const ct = cabinTemp();
-  const cabin = ct != null ? ct + '°C' : null;
-  el.innerHTML =
-    '<div class="acsub ov">' + (cabin ? 'Cabin now ' + cabin : 'Set a target, then power on') + '</div>' +
-    '<div class="acbig"><span class="side">' + Math.max(mn, acTarget - 1) + '</span>' +
-    '<span class="cur num">' + acTarget + '<u>°C</u></span>' +
-    '<span class="side">' + Math.min(mx, acTarget + 1) + '</span></div>' +
-    '<div class="acrow">' +
-      '<button class="step" id="acMinus" aria-label="Cooler">&minus;</button>' +
-      '<button class="step" id="acPlus" aria-label="Warmer">+</button></div>' +
+  const c = (CAPS && CAPS.ac) || {};
+  el.innerHTML = '<div id="acTemp"></div>' +
     '<div class="acacts">' +
     '<button data-ac="heat"><span class="cic">' + icon('heat') + '</span>Heat</button>' +
     '<button data-ac="cool"><span class="cic">' + icon('cool') + '</span>Cool</button>' +
     '<button data-ac="pwr"><span class="cic">' + icon('power') + '</span><span id="acPwrLbl">' +
       (S.ac_on ? 'Turn off' : 'Turn on') + '</span></button></div>' +
-    '<div class="note">Setting a target temperature is not confirmed on the car yet. Power and quick ' +
-    'heat/cool are.</div>';
-  $('acMinus').onclick = () => { acTarget = Math.max(mn, acTarget - 1); renderAc(); sendTemp(); };
-  $('acPlus').onclick  = () => { acTarget = Math.min(mx, acTarget + 1); renderAc(); sendTemp(); };
+    '<div class="note">The car does not report its set temperature, so this shows the last one sent ' +
+    'from this device.</div>' +
+    (c.duration ? sech('Smart A/C') + '<div class="rowcard"><div class="row"><span class="ri">' + icon('clock') +
+      '</span><span class="rl">Run time<small>How long remote A/C runs</small></span>' +
+      segHtml('min', RUN_TIMES.map(m => [m, m + ' min']), c.airDuration, 'Smart A/C run time', 'acRun') +
+      '</div></div>' : '') +
+    seatsHtml() +
+    (CAPS && CAPS.scheduledTravel ? sech('Advance travel') + '<div id="acTravel"></div>' +
+      '<div class="note">The cabin is ready by this time.</div>' : '');
+  renderAcTemp();
   el.querySelector('[data-ac="heat"]').onclick = () => fire(S.ac_on ? '741F00' : '741F01');
   el.querySelector('[data-ac="cool"]').onclick = () => fire(S.ac_on ? '742000' : '742001');
   el.querySelector('[data-ac="pwr"]').onclick  = () => fire(S.ac_on ? '741000' : '741001');
   el.querySelector('[data-ac="pwr"]').classList.toggle('on', !!S.ac_on);
+  bindSeg($('acRun'), 'min', async (m, b) => {
+    const ok = await send('/api/airduration', {minutes: +m, confirm: true},
+      'Run time set to ' + m + ' min', 'set the run time', b);
+    if(ok) CAPS.ac.airDuration = +m;
+    return ok;
+  });
+  el.querySelectorAll('.row[data-seat]').forEach(r => bindSeg(r.querySelector('.seg'), 'lvl', (l, b) => {
+    const k = r.dataset.kind, name = (r.dataset.seat === 'left' ? 'Left' : 'Right') + ' seat ' + k;
+    return send('/api/seat', {kind: k, seat: r.dataset.seat, level: +l},
+      name + (l === '0' ? ' off' : ' on ' + LVL[l]), 'set the ' + name.toLowerCase(), b);
+  }));
+  if($('acTravel'))
+    withSettings(() => schedBlock($('acTravel'), 'scheduledTravel', '/api/scheduledtravel', null, 'Advance travel'));
+}
+// the set-point block re-renders on its own, so stepping never resets the editors below it
+function renderAcTemp(){
+  const r = acRange(), ct = cabinTemp();
+  $('acTemp').innerHTML =
+    '<div class="acsub ov">' + (ct != null ? 'Cabin now ' + ct + '°C' : 'Set a target, then power on') + '</div>' +
+    '<div class="acbig"><span class="side">' + fmtT(Math.max(r.mn, acTarget - r.st)) + '</span>' +
+    '<span class="cur num">' + fmtT(acTarget) + '<u>°C</u></span>' +
+    '<span class="side">' + fmtT(Math.min(r.mx, acTarget + r.st)) + '</span></div>' +
+    '<div class="acrow">' +
+      '<button class="step" id="acMinus" aria-label="Cooler">&minus;</button>' +
+      '<button class="step" id="acPlus" aria-label="Warmer">+</button></div>';
+  $('acMinus').onclick = () => { stepTemp(-1); renderAcTemp(); };
+  $('acPlus').onclick  = () => { stepTemp(1); renderAcTemp(); };
+}
+// One row per seat and kind this car lists levels for. The current level comes from telemetry,
+// and only when there is a real frame -- with none, no level is shown as selected.
+function seatsHtml(){
+  let rows = '';
+  SEAT_KINDS.forEach(([kind, cap, name, key]) => SEAT_SIDES.forEach(([side, label], i) => {
+    const lv = seatLevels(cap, side);
+    if(!lv.length) return;
+    const cur = S.updated && Array.isArray(S[key]) && typeof S[key][i] === 'number' ? S[key][i] : null;
+    rows += '<div class="row" data-kind="' + kind + '" data-seat="' + side + '"><span class="ri">' +
+      icon(kind === 'heat' ? 'heat' : 'cool') + '</span>' +
+      '<span class="rl">' + label + '<small>' + name + '</small></span>' +
+      segHtml('lvl', [0].concat(lv).map(l => [l, LVL[l]]), cur, label + ' ' + name.toLowerCase() + ' level') +
+      '</div>';
+  }));
+  return rows ? sech('Seats') + '<div class="rowcard">' + rows + '</div>' +
+    '<div class="note">Left and right are as CarLinko names them. Which one is the driver depends on ' +
+    'the car.</div>' : '';
+}
+
+// ---- schedule editor: one builder for scheduled charging and advance travel ----
+// Both read back from /api/settings as {enabled, hour, minute, week[7] Sun..Sat}; charging also
+// carries a duration in hours. No day selected = once.
+const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAYN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function schedSummary(s){
+  if(!s) return notRead('setting');
+  if(!s.enabled) return 'Off';
+  const w = s.week || [], on = DAYN.filter((d, i) => w[i]);
+  return 'On · ' + pad2(s.hour) + ':' + pad2(s.minute) +
+    (s.duration ? ' for ' + s.duration + ' h' : '') + ' · ' +
+    (on.length === 7 ? 'every day' : on.length ? on.join(', ') : 'once');
+}
+function schedBlock(host, key, path, durations, what){
+  if(!host) return;
+  const s = SET && SET[key];
+  const st = {duration: (s && s.duration) || (durations && durations[0]),
+              week: DAYS.map((d, i) => !!(s && s.week && s.week[i]))};
+  host.innerHTML = '<div class="panel"><div class="plbl" aria-live="polite">' + schedSummary(s) + '</div>' +
+    '<label class="cr2"><span>Start at</span><input class="tin" type="time" value="' +
+      pad2((s && s.hour) || 0) + ':' + pad2((s && s.minute) || 0) + '"></label>' +
+    (durations ? '<div class="cr2"><span>Charge for</span>' +
+      segHtml('h', durations.map(h => [h, h + ' h']), st.duration, 'Charge for') + '</div>' : '') +
+    '<div class="days" role="group" aria-label="Repeat on, none for once">' + DAYS.map((d, i) =>
+      '<button data-d="' + i + '" aria-label="' + DAYN[i] + '" aria-pressed="' + st.week[i] + '"' +
+      (st.week[i] ? ' class="on"' : '') + '>' + d + '</button>').join('') + '</div>' +
+    '<div class="acts2"><button class="bigbtn alt" data-on="0"' + (s && s.enabled ? '' : ' disabled') +
+      '>Turn off</button><button class="bigbtn" data-on="1">Save</button></div></div>';
+  host.querySelectorAll('[data-d]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.d; st.week[i] = !st.week[i];
+    b.classList.toggle('on', st.week[i]); b.setAttribute('aria-pressed', st.week[i]);
+  });
+  // duration is part of the form, so it only changes locally until Save
+  bindSeg(host.querySelector('[data-h]') && host.querySelector('[data-h]').parentNode, 'h',
+    async h => { st.duration = +h; return true; });
+  host.querySelectorAll('[data-on]').forEach(b => b.onclick = async () => {
+    const [hour, minute] = host.querySelector('.tin').value.split(':').map(Number);
+    const v = {enabled: b.dataset.on === '1', hour: hour || 0, minute: minute || 0, week: st.week};
+    if(durations) v.duration = st.duration;
+    const ok = await send(path, Object.assign({confirm: true}, v),
+      what + (v.enabled ? ' saved' : ' turned off'), 'save ' + what.toLowerCase(), b);
+    if(ok){ (SET = SET || {})[key] = v; schedBlock(host, key, path, durations, what); }
+  });
 }
 
 /* ---- 3D car ----
@@ -1511,7 +1730,6 @@ function renderChg(){
   const c = S.charging || {};
   const s = c.session;
   const cur = S.currency ? S.currency.symbol : '';
-  const sech = t => '<div class="sech" style="padding-left:0;padding-right:0"><span class="ov">' + t + '</span></div>';
   // charge-curve section between the live/last panel and the month stats — same slot as v1
   const curveHtml = s ?
     sech(s.ongoing ? 'Charge curve · live' : 'Last charge · ' + s.start_dt) +
@@ -1546,7 +1764,7 @@ function renderChg(){
     x.dur_min + ' min · ' + cur + Number(x.cost).toLocaleString() + '</span></div>').join('');
   const calc = '<div class="rowcard" style="margin-top:var(--s3)">' +
     row('plug', 'Charge calculator', 'Cost to a target %', '', 'plan') + '</div>';
-  el.innerHTML = top + calc + curveHtml +
+  el.innerHTML = top + calc + '<div id="chgSet"></div>' + curveHtml +
     sech('This month') +
     '<div class="panel"><div class="stats" style="border-top:0;padding-top:0;margin-top:0">' +
       '<div><b class="num">' + (c.month_kwh || 0) + '</b><span>kWh in</span></div>' +
@@ -1557,6 +1775,27 @@ function renderChg(){
     '<div class="panel">' + (hist || '<div class="plbl">No sessions logged yet</div>') + '</div>';
   el.querySelector('[data-page="plan"]').onclick = () => openPage('plan');
   if(s) drawChgCurve(s);
+  withSettings(chgSettings);
+}
+// Charge limit + scheduled charging, from /api/settings. The limit offers the app's own choices,
+// plus the car's current value when it is something else.
+function chgSettings(){
+  const host = $('chgSet');
+  if(!host || (CAPS && !CAPS.charging)) return;
+  const cur = SET && SET.targetSoc;
+  const opts = [80, 90, 100];
+  if(cur != null && opts.indexOf(cur) < 0) opts.push(cur), opts.sort((a, b) => a - b);
+  host.innerHTML = sech('Charge limit') + '<div class="rowcard"><div class="row"><span class="ri">' + icon('batt') +
+    '</span><span class="rl">Stop at' + (cur == null ? '<small>' + notRead('limit') + '</small>' : '') + '</span>' +
+    segHtml('soc', opts.map(v => [v, v + '%']), cur, 'Charge limit', 'socSeg') + '</div></div>' +
+    (!CAPS || CAPS.scheduledCharging ? sech('Scheduled charging') + '<div id="chgSched"></div>' : '');
+  bindSeg($('socSeg'), 'soc', async (v, b) => {
+    const ok = await send('/api/targetsoc', {targetSoc: +v, confirm: true}, 'Charge limit set to ' + v + '%',
+      'set the charge limit', b);
+    if(ok) (SET = SET || {}).targetSoc = +v;
+    return ok;
+  });
+  schedBlock($('chgSched'), 'chargeSchedule', '/api/chargeschedule', [1, 2, 4], 'Scheduled charging');
 }
 
 // charge curve (SoC% vs elapsed minutes) — same math as v1's drawCharge, instrument tokens
@@ -1810,6 +2049,61 @@ function cpUpdate(fromPrice){
 }
 
 // ---- account tab ----
+// ---- vehicle alerts: the CarLinko app's only two push-alert switches ----
+const ALERTS = [
+  ['VEHICLE_ANOMALY', 'Vehicle condition', 'Anti-theft alarm, tyres, door open, lights on, door unlocked'],
+  ['BATTERY_ANOMALY', 'Battery', 'Low battery, low battery voltage'],
+];
+function renderAlerts(){
+  const el = $('pgAlertsBody'), a = SET && SET.alerts;
+  el.innerHTML = '<div class="rowcard">' + ALERTS.map(([k, t, sub]) =>
+    '<div class="row" data-alert="' + k + '"><span class="ri">' + icon('bell') + '</span>' +
+    '<span class="rl">' + t + '<small>' + sub + '</small></span>' +
+    segHtml('on', [[1, 'On'], [0, 'Off']], a && a[k] != null ? +!!a[k] : null, t + ' alerts') + '</div>').join('') +
+    '</div><div class="note">' + (a ? '' : notRead('settings') + ' ') +
+    'CarLinko sends these as push alerts to the CarLinko app.</div>';
+  el.querySelectorAll('.row[data-alert]').forEach(r => bindSeg(r.querySelector('.seg'), 'on', async (v, b) => {
+    const k = r.dataset.alert, on = v === '1', t = ALERTS.find(x => x[0] === k)[1];
+    const ok = await send('/api/alertconfig', {configName: k, enabled: on, confirm: true},
+      t + ' alerts ' + (on ? 'on' : 'off'), 'change ' + t.toLowerCase() + ' alerts', b);
+    if(ok){ SET = SET || {}; SET.alerts = Object.assign({}, SET.alerts, {[k]: on}); }
+    return ok;
+  }));
+}
+
+// ---- activity: CarLinko's command log + its unread alert counts ----
+// The log's operationTime is UTC with no zone marker: a write at 16:14 in Malaysia logs as 08:14.
+function utcLocal(t){ const d = new Date(String(t || '').replace(' ', 'T') + 'Z'); return isNaN(d) ? null : d; }
+function when(d){
+  if(!d) return '';
+  const hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  return new Date().toDateString() === d.toDateString() ? hm : d.getDate() + ' ' + MON[d.getMonth()].slice(0, 3) + ' ' + hm;
+}
+const NOTICE_KINDS = [['vehicleNoticeVo', 'Vehicle'], ['controlNoticeVo', 'Commands'],
+                      ['systemNoticeVo', 'System'], ['serviceNoticeVo', 'Service']];
+async function renderActivity(){
+  const el = $('pgActivityBody');
+  const skel = '<div class="panel"><div class="skel"></div><div class="skel"></div></div>';
+  el.innerHTML = sech('Alerts') + '<div id="actAlerts">' + skel + '</div>' +
+                 sech('Commands') + '<div id="actLog">' + skel + '</div>';
+  const [nc, ol] = await Promise.all([api('/api/noticecount').catch(() => null),
+                                      api('/api/oplog?page=1&size=30').catch(() => null)]);
+  if(openKey !== 'activity') return;
+  const n = nc && nc.ok && nc.data && !Array.isArray(nc.data) ? nc.data : null;
+  const kinds = n ? NOTICE_KINDS.filter(([k]) => n[k] && n[k].count) : [];
+  $('actAlerts').innerHTML = '<div class="panel act">' + (!n ? '<div class="plbl">Could not read alerts</div>' :
+    !kinds.length ? '<div class="plbl">No new alerts</div>' : kinds.map(([k, t]) =>
+      '<div class="hrow2"><span>' + t + (n[k].contents ? ': ' + esc(n[k].contents) : '') + '</span>' +
+      '<span><b class="num">' + n[k].count + '</b> new</span></div>').join('')) + '</div>';
+  const rows = ol && ol.ok && Array.isArray(ol.data) ? ol.data : null;
+  $('actLog').innerHTML = '<div class="panel act">' + (!rows ? '<div class="plbl">Could not read the command log</div>' :
+    !rows.length ? '<div class="plbl">No commands logged yet</div>' : rows.map(r => {
+      const who = r.isOwner ? 'Owner' : 'Sub-user' + (r.subUserName ? ' · ' + r.subUserName.split('-')[0] : '');
+      return '<div class="hrow2"><span><b>' + esc(r.name) + '</b><small class="who">' + esc(who) + '</small></span>' +
+        '<span>' + when(utcLocal(r.operationTime)) + (r.result ? ' · result ' + esc(r.result) : '') + '</span></div>';
+    }).join('')) + '</div>';
+}
+
 let vinShown = false;
 function renderAcct(){
   $('aModel').textContent = (S.vehicle && S.vehicle.model) || 'My car';
@@ -1830,6 +2124,7 @@ function renderAcct(){
     {ic: 'gauge',  t: 'Classic dashboard', s: 'Trips, SPKLU planner, full stats', fn: () => location.href = '/index.html'},
     {ic: 'plug',   t: 'Charge calculator', s: 'Cost and kWh to any target %',     fn: () => openPage('plan')},
     {ic: 'chart',  t: 'Share card',        s: 'Month stats as a shareable card',  fn: () => openPage('flex')},
+    {ic: 'bell',   t: 'Vehicle alerts',    s: 'What CarLinko alerts you about',   fn: () => openPage('alerts')},
     {ic: 'camera', t: 'Update car photo',  s: 'Re-fetch the render from CarLinko', fn: async () => {
         const d = await api('/api/photorefresh', {method: 'POST'});
         toast(d.ok ? 'Photo updated' : (d.error || 'failed')); if(d.ok) load(); }},
@@ -1861,13 +2156,13 @@ const PAGES = {ac: ['pgAc', renderAc], doors: ['pgDoors', renderDoors],
                tyres: ['pgTyres', renderTyres], energy: ['pgEnergy', renderEnergy],
                batt: ['pgBatt', renderBatt], chg: ['pgChg', renderChg],
                dist: ['pgDist', renderDist], flex: ['pgFlex', renderFlex],
-               plan: ['pgPlan', renderPlan]};
+               plan: ['pgPlan', renderPlan], activity: ['pgActivity', renderActivity],
+               alerts: ['pgAlerts', () => withSettings(renderAlerts)]};
 let openKey = null;
 
 function openPage(k, fromHistory){
   const p = PAGES[k]; if(!p) return;
-  if(k === 'ac' && CAPS && CAPS.ac && CAPS.ac.min != null)
-    acTarget = Math.min(Math.max(acTarget, Math.ceil(CAPS.ac.min)), Math.floor(CAPS.ac.max));
+  if(k === 'ac'){ const r = acRange(); acTarget = Math.min(r.mx, Math.max(r.mn, acTarget)); }
   p[1]();
   const el = $(p[0]);
   el.scrollTop = 0;
