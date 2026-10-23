@@ -3,10 +3,24 @@ Serves the mobile PWA in ./web and a JSON API computed from carlinko.db.
 Run: python server.py [port]   (default 8088, binds 0.0.0.0 so Tailscale can reach it)
 """
 import os, sys, json, time, sqlite3, threading, math, calendar, urllib.request, urllib.parse
+import logging, traceback
 import hmac, hashlib, base64, secrets, re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import known_cars          # per-model constants the telemetry never carries (pack size, tyre scale)
 import maintenance
+
+logging.basicConfig(
+    level=os.environ.get("CARLINKO_LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+LOG = logging.getLogger("carlinko.server")
+
+def _log_exception(context, exc, level=logging.ERROR):
+    """Log the failure location without exception text, which may contain credentials."""
+    frames = traceback.extract_tb(exc.__traceback__)
+    where = "%s:%s in %s" % (os.path.basename(frames[-1].filename), frames[-1].lineno,
+                              frames[-1].name) if frames else "unknown location"
+    LOG.log(level, "%s: %s at %s", context, type(exc).__name__, where)
 
 # Version of the /api/summary contract, stamped onto every payload as "api_version".
 #
@@ -49,6 +63,7 @@ def live_poll():
             conn.close()
         return (st is not None), ("ok" if st else "car offline")
     except Exception as e:
+        _log_exception("live poll failed", e)
         return False, repr(e)
     finally:
         _poll_lock.release()
@@ -82,8 +97,8 @@ def _ensure_db():
     try:
         import logger as L
         conn = sqlite3.connect(DB); conn.executescript(L.SCHEMA); conn.commit(); conn.close()
-    except Exception:
-        pass
+    except Exception as e:
+        _log_exception("database initialization failed", e)
 def _vehicle():
     """Vehicle identity (plate/model/VIN) from creds.json, read fresh so a web login, a setup.py
     run or a restored creds.json shows up without a restart. The client hides plate+VIN by
@@ -116,7 +131,8 @@ def _vehicle_img_url(v):
     try:
         img = json.loads(v.get("vehicleImgConfig") or "{}")
         return img.get("Front") or img.get("Side") or img.get("Top")
-    except Exception:
+    except Exception as e:
+        _log_exception("vehicle image configuration is invalid", e, logging.WARNING)
         return None
 
 def is_configured():
@@ -387,7 +403,8 @@ def _latest_body_state():
             return None
         d = decode(row[0])
         return {k: d.get(k) for k in _STATE_KEYS}
-    except Exception:
+    except Exception as e:
+        _log_exception("reading latest vehicle state failed", e)
         return None
 
 def _opcode_expect(op):
@@ -407,8 +424,8 @@ def control_and_confirm(op, timeout=20, wake=True, settle=18.0):
     if wake and not DEMO:
         try:
             send_control("77", 10); time.sleep(0.6)
-        except Exception:
-            pass
+        except Exception as e:
+            _log_exception("control wake command failed", e, logging.WARNING)
     d = send_control(op, timeout)
     res = {**control_result(op, d), "state_before": before, "expect": _opcode_expect(op)}
     if not res["ok"]:
@@ -450,7 +467,8 @@ def _gated():
 
 def _save_creds(c):
     cpath = os.path.join(_DATA, "creds.json")
-    json.dump(c, open(cpath, "w"), indent=2)
+    with open(cpath, "w") as f:
+        json.dump(c, f, indent=2)
     try: os.chmod(cpath, 0o600)
     except Exception: pass
 
@@ -1772,9 +1790,26 @@ def trip_plan(frm, to, soc, cons, reserve=10.0, target=80.0, derate=1.0, a=None,
             "src": "google" if _gkey() else "osm"}
 
 class H(BaseHTTPRequestHandler):
-    def log_message(self, *a):  # quiet
+    def log_message(self, format, *args):
+        # _send records the outcome; avoid BaseHTTPRequestHandler's duplicate line.
         pass
+    def send_error(self, code, message=None, explain=None):
+        # Parser-level failures bypass _send; the raw request line can contain secrets.
+        LOG.log(logging.ERROR if code >= 500 else logging.WARNING,
+                "HTTP request rejected -> %d", code)
+        super().send_error(code, message, explain)
     def _send(self, code, body, ctype, extra=None):
+        path = self.path.split("?", 1)[0]
+        failed = False
+        if path.startswith("/api/") and "json" in ctype:
+            try:
+                payload = json.loads(body)
+                failed = isinstance(payload, dict) and (payload.get("ok") is False or "error" in payload)
+            except (TypeError, ValueError):
+                pass
+        level = logging.ERROR if code >= 500 else logging.WARNING if code >= 400 or failed else logging.INFO
+        LOG.log(level, "%s %r -> %d%s", self.command, path, code,
+                " (application failure)" if failed and code < 400 else "")
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -1839,7 +1874,8 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps(result).encode(), "application/json")
             except (ValueError, TypeError):
                 self._send(400, b'{"error":"invalid coordinates"}', "application/json")
-            except Exception:
+            except Exception as e:
+                _log_exception("GET /api/service-centres failed", e)
                 self._send(502, b'{"error":"service centre search unavailable"}', "application/json")
             return
         if path == "/api/controls":                    # what this car supports + opcodes to test
@@ -1849,6 +1885,7 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps({"caps": control_caps(), "known": KNOWN_OPCODES}).encode(),
                            "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"error": str(e)[:180]}).encode(), "application/json")
             return
         if path == "/car-photo":     # cached proxy for CarLinko's own render of this exact car.
@@ -1867,6 +1904,7 @@ class H(BaseHTTPRequestHandler):
                 kind = "image/png" if blob[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
                 self._send(200, blob, kind)
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(502, ("car image fetch failed: %r" % (e,)).encode(), "text/plain")
             return
         if path == "/api/refresh":                     # manual button: poll the car live, then return
@@ -1878,7 +1916,8 @@ class H(BaseHTTPRequestHandler):
             q = urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
             try:
                 res = _suggest((q.get("q") or [""])[0])
-            except Exception:
+            except Exception as e:
+                _log_exception("GET /api/geocode failed", e)
                 res = []
             self._send(200, json.dumps(res).encode(), "application/json")
             return
@@ -1901,6 +1940,7 @@ class H(BaseHTTPRequestHandler):
                     res.sort(key=lambda x: x["dist"])
                     _trip_cache[key] = (time.time(), res)
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 res = {"error": repr(e)[:160]}
             self._send(200, json.dumps(res).encode(), "application/json")
             return
@@ -1923,6 +1963,7 @@ class H(BaseHTTPRequestHandler):
                 plan = trip_plan(g1("from", ""), g1("to", ""), soc, cons,
                                  float(g1("reserve", "15")), 80.0, float(g1("derate", "1.0")), a, b)
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 plan = {"error": repr(e)[:200]}
             if "error" not in plan:
                 _trip_cache["trip:" + qs] = (time.time(), plan)
@@ -1935,6 +1976,7 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps(month_history((q.get("month") or [""])[0])).encode(),
                            "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(),
                            "application/json")
             return
@@ -1962,6 +2004,7 @@ class H(BaseHTTPRequestHandler):
                 elif path == "/api/geofences":      res = clx.geofences(*pg())
                 elif path == "/api/settings":       res = clx.device_settings()
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 res = {"ok": False, "error": str(e)[:180]}
             self._send(200, json.dumps(res).encode(), "application/json")
             return
@@ -2002,6 +2045,7 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps({"ok": True, "vehicle": veh}).encode(),
                            "application/json", self._set_cookie())   # log them straight in
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 msg = str(e)
                 if "login failed" in msg.lower() or "code" in msg.lower():
                     m = re.search(r"'code': '(\d+)'", msg)
@@ -2023,6 +2067,7 @@ class H(BaseHTTPRequestHandler):
                 else:
                     self._send(200, json.dumps({"ok": False, "error": "Wrong password."}).encode(), "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(), "application/json")
             return
         if path == "/api/forcerefresh":                # poke the car with the benign init (0x77) so it
@@ -2035,6 +2080,7 @@ class H(BaseHTTPRequestHandler):
                                             "code": d.get("code"), "msg": d.get("msg")}).encode(),
                            "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(), "application/json")
             return
         if path == "/api/control":                     # fire a remote-control opcode at the car
@@ -2056,6 +2102,7 @@ class H(BaseHTTPRequestHandler):
                 d = send_control(op, body.get("timeOut") or 20)
                 self._send(200, json.dumps(control_result(op, d)).encode(), "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(), "application/json")
             return
         if path in ("/api/actemp", "/api/seat"):       # climate opcodes -- the server encodes + checks them
@@ -2072,6 +2119,7 @@ class H(BaseHTTPRequestHandler):
                 res = ({"ok": False, "error": err} if err else
                        {**control_result(op, send_control(op, body.get("timeOut") or 20)), "opcode": op})
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 res = {"ok": False, "error": str(e)[:180]}
             self._send(200, json.dumps(res).encode(), "application/json")
             return
@@ -2103,6 +2151,7 @@ class H(BaseHTTPRequestHandler):
                     bool(body.get("enabled")), int(body.get("hour", 0)),
                     int(body.get("minute", 0)), body.get("week"), confirm)
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 res = {"ok": False, "error": str(e)[:180]}
             self._send(200, json.dumps(res).encode(), "application/json")
             return
@@ -2129,6 +2178,7 @@ class H(BaseHTTPRequestHandler):
                 except Exception: pass
                 self._send(200, json.dumps({"ok": True}).encode(), "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(),
                            "application/json")
             return
@@ -2156,6 +2206,7 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps({"ok": True, "car_image": "/car-photo",
                                             "bytes": len(blob)}).encode(), "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(),
                            "application/json")
             return
@@ -2204,6 +2255,7 @@ class H(BaseHTTPRequestHandler):
                                             "car_image": c.get("car_image", "")}).encode(),
                            "application/json")
             except Exception as e:
+                _log_exception("%s %s failed" % (self.command, path), e)
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(),
                            "application/json")
             return
@@ -2213,10 +2265,10 @@ def main():
     ports = [a for a in sys.argv[1:] if a.isdigit()]       # ignore flags like --demo
     port = int(ports[0]) if ports else 8088
     if DEMO:
-        print(f"CarLinko dashboard (DEMO — fake data) on http://0.0.0.0:{port}")
+        LOG.info("dashboard starting in demo mode on port %d", port)
     else:
         _ensure_db()                                       # so a brand-new install serves without crashing
-        print(f"CarLinko dashboard on http://0.0.0.0:{port}  (db={os.path.abspath(DB)})")
+        LOG.info("dashboard starting on port %d (db=%s)", port, os.path.abspath(DB))
     ThreadingHTTPServer(("0.0.0.0", port), H).serve_forever()
 
 if __name__ == "__main__":

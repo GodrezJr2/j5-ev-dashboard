@@ -250,6 +250,22 @@ Reference systemd units are in [`tools/`](tools/) if you'd rather write them you
 ([logger](tools/carlinko-logger.service), [web](tools/carlinko-web.service)) — but `install.sh`
 generates correct ones for your user and paths, so you shouldn't need to.
 
+### View backend logs
+
+The dashboard writes timestamped `INFO`, `WARNING`, and `ERROR` lines to stderr. Every HTTP
+response records its method, path and outcome; application failures returned with HTTP 200 are
+also marked as warnings. Caught errors record their exception type and source location. Query
+strings, cookies, request bodies, passwords and tokens are omitted. Set `CARLINKO_LOG_LEVEL=WARNING`
+to show only warnings and errors (the default is `INFO`). The telemetry logger runs separately
+and writes its poll output to its own service log.
+
+| Deployment | View live logs |
+| --- | --- |
+| Docker Compose | `docker compose logs -f web logger` |
+| systemd | `journalctl -fu carlinko-web -u carlinko-logger` |
+| Railway | Open the service's **Logs** tab |
+| `start.sh` or `tools/run.py` | Read the terminal where it is running |
+
 ### `creds.json` reference
 | key | required | what |
 | --- | --- | --- |
