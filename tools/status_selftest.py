@@ -62,7 +62,7 @@ class StatusTest(unittest.TestCase):
             {key: unlocked[key] for key in ("api_version", "capabilities")},
         )
 
-    def test_demo_does_not_claim_account_capabilities(self):
+    def test_demo_claims_only_implemented_maintenance_capabilities(self):
         with patch.object(server, "DEMO", True):
             status, demo = self.get("/api/status")
             _, summary = self.get("/api/summary")
@@ -72,7 +72,7 @@ class StatusTest(unittest.TestCase):
             "gated": False,
             "authed": True,
             "api_version": server.API_VERSION,
-            "capabilities": [],
+            "capabilities": ["maintenance_guide", "service_centres"],
         })
         self.assertEqual(demo["api_version"], summary["api_version"])
 
