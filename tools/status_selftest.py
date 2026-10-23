@@ -94,6 +94,26 @@ class StatusTest(unittest.TestCase):
         })
         self.assertEqual(demo["api_version"], summary["api_version"])
 
+    def test_requests_and_failures_are_logged_without_sensitive_input(self):
+        server.set_dashboard_password("test-password")
+        with self.assertLogs("carlinko.server", level="INFO") as captured:
+            self.get("/api/status?token=secret-token")
+            with self.assertRaises(urllib.error.HTTPError) as blocked:
+                self.get("/api/summary?token=secret-token")
+            blocked.exception.close()
+            with patch.object(server, "control_caps", side_effect=RuntimeError("secret-token")):
+                _, failed = self.get("/api/controls", "sid=" + server.make_session())
+
+        self.assertIn("GET '/api/status' -> 200", captured.output[0])
+        self.assertTrue(any("WARNING" in line and "'/api/summary' -> 401" in line
+                            for line in captured.output))
+        self.assertFalse("caps" in failed)
+        self.assertTrue(any("ERROR" in line and "RuntimeError" in line
+                            for line in captured.output))
+        self.assertTrue(any("WARNING" in line and "application failure" in line
+                            for line in captured.output))
+        self.assertNotIn("secret-token", "\n".join(captured.output))
+
 
 if __name__ == "__main__":
     unittest.main()

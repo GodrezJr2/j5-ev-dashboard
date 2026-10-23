@@ -7,6 +7,7 @@ COPY tools/ /app/tools/
 COPY web/  /app/web/
 
 ENV CARLINKO_DATA=/data
+ENV PYTHONUNBUFFERED=1
 # no VOLUME instruction: docker-compose mounts ./data:/data, Railway attaches its own volume
 WORKDIR /app/tools
 EXPOSE 8088
