@@ -62,6 +62,24 @@ class StatusTest(unittest.TestCase):
             {key: unlocked[key] for key in ("api_version", "capabilities")},
         )
 
+    def test_summary_identity_follows_creds_written_after_start(self):
+        # A server that started before creds.json existed (fresh install, restored backup)
+        # must not keep serving the "EV / — / —" fallback once the file appears.
+        db_patch = patch.object(server, "DB", os.path.join(self.data.name, "carlinko.db"))
+        db_patch.start()
+        self.addCleanup(db_patch.stop)
+        server._ensure_db()
+        _, before = self.get("/api/summary")
+        self.assertEqual(before["vehicle"], {"plate": "—", "model": "EV", "vin": "—"})
+        self.assertIsNone(before["car_image"])
+
+        vehicle = {"plate": "WXY 1234", "model": "TIGGO 7 CSH", "vin": "LVTDB21B0RD000001"}
+        with open(os.path.join(self.data.name, "creds.json"), "w") as f:
+            json.dump({"vehicle": dict(vehicle, img="https://example.invalid/front.png")}, f)
+        _, after = self.get("/api/summary")
+        self.assertEqual(after["vehicle"], vehicle)
+        self.assertEqual(after["car_image"], "/car-photo")
+
     def test_demo_claims_only_implemented_maintenance_capabilities(self):
         with patch.object(server, "DEMO", True):
             status, demo = self.get("/api/status")

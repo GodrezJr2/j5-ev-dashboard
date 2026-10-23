@@ -63,7 +63,8 @@ WEB  = os.path.join(HERE, "..", "web")
 
 def _creds():
     try:
-        return json.load(open(os.path.join(_DATA, "creds.json")))
+        with open(os.path.join(_DATA, "creds.json")) as f:
+            return json.load(f)
     except Exception:
         return {}
 
@@ -83,14 +84,16 @@ def _ensure_db():
         conn = sqlite3.connect(DB); conn.executescript(L.SCHEMA); conn.commit(); conn.close()
     except Exception:
         pass
-# Vehicle identity (plate/model/VIN) comes from creds.json; the client hides plate+VIN by
-# default (eye-toggle reveals). Falls back to generic labels so the app still runs unconfigured.
-_V = (_creds().get("vehicle") or {})
-VEHICLE = {"plate": _V.get("plate") or "—", "model": _V.get("model") or "EV", "vin": _V.get("vin") or "—"}
+def _vehicle():
+    """Vehicle identity (plate/model/VIN) from creds.json, read fresh so a web login, a setup.py
+    run or a restored creds.json shows up without a restart. The client hides plate+VIN by
+    default (eye-toggle reveals). Falls back to generic labels so the app still runs unconfigured."""
+    v = _creds().get("vehicle") or {}
+    return {"plate": v.get("plate") or "—", "model": v.get("model") or "EV", "vin": v.get("vin") or "—"}
+
 # CarLinko hosts a render of the exact car (model + colour) on its own CDN; setup.py saves the URL.
 # We proxy it through /car-photo and cache it on disk rather than pointing the browser at the
 # vendor's CDN -- keeps the dashboard self-hosted and offline-friendly, and leaks no referer.
-VEHICLE_IMG = (_V.get("img") or "").strip() or None
 _CAR_PHOTO = os.path.join(_DATA, "car-photo.img")
 _CAR_PHOTO_MAX = 8 * 1024 * 1024                       # same cap as the CarLinko fetch below
 TPMS_POS = ["FL", "FR", "RL", "RR"]
@@ -151,7 +154,6 @@ def web_login(email, password, region="sea", gmaps_key=None, dashboard_password=
         json.dump(c, open(cpath, "w"), indent=2)
         try: os.chmod(cpath, 0o600)
         except Exception: pass
-        VEHICLE.update(c["vehicle"])                        # reflect immediately, no restart
     if dashboard_password and dashboard_password.strip():
         set_dashboard_password(dashboard_password.strip())  # gate the dashboard for public hosting
     _ensure_db()                                           # table exists before the dashboard first loads
@@ -579,7 +581,7 @@ _CC = _creds()          # per-model overrides; anything not set falls back to kn
 def match_model(table, model=None):
     """Value from `table` for this car. `model` is passed explicitly by demo mode, which has its
     own car rather than the one in creds.json."""
-    return known_cars.match(table, model if model is not None else VEHICLE.get("model"))
+    return known_cars.match(table, model if model is not None else _vehicle()["model"])
 
 KNOWN = match_model(known_cars.CARS) or {}
 
@@ -603,11 +605,6 @@ TPMS_SCALE = float(_CC.get("tpms_scale") or KNOWN.get("tpms_scale") or 1.373)
 # --- pack chemistry: decides the 100%-charge advice (LFP wants one regularly, NMC does not) ---
 CHEMISTRY = (_CC.get("chemistry") or KNOWN.get("chemistry") or "lfp").lower()   # lfp | nmc — J5 is LFP
 CHEMISTRY_KNOWN = bool(_CC.get("chemistry") or KNOWN.get("chemistry"))
-# Optional path/URL to a picture of YOUR car for the dashboard hero. The bundled render is a
-# Jaecoo J5; showing it to an Omoda/Chery/Tiggo owner is just wrong, so anything we don't have
-# a render for falls back to a neutral silhouette (see web/car-generic.svg) instead.
-#   your own picture  >  CarLinko's render of your actual car  >  (client picks J5 or silhouette)
-CAR_IMAGE = (_CC.get("car_image") or "").strip() or ("/car-photo" if VEHICLE_IMG else None)
 
 # Brochure specs. These are per-model facts nothing in the telemetry can tell us, so they can only
 # come from a table or from you. Showing the J5's numbers to a Tiggo owner is stating a falsehood,
@@ -1118,7 +1115,7 @@ def summary():
 def _summary():
     if DEMO:
         return demo_summary()
-    out = {"vehicle": VEHICLE, "online": False, "battery": None, "range_km": None,
+    out = {"vehicle": _vehicle(), "online": False, "battery": None, "range_km": None,
            "odometer": None, "volt12": None, "unlocked": None, "speed": None,
            "moving": False, "avg_speed": None, "insights": {}, "health": {}, "drain": None,
            "volt12_min7d": None, "volt12_status": None,
@@ -1127,7 +1124,7 @@ def _summary():
            "wltp_kwh_100": WLTP_KWH_100 if WLTP_KNOWN else None,
            "chemistry_known": CHEMISTRY_KNOWN, "powertrain": "bev", "fuel": None,
            "currency": {"symbol": CUR_SYMBOL, "locale": CUR_LOCALE, "code": CUR_CODE},
-           "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": CAR_IMAGE,
+           "tyre_unit": TYRE_UNIT, "tariff": TARIFF_IDR, "car_image": _car_image(),
            "specs": model_specs(),
            "energy": {"today_kwh": 0.0, "consumption": None, "rating": None,
                       "week_consumption": None},
