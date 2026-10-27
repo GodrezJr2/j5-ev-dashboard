@@ -66,6 +66,14 @@ main() {
     grep -Eq '^tools/(server|auth|known_cars)\.py$' <<<"$changed" && services="carlinko-web"
     grep -Eq '^tools/(logger|auth)\.py$' <<<"$changed" && services="$services carlinko-logger"
     services="${services# }"
+    # extra instances (another owner's car) run the same checkout as carlinko-<name>-web/-logger
+    # with their own CARLINKO_DATA, so they need the same restarts
+    local extra=""
+    for f in $services; do
+      extra="$extra $(systemctl list-unit-files --no-legend "carlinko-*-${f#carlinko-}.service" 2>/dev/null \
+        | awk '{print $1}' | sed 's/\.service$//' | tr '\n' ' ')"
+    done
+    services="$(echo "$services $extra" | xargs)"
   fi
   if [ -n "$services" ]; then
     echo "==> restarting: $services"

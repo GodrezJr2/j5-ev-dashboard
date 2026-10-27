@@ -96,7 +96,7 @@
       const s=await (await fetch('api/status',{cache:'no-store'})).json();
       if(!s.configured) show('cfg');
       else if(s.gated && !s.authed) show('unlock');
-      else location.href='/';
+      else location.href='./';
     }catch(e){ show('cfg'); }
   }
   boot();
@@ -113,7 +113,7 @@
         body:JSON.stringify({email:$('email').value,password:$('password').value,region:$('region').value||'sea',
           gmaps_key:$('gmaps').value,dashboard_password:$('dashpw').value})});
       const d=await r.json();
-      if(d.ok){ btn.textContent='Loading your car…'; location.href='/'; }
+      if(d.ok){ btn.textContent='Loading your car…'; location.href='./'; }
       else{ err.textContent=d.error||'Sign in failed.'; err.classList.add('show');
         btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Sign in'; }
     }catch(ex){ err.textContent='Network error — is the server running?'; err.classList.add('show');
@@ -128,7 +128,7 @@
       const r=await fetch('api/unlock',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({password:$('upw').value})});
       const d=await r.json();
-      if(d.ok){ location.href='/'; }
+      if(d.ok){ location.href='./'; }
       else{ err.textContent=d.error||'Wrong password.'; err.classList.add('show');
         btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Unlock'; }
     }catch(ex){ err.textContent='Network error.'; err.classList.add('show');

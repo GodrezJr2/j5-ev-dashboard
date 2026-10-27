@@ -680,7 +680,7 @@ MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduc
 <script>
 const $ = id => document.getElementById(id);
 let S = null, CAPS = null;
-async function api(p, opt){ const r = await fetch(p, opt); if(r.status === 401){ location.href = '/'; throw 0; } return r.json(); }
+async function api(p, opt){ const r = await fetch(p, opt); if(r.status === 401){ location.href = './'; throw 0; } return r.json(); }
 let toastT = null;
 function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show');
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
@@ -843,10 +843,10 @@ async function fire(op, btn){
   const [done, doing] = opText(op);
   if(btn) btn.classList.add('busy');
   try{
-    await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
+    await api('api/control', {method: 'POST', headers: {'content-type': 'application/json'},
       body: JSON.stringify({data: '77', timeOut: 20})});
     await new Promise(r => setTimeout(r, 600));
-    const d = await api('/api/control', {method: 'POST', headers: {'content-type': 'application/json'},
+    const d = await api('api/control', {method: 'POST', headers: {'content-type': 'application/json'},
       body: JSON.stringify({data: op, timeOut: 20})});
     if(d.ok){ toast(done); setTimeout(load, 1800); }
     else if(String(d.code) === '50043') toast('Car is asleep or out of signal');
@@ -874,7 +874,7 @@ function renderHero(){
   $('carWrap').classList.toggle('charging', charging && isJ5());
   const img = $('hCar');
   img.onerror = () => { img.onerror = null; img.src = 'car-generic.svg'; };
-  img.src = '/car-photo';
+  img.src = 'car-photo';
 }
 
 // State-of-charge bar under the range numeral. A second, blue fuel bar appears only when the
@@ -1636,7 +1636,7 @@ async function renderDist(){
     '<div class="calgrid" id="calG"><div class="note" style="margin:0">Loading…</div></div>';
   $('calP').onclick = () => { shiftMonth(-1); };
   $('calN').onclick = () => { shiftMonth(1); };
-  const d = await api('/api/history?month=' + calMonth);
+  const d = await api('api/history?month=' + calMonth);
   if(mine !== distSeq) return;                     // a newer render started while this was loading
   const g = $('calG');
   const lead = (new Date(cy, cm - 1, 1).getDay() + 6) % 7;   // Monday-first
@@ -1827,11 +1827,11 @@ function renderAcct(){
       '>' + o[1] + '</button>').join('') + '</span></div>';
 
   const linkRows = [
-    {ic: 'gauge',  t: 'Classic dashboard', s: 'Trips, SPKLU planner, full stats', fn: () => location.href = '/index.html'},
+    {ic: 'gauge',  t: 'Classic dashboard', s: 'Trips, SPKLU planner, full stats', fn: () => location.href = 'index.html'},
     {ic: 'plug',   t: 'Charge calculator', s: 'Cost and kWh to any target %',     fn: () => openPage('plan')},
     {ic: 'chart',  t: 'Share card',        s: 'Month stats as a shareable card',  fn: () => openPage('flex')},
     {ic: 'camera', t: 'Update car photo',  s: 'Re-fetch the render from CarLinko', fn: async () => {
-        const d = await api('/api/photorefresh', {method: 'POST'});
+        const d = await api('api/photorefresh', {method: 'POST'});
         toast(d.ok ? 'Photo updated' : (d.error || 'failed')); if(d.ok) load(); }},
     {ic: 'link',   t: 'About', s: 'J5 EV Dashboard V2 · self-hosted', fn: () =>
         toast('J5 EV Dashboard V2 · CarLinko, reverse-engineered')},
@@ -1937,20 +1937,20 @@ document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => {
 // ---- data ----
 async function load(){
   try{
-    S = await api('/api/summary');
+    S = await api('api/summary');
     renderHero(); renderQA(); renderCharging(); renderCards();
     if(S._acctDone) renderAcct();
   }catch(e){ /* auth redirect handled in api() */ }
 }
 $('hRefresh').onclick = async () => {
   const b = $('hRefresh'); b.classList.add('spin');
-  try{ await api('/api/refresh'); }catch(e){}
+  try{ await api('api/refresh'); }catch(e){}
   await load(); b.classList.remove('spin');
 };
 $('aEye').onclick = () => { vinShown = !vinShown; renderAcct(); };
 
 (async () => {
-  try{ CAPS = (await api('/api/controls')).caps; }catch(e){ CAPS = null; }
+  try{ CAPS = (await api('api/controls')).caps; }catch(e){ CAPS = null; }
   await load();
   // first paint only: the instrument comes up top-down, then the actions
   stagger([$('hModel').parentNode, $('hRange').parentNode, document.querySelector('.hlbl'),
