@@ -5,7 +5,8 @@ TRELLIS.2 output is an open shell (holes under the car and in the arches) and ho
 Here: sample the surface into a voxel grid, call a voxel inside when it lies between surface hits along all three
 axes (works on an open shell), marching cubes, then snap each vertex back onto the source surface (point-to-plane on
 the nearest of 4M surface samples) so the voxel steps disappear. Vertices with no surface within 3 cm (filled holes)
-stay where marching cubes put them.
+stay where marching cubes put them. A voxel opening in the nose first cuts off thin
+fins (the 'whiskers' TRELLIS grows at the bumper corners).
 
 pipeline for the TRELLIS.2 model now in web/car_parts.json:
   trellis-cli j5.png raw.glb --res 1024 --seed 42 -> tools/car_mirror.py raw.glb trm   (keep trm_L)
@@ -24,6 +25,8 @@ ap = argparse.ArgumentParser(); ap.add_argument("src"); ap.add_argument("dst")
 ap.add_argument("--pitch", type=float, default=.008, help="voxel size in m")
 ap.add_argument("--close", type=int, default=2, help="dilate/erode steps that bridge small cracks")
 ap.add_argument("--faces", type=int, default=150000)
+ap.add_argument("--open", type=int, default=2, help="erode/dilate steps that cut off thin fins (TRELLIS whiskers)")
+ap.add_argument("--nose", type=float, default=.6, help="length in m from the front (+Z) where fins are cut")
 a = ap.parse_args()
 P, R, F = a.pitch, a.close, a.faces
 
@@ -44,6 +47,10 @@ def between(g, ax):                      # true between the first and last surfa
 g = between(g, 0) & between(g, 1) & between(g, 2)
 g = ndimage.binary_fill_holes(g)
 g = ndimage.binary_erosion(g, st, iterations=R)
+if a.open:   # only in the nose: elsewhere thin sheets are real (the windshield is a sheet over an empty cabin)
+    op = ndimage.binary_opening(g, ndimage.generate_binary_structure(3, 2), iterations=a.open)
+    nose = (np.arange(g.shape[2]) * P + lo[2]) > m.bounds[1][2] - a.nose
+    g[:, :, nose] = op[:, :, nose]
 lab, n = ndimage.label(g); sz = np.bincount(lab.ravel()); sz[0] = 0; g = lab == sz.argmax()
 print("grid", g.shape, "components", n, "fill", round(float(g.mean()), 3))
 
