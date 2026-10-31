@@ -1,9 +1,9 @@
 """Stage 2 of the car model: cut the mid-poly car mesh (tools/car_prep.py) into the animated parts of web/car3d.js.
 
-pipeline: nano-banana clay renders (front/left/back + mirrored left as right)
-          -> Hunyuan3D-2mv gen_mv_seeds.py (res 512, seed 1 is the one in use)
-          -> tools/car_prep.py out/mv4_r512_s1.glb build/car_t40_s1.glb --taubin 40
-          -> this script -> web/car_parts.json
+pipeline (current, Oct 2026): official J5 EV studio render -> TRELLIS.2 (res 1024) -> tools/car_mirror.py
+          -> tools/car_prep.py --mid 120000 --taubin 6 -> tools/car_solid.py (booleans need a closed mesh)
+          -> this script --body 30000 --door 4000 --gate 5000 -> web/car_parts.json  (details: car_solid.py)
+          older: nano-banana clay renders -> Hunyuan3D-2mv (res 512, seed 1) -> car_prep.py --taubin 40 -> this script
 usage (needs trimesh, numpy, scipy, pymeshlab; the Hunyuan3D venv has them):
   python tools/split_car.py build/car_t40_s1.glb web/car_parts [--body 11000 --door 1800 --gate 2400]
   add --quick to skip every cut and preview a source mesh in seconds

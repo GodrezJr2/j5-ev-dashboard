@@ -1226,8 +1226,9 @@ function doorBits(mask){
 }
 const DOOR_NAME = ['Front left', 'Front right', 'Rear left', 'Rear right'];
 
-function renderDoors(){
-  const el = $('pgDoorsBody');
+/* Status rows and 3D state for the Doors page. Split out so a live refresh can update an open page
+   in place: the 3D car keeps running and its panels swing to the new state instead of remounting. */
+function doorStatus(){
   const winOpen = windowsOpen();
   const open = doorBits(S.doors);
   const doorsOpen = S.doors != null && (S.doors & 15) !== 0;
@@ -1245,23 +1246,38 @@ function renderDoors(){
   if(CAPS && CAPS.sunroof && (CAPS.sunroof.open || CAPS.sunroof.tilt))
     r('Sunroof', !S.sunroof_open, 'Closed', 'Open');
   r('Rear trunk', !S.trunk_open, 'Closed', 'Open');
+  return {open: open, rows: rows.join(''),
+          car: {doors: open, trunk: !!S.trunk_open, sunroof: !!S.sunroof_open, unlocked: !!S.unlocked}};
+}
+function paintDoorSvg(open){
+  const svg = $('doorCar');
+  if(!svg) return;
+  svg.querySelectorAll('[data-door]').forEach(p =>
+    p.classList.toggle('open', !!open[+p.dataset.door]));
+  svg.querySelector('.clid').classList.toggle('open', !!S.trunk_open);
+  svg.querySelector('.csun').classList.toggle('open', !!S.sunroof_open);
+  svg.querySelectorAll('.chole')[0].classList.toggle('on', !!S.sunroof_open);
+  svg.querySelectorAll('.chole')[1].classList.toggle('on', !!S.trunk_open);
+}
+// live refresh while the Doors page is open: rows, flat diagram and 3D car follow the new state
+function liveDoors(){
+  const st = doorStatus(), card = $('doorRows');
+  if(!card) return renderDoors();
+  card.innerHTML = st.rows;
+  paintDoorSvg(st.open);
+  if(CAR3D.doors) CAR3D.doors.set(st.car);
+}
+
+function renderDoors(){
+  const el = $('pgDoorsBody');
+  const st = doorStatus(), open = st.open;
 
   // Paint everything shut, then let the open panels swing on the next frame, so entering the page
   // plays the movement rather than showing a car that was already hanging open.
   el.innerHTML = '<div class="topwrap" id="doorCar">' + carTop({unlocked: !!S.unlocked}) + '</div>' +
-    '<div class="rowcard">' + rows.join('') + '</div>';
-  mount3d('doors', 'doorCar', 'doors', {doors: open, trunk: !!S.trunk_open, sunroof: !!S.sunroof_open,
-    unlocked: !!S.unlocked});
-  const paint = () => {
-    const svg = $('doorCar');
-    if(!svg) return;
-    svg.querySelectorAll('[data-door]').forEach(p =>
-      p.classList.toggle('open', !!open[+p.dataset.door]));
-    svg.querySelector('.clid').classList.toggle('open', !!S.trunk_open);
-    svg.querySelector('.csun').classList.toggle('open', !!S.sunroof_open);
-    svg.querySelectorAll('.chole')[0].classList.toggle('on', !!S.sunroof_open);
-    svg.querySelectorAll('.chole')[1].classList.toggle('on', !!S.trunk_open);
-  };
+    '<div class="rowcard" id="doorRows">' + st.rows + '</div>';
+  mount3d('doors', 'doorCar', 'doors', st.car);
+  const paint = () => paintDoorSvg(open);
   if(REDUCED()) paint(); else requestAnimationFrame(() => requestAnimationFrame(paint));
   // remote actions, only for what vehicleControlConfig says this car has. Window state is unknown
   // on a J5, so windows are plain Close / Vent / Open rather than a toggle that guesses.
@@ -1310,7 +1326,7 @@ function renderDoors(){
   const note = document.createElement('div');
   note.className = 'note';
   note.innerHTML =
-    (winOpen === null
+    (windowsOpen() === null
       ? 'Window position is not decoded reliably on this model yet, so that row is hidden rather ' +
         'than guessed. '
       : '') +
@@ -1940,6 +1956,7 @@ async function load(){
     S = await api('api/summary');
     renderHero(); renderQA(); renderCharging(); renderCards();
     if(S._acctDone) renderAcct();
+    if(openKey === 'doors') liveDoors();
   }catch(e){ /* auth redirect handled in api() */ }
 }
 $('hRefresh').onclick = async () => {
@@ -1959,7 +1976,14 @@ $('aEye').onclick = () => { vinShown = !vinShown; renderAcct(); };
   const h = location.hash.slice(1);
   if(PAGES[h]) openPage(h);           // deep link: v2.html#doors / #tyres / #energy / #ac
   if(h === 'acct') document.querySelector('.tabbar button[data-v="acct"]').click();
-  setInterval(() => { if(!document.hidden) load(); }, 60000);
+  // 60 s on the home view; 4 s while the Doors page is open, so a door opened at the car shows
+  // on the 3D model within a few seconds (the logger streams near real-time while unlocked).
+  let lastLoad = Date.now();
+  setInterval(() => {
+    if(document.hidden) return;
+    const every = openKey === 'doors' ? 4000 : 60000;
+    if(Date.now() - lastLoad >= every){ lastLoad = Date.now(); load(); }
+  }, 1000);
 })();
 </script>
 </body>
