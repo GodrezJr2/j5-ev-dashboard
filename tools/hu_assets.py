@@ -65,6 +65,54 @@ def main(apk_path):
             im.save(dst, "WEBP", quality=88, method=6)
             print(f"{dst}  {im.size}  <- {name} ({f})")
 
+    airflow(a, ids)
+
+
+# A/C airflow view, from the head unit's EV climate screen (elac_main): the dashboard seen from
+# the back seat on a 1440x1130 canvas, car render at y=163, and looping 20-frame airflow
+# animations (100 ms a frame) at fixed spots. Saved at half size; each animation becomes one
+# vertical sprite strip that v2 steps through with CSS.
+FLOW = {
+    "flow-face": "right_fan_{:05d}",          # centre vents, drawn mirrored on the left one
+    "flow-door": "right_door_fan_{:05d}",     # door-side vents
+    "flow-foot": "foot_right_{:05d}",         # footwell
+    "flow-defog": "defog_{:05d}",             # windshield, left-hand drive
+    "flow-defog-r": "defog_r_{:05d}",         # windshield, right-hand drive
+}
+
+
+def _imgs(a, res, ids, name):
+    rid = ids.get(name)
+    if rid is None:
+        return []
+    files = sorted({str(v) for _c, v in res.get_resolved_res_configs(rid) if str(v).endswith((".png", ".webp"))})
+    return [Image.open(io.BytesIO(a.get_file(f))).convert("RGBA") for f in files]
+
+
+def _half(im):
+    return im.resize((im.width // 2, im.height // 2), Image.LANCZOS)
+
+
+def airflow(a, ids):
+    res = a.get_android_resources()
+    for out, name in (("dash", "car_model_bev"), ("dash-r", "car_model_bev_r")):
+        for im in _imgs(a, res, ids, name)[:1]:
+            _half(im).save(os.path.join(OUT, out + ".webp"), "WEBP", quality=86, method=6)
+            print(out, im.size)
+    for k, im in enumerate(_imgs(a, res, ids, "wheel")[:2]):
+        _half(im).save(os.path.join(OUT, ("wheel-dark", "wheel-light")[k] + ".webp"), "WEBP", quality=88, method=6)
+    for out, pat in FLOW.items():
+        frames = [im for i in range(20) for im in _imgs(a, res, ids, pat.format(i))[:1]]
+        if len(frames) != 20:
+            print("missing", pat)
+            continue
+        f0 = _half(frames[0])
+        strip = Image.new("RGBA", (f0.width, f0.height * 20))
+        for i, im in enumerate(frames):
+            strip.paste(_half(im), (0, i * f0.height))
+        strip.save(os.path.join(OUT, out + ".webp"), "WEBP", quality=80, method=6)
+        print(out, f0.size, "x20")
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

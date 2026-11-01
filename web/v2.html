@@ -410,6 +410,17 @@
   .hucab .sb:active{transform:scale(.9)}
   .hucab .sb img{width:100%;height:100%;display:block}
   .hucab .sb.busy{opacity:.55}
+  /* head-unit airflow view: the HU's EV climate screen (elac_main), half size, cropped to the dash */
+  .huflow{position:relative;width:100%;aspect-ratio:520/330;margin:var(--s4) 0 var(--s2);
+    border-radius:var(--r3);overflow:hidden;background:#0a0e14}
+  .huflow>*{position:absolute;display:block}
+  .huflow .fl{background-repeat:no-repeat;background-size:100% 2000%;opacity:0;
+    transition:opacity var(--t-mid) linear;animation:huflow 2s steps(20) infinite}
+  .huflow .fl.on{opacity:1}
+  .huflow .mir{transform:scaleX(-1)}
+  .huflow .dfz{left:10%;top:5%;width:80%;height:30%;border-radius:40% 40% 8px 8px;padding:0;background:none}
+  .huflow .cap{left:0;right:0;bottom:8px;text-align:center;font-size:11.5px;color:#9aa4b2}
+  @keyframes huflow{to{background-position:0 105.2632%}}
   .hucab .cap{position:absolute;bottom:-4px;left:0;right:0;text-align:center;font-size:11.5px;color:var(--mut)}
   .acseats .rl small{display:block;font-size:11.5px;font-weight:500;color:var(--mut)}
   .acseats .seg button{min-width:40px;min-height:36px}
@@ -1156,6 +1167,30 @@ function rhd(){
     return /^(Asia\/(Jakarta|Pontianak|Makassar|Jayapura|Kuala_Lumpur|Kuching|Singapore|Bangkok|Tokyo|Kolkata|Calcutta|Karachi|Dhaka|Colombo|Hong_Kong|Macau|Brunei|Kathmandu|Thimphu)|Australia\/|Pacific\/(Auckland|Fiji)|Europe\/(London|Dublin|Malta)|Africa\/(Johannesburg|Nairobi|Harare|Lusaka|Maputo|Gaborone|Windhoek|Kampala|Dar_es_Salaam|Maseru|Mbabane|Blantyre)|Indian\/Mauritius|America\/(Jamaica|Barbados|Port_of_Spain|Guyana|Nassau))/.test(z);
   }catch(e){ return false; }
 }
+// Airflow view: spots from the HU's elac_main layout (1440x1130 canvas), halved and cropped to
+// the dash (x 100-620, y 40-370). The car only reports A/C on/off and front defog, not where the vents
+// blow, so A/C on lights the face, door and foot flows together, the way the HU's auto mode looks.
+let FLOW_OK = null;
+(function(){ const i = new Image(); i.onload = () => { FLOW_OK = true; if(openKey === 'ac') renderAc(); };
+  i.onerror = () => { FLOW_OK = false; }; i.src = 'hu/dash.webp'; })();
+function huFlowHtml(ac){
+  const r = rhd(), X = 100, W = 520, H = 330, Y = 40;
+  const box = (x, y, w, h) => 'left:' + ((x - X) / W * 100).toFixed(3) + '%;top:' + ((y - Y) / H * 100).toFixed(3) +
+    '%;width:' + (w / W * 100).toFixed(3) + '%;height:' + (h / H * 100).toFixed(3) + '%';
+  const fl = (img, on, x, y, w, h, mir) => '<i class="fl' + (on ? ' on' : '') + (mir ? ' mir' : '') +
+    '" style="background-image:url(hu/' + img + '.webp);' + box(x, y, w, h) + '"></i>';
+  const on = !!S.ac_on, dfg = !!S.defrost_front;
+  let h = '<div class="huflow"><img src="hu/dash' + (r ? '-r' : '') + '.webp" alt="" style="' + box(0, 81.5, 720, 338.5) + '">' +
+    '<img src="hu/wheel-dark.webp" alt="" style="' + box(r ? 402.5 : 172.5, 147, 145, 130) + '">' +
+    fl(r ? 'flow-defog-r' : 'flow-defog', dfg, 133.5, 57.5, 453, r ? 120 : 107, false) +
+    fl('flow-door', on, 142.5, 199, 109, 90, true) + fl('flow-door', on, 459.5, 199, 109, 90, false) +
+    fl('flow-face', on, 250, 199.5, 109, 90, true) + fl('flow-face', on, 353.5, 199.5, 109, 90, false) +
+    fl('flow-foot', on, 205, 280, 122, 90, true) + fl('flow-foot', on, 385, 280, 122, 90, false);
+  if(ac.defog) h += '<button class="dfz" data-xop="7412' + (dfg ? '00' : '01') + '" aria-label="Turn front defog ' +
+    (dfg ? 'off' : 'on') + '"></button>';
+  return h + '<span class="cap">' + (on ? 'A/C running' : 'A/C off') + (dfg ? ' · defog on' : '') +
+    (ac.defog ? ' · tap the windshield for defog' : '') + '</span></div>';
+}
 const SEAT_POS = {L: [148, 173], R: [460, 173], RL: [152, 517], RR: [460, 517]};   // HU layout, px of 874x968
 const seatLocal = {};          // last level we sent, for seats the status blob does not report
 function huSeatHtml(seats){
@@ -1215,6 +1250,7 @@ function renderAc(){
   el.innerHTML =
     '<div class="acsub ov">' + (cabin ? 'Cabin now ' + cabin
       : (acSetPoint() != null ? 'Car is set to ' + acSetPoint() + '°C' : 'Set a target, then power on')) + '</div>' +
+    (FLOW_OK ? huFlowHtml(ac) : '') +
     '<div class="acbig"><span class="side">' + Math.max(mn, acTarget - st) + '</span>' +
     '<span class="cur num">' + acTarget + '<u>°C</u></span>' +
     '<span class="side">' + Math.min(mx, acTarget + st) + '</span></div>' +
