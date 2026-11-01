@@ -261,12 +261,21 @@ Jadi host-nya di tempat lain, HP cuma jadi browser (add to home screen jadi PWA)
 | --- | --- | --- |
 | PC nganggur / laptop lama / **Raspberry Pi** di rumah | gratis | paling privat; akses lewat [Tailscale](https://tailscale.com) |
 | **VPS** murah (Hetzner, Contabo, DigitalOcean…) | ~$4/bln | paling gampang nyala terus; privat pakai Tailscale, atau set `dashboard_password` |
-| **Fly.io / Railway / Render** free tier | gratis | deploy Docker image; set `dashboard_password` |
+| **Fly.io / Railway / Render** free tier | gratis | deploy Docker image; set `dashboard_password`. Host yang cuma kasih satu service + satu volume bisa jalanin logger bareng dashboard pakai start command `bash railway_start.sh` (lihat bawah) |
 | **Oracle Cloud Free / Google e2-micro** | gratis | VM nyala terus gratis |
 
 > **Host publik = wajib set dashboard password.** Di host privat/rumah/Tailscale boleh dibiarin
 > kebuka. Begitu URL-nya bisa dicapai dari internet, set `dashboard_password` (halaman login →
 > Advanced) biar cuma kamu yang bisa buka.
+
+> **Satu service, dua proses.** `docker compose` jalanin dashboard sama logger sebagai dua
+> service yang share `./data`. Host yang nempelin volume ke *satu* service doang (Railway) nggak
+> bisa gitu, jadi `tools/railway_start.sh` jalanin logger di background dan dashboard di
+> foreground dari satu container. Set jadi start command service-nya — `bash railway_start.sh` —
+> dan taruh isi `creds.json` di service variable `CREDS_JSON`; script-nya nulis itu ke volume
+> tiap boot. Ini sengaja **bukan** default image: CarLinko cuma ngebolehin satu sesi aktif per
+> akun, jadi `docker run` yang diam-diam nyalain logger bakal bikin app CarLinko kamu sendiri
+> ke-logout.
 
 ### Setup per-OS
 Jalur Docker sama persis di semua OS — install Docker, lalu `docker compose up -d` dan buka
