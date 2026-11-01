@@ -668,6 +668,29 @@ def day_regen(data, resync_skip):
     return out
 
 
+def day_regen_kw(data):
+    """kWh regen actually reported per day: b62-63 power (it carries regen kW while driving, with
+    no connector and no charge running) times the gap to the next frame, capped at 60 s so one
+    sample never stands for a long hole. Frames are ~30 s apart, so this is an estimate, but unlike
+    SoC rises it is not inflated by the 1%-integer SoC (41.8% regen reading as a 41->42 step).
+    Display only: the net efficiency still comes from SoC (drops minus rises = start minus end).
+    Returns {YYYY-MM-DD: kwh}."""
+    out = {}
+    last_move = 0
+    for (t0, _a, d0), (t1, _b, d1) in zip(data, data[1:]):
+        o0, o1 = d0.get("odometer"), d1.get("odometer")
+        if (o0 is not None and o1 is not None and o1 > o0) or (d0.get("speed") or 0) > 0:
+            last_move = t0
+        p = d0.get("charge_power") or 0
+        if p <= 0 or d0.get("charge_mode") or d0.get("charge_state") == 1:
+            continue
+        if not last_move or t0 - last_move > 300:
+            continue
+        k = time.strftime("%Y-%m-%d", time.localtime(t0))
+        out[k] = out.get(k, 0.0) + p * min(t1 - t0, 60) / 3600.0
+    return out
+
+
 def net_eff(used, regen, km, eff):
     """kWh/100km net of regen -- the dashboard's headline efficiency -- for a day whose drops-only
     (head-unit) figure passed its 9-30 gate; the gate checks the measurement, the net can be lower."""
@@ -1154,7 +1177,8 @@ def _summary():
     out["resync_km"] = "skip" if resync_skip else "count"
     trips_all = build_trips(data, resync_skip)
     kwh_day = day_energy(data, resync_skip)
-    regen_day = day_regen(data, resync_skip)
+    regen_day = day_regen(data, resync_skip)          # SoC rises: nets out against the drops
+    regen_kw = day_regen_kw(data)                     # what the car reports as regen, for display
     km_day = {}
     for t in trips_all:
         k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
@@ -1181,7 +1205,7 @@ def _summary():
         # on the Puncak round trip)
         series.append({"day": day[5:], "km": km, "kwh": round(max(0.0, u - r), 1),
                        "eff": net_eff(u, r, km, eff), "kwh_hu": round(u, 1), "eff_hu": eff,
-                       "regen": round(r, 1)})
+                       "regen": round(regen_kw.get(day, 0.0), 1)})
     out["history"] = series
     res = analyze(data, trips_all, net_day(kwh_day, regen_day))
     out["battery_kwh"] = res["battery_kwh"]
@@ -1269,7 +1293,8 @@ def month_history(month):
     resync_skip = _resync_skip()
     trips = build_trips(data, resync_skip)
     kwh_day = day_energy(data, resync_skip)
-    regen_day = day_regen(data, resync_skip)
+    regen_day = day_regen(data, resync_skip)          # SoC rises: nets out against the drops
+    regen_kw = day_regen_kw(data)                     # what the car reports as regen, for display
     km_day = {}
     for t in trips:
         k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
@@ -1302,9 +1327,10 @@ def month_history(month):
             eff = None
         c = chg.get(k)
         r = regen_day.get(k, 0.0)
+        rk = regen_kw.get(k, 0.0)
         days.append({"d": day, "km": km, "kwh": round(max(0.0, u - r), 1),
                      "eff": net_eff(u, r, km, eff), "kwh_hu": round(u, 1), "eff_hu": eff,
-                     "regen": round(r, 1),
+                     "regen": round(rk, 1),
                      "chg_kwh": round(c["kwh"], 1) if c else 0,
                      "chg_cost": round(c["cost"]) if c else 0,
                      "trips": trips_day.get(k, []),

@@ -1638,7 +1638,7 @@ function drawEnergy(hist, wltp){
       const hy = y(hv);
       track += '<rect class="ebar hu" x="' + x.toFixed(1) + '" y="' + hy.toFixed(1) + '" width="' + bw.toFixed(1) +
         '" height="' + (base - hy).toFixed(1) + '" rx="' + (bw / 2.6).toFixed(1) + '"><title>' + hv +
-        ' kWh/100km before regen (head unit)</title></rect>';
+        ' kWh/100km on the head unit (counts SoC drops only)</title></rect>';
     }
     if(v != null){
       const yy = y(v);
@@ -1668,7 +1668,7 @@ function drawEnergy(hist, wltp){
 
   const worse = present.filter(v => wltp && v > wltp).length;
   const netKey = hus.some((v, i) => v != null && vals[i] != null && v > vals[i])
-    ? '<span><i class="sw swn"></i>before regen</span>' : '';
+    ? '<span><i class="sw swn"></i>head unit</span>' : '';
   $('eLegend').innerHTML = wltp
     ? '<span><i class="sw"></i>kWh/100km</span>' + netKey + '<span><i class="sw d"></i>WLTP ' + wltp + '</span>' +
       '<span class="gap">' + (worse ? worse + ' of ' + present.length + ' days above rating'
@@ -1825,8 +1825,8 @@ function calDay(x, cy, cm){
   let h = '<div class="rowcard calcard"><div class="calch">' + when + '</div>' +
     '<div class="caltot">' + calStat(x.km, 'km driven') + calStat(x.kwh || '—', 'kWh used') +
     calStat(x.eff != null ? x.eff : '—', 'kWh/100km') + '</div>' +
-    (x.regen > 0 && x.eff_hu != null ? '<div class="calnet">' + x.regen + ' kWh back from regen · head unit shows ' +
-      x.eff_hu + ' (before regen)</div>' : '');
+    (x.regen > 0 && x.eff_hu != null ? '<div class="calnet">' + '≈' + x.regen + ' kWh back from regen · head unit shows ' +
+      x.eff_hu + '</div>' : '');
   (x.trips || []).forEach(t => {
     h += '<div class="row"><span class="rl">' + t.from + (t.to !== t.from ? ' – ' + t.to : '') +
       (t.min >= 1 ? '<small>' + t.min + ' min</small>' : '') + '</span>' +
@@ -1892,8 +1892,8 @@ async function renderDist(){
     '<div class="caltot mid">' + calStat(t.eff != null ? t.eff : '—', 'kWh/100km') +
       calStat(t.chg_cost ? money(t.chg_cost) : '—', 'charging cost') +
       calStat(per != null ? per : '—', 'km per driving day') + '</div>' +
-    (t.regen > 0 && t.eff_hu != null ? '<div class="calnet">' + t.regen + ' kWh back from regen · head unit shows ' +
-      t.eff_hu + ' (before regen)</div>' : '') +
+    (t.regen > 0 && t.eff_hu != null ? '<div class="calnet">' + '≈' + t.regen + ' kWh back from regen · head unit shows ' +
+      t.eff_hu + '</div>' : '') +
     (t.days_driven ? '<div class="calsub">' + t.days_driven + (t.days_driven === 1 ? ' day' : ' days') +
       ' driven · ' + (t.trips || 0) + (t.trips === 1 ? ' trip' : ' trips') + ' · ' +
       (t.charges || 0) + (t.charges === 1 ? ' charge' : ' charges') + '</div>' : '') +
