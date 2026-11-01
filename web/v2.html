@@ -430,8 +430,8 @@
      hole, so the week always reads as seven days. */
   .etrack{fill:var(--card-2)}
   .ebar{fill:var(--acc)}
-  .ebar.net{fill:#fff;fill-opacity:.42}
-  .elegend .sw.swn{background:linear-gradient(90deg,var(--acc) 32%,rgba(255,255,255,.75) 32% 68%,var(--acc) 68%)}
+  .ebar.hu{fill:var(--acc);fill-opacity:.22}
+  .elegend .sw.swn{background:var(--acc);opacity:.3}
   .plbl .plsub{display:block;font-size:11.5px;font-weight:500;color:var(--mut);letter-spacing:0;
     text-transform:none;margin-top:2px}
   .calnet{font-size:12.5px;color:var(--mut);text-align:center;margin:-2px 0 var(--s3)}
@@ -1608,7 +1608,7 @@ function drawEnergy(hist, wltp){
   const L = 6, R = 6, T = 30, B = 30;          // room above for value labels, below for dates
   const days = hist.length || 7;
   const vals = hist.map(h => (h.eff == null ? null : h.eff));
-  const nets = hist.map(h => (h.net_eff == null ? null : h.net_eff));
+  const hus = hist.map(h => (h.eff_hu == null ? null : h.eff_hu));   // drops only, as the head unit counts
   const present = vals.filter(v => v != null);
 
   if(!present.length){
@@ -1618,7 +1618,7 @@ function drawEnergy(hist, wltp){
     return;
   }
 
-  const top = Math.max(...present, wltp || 0) * 1.16;
+  const top = Math.max(...present, ...hus.filter(v => v != null), wltp || 0) * 1.16;
   const band = (W - L - R) / days;
   const bw = Math.min(26, band * 0.52);
   const cx = i => L + band * i + band / 2;
@@ -1632,19 +1632,20 @@ function drawEnergy(hist, wltp){
     // faint full-height track so an empty day still occupies visible space
     track += '<rect class="etrack" x="' + x.toFixed(1) + '" y="' + (T + 4) + '" width="' + bw.toFixed(1) +
       '" height="' + (base - T - 4).toFixed(1) + '" rx="' + (bw / 2.6).toFixed(1) + '"/>';
+    // ghost bar behind: the same day before regen is credited (the head unit's figure)
+    const hv = hus[i];
+    if(v != null && hv != null && hv > v){
+      const hy = y(hv);
+      track += '<rect class="ebar hu" x="' + x.toFixed(1) + '" y="' + hy.toFixed(1) + '" width="' + bw.toFixed(1) +
+        '" height="' + (base - hy).toFixed(1) + '" rx="' + (bw / 2.6).toFixed(1) + '"><title>' + hv +
+        ' kWh/100km before regen (head unit)</title></rect>';
+    }
     if(v != null){
       const yy = y(v);
       bars += '<rect class="ebar" x="' + x.toFixed(1) + '" y="' + yy.toFixed(1) + '" width="' + bw.toFixed(1) +
         '" height="' + Math.max(3, base - yy).toFixed(1) + '" rx="' + (bw / 2.6).toFixed(1) + '"/>';
-      // inner bar: the same day net of regen (what actually left the pack)
-      const nv = nets[i];
-      if(nv != null && nv < v){
-        const nw = bw * 0.38, ny = y(nv);
-        bars += '<rect class="ebar net" x="' + (cx(i) - nw / 2).toFixed(1) + '" y="' + ny.toFixed(1) +
-          '" width="' + nw.toFixed(1) + '" height="' + Math.max(3, base - ny - 3).toFixed(1) +
-          '" rx="' + (nw / 2).toFixed(1) + '"><title>' + nv + ' kWh/100km net of regen</title></rect>';
-      }
-      labels += '<text class="eval" x="' + cx(i).toFixed(1) + '" y="' + (yy - 8).toFixed(1) +
+      const ly = (hv != null && hv > v) ? y(hv) : yy;          // clear the ghost bar too
+      labels += '<text class="eval" x="' + cx(i).toFixed(1) + '" y="' + (ly - 8).toFixed(1) +
         '" text-anchor="middle">' + v + '</text>';
     }
     dates += '<text class="eday' + (v == null ? ' off' : '') + '" x="' + cx(i).toFixed(1) +
@@ -1666,8 +1667,8 @@ function drawEnergy(hist, wltp){
     dates;
 
   const worse = present.filter(v => wltp && v > wltp).length;
-  const netKey = nets.some(v => v != null)
-    ? '<span><i class="sw swn"></i>net of regen</span>' : '';
+  const netKey = hus.some((v, i) => v != null && vals[i] != null && v > vals[i])
+    ? '<span><i class="sw swn"></i>before regen</span>' : '';
   $('eLegend').innerHTML = wltp
     ? '<span><i class="sw"></i>kWh/100km</span>' + netKey + '<span><i class="sw d"></i>WLTP ' + wltp + '</span>' +
       '<span class="gap">' + (worse ? worse + ' of ' + present.length + ' days above rating'
@@ -1824,8 +1825,8 @@ function calDay(x, cy, cm){
   let h = '<div class="rowcard calcard"><div class="calch">' + when + '</div>' +
     '<div class="caltot">' + calStat(x.km, 'km driven') + calStat(x.kwh || '—', 'kWh used') +
     calStat(x.eff != null ? x.eff : '—', 'kWh/100km') + '</div>' +
-    (x.net_eff != null ? '<div class="calnet">' + x.net_eff + ' kWh/100km net of regen · ' + x.regen +
-      ' kWh back from regen</div>' : '');
+    (x.regen > 0 && x.eff_hu != null ? '<div class="calnet">' + x.regen + ' kWh back from regen · head unit shows ' +
+      x.eff_hu + ' (before regen)</div>' : '');
   (x.trips || []).forEach(t => {
     h += '<div class="row"><span class="rl">' + t.from + (t.to !== t.from ? ' – ' + t.to : '') +
       (t.min >= 1 ? '<small>' + t.min + ' min</small>' : '') + '</span>' +
@@ -1891,8 +1892,8 @@ async function renderDist(){
     '<div class="caltot mid">' + calStat(t.eff != null ? t.eff : '—', 'kWh/100km') +
       calStat(t.chg_cost ? money(t.chg_cost) : '—', 'charging cost') +
       calStat(per != null ? per : '—', 'km per driving day') + '</div>' +
-    (t.net_eff != null ? '<div class="calnet">' + t.net_eff + ' kWh/100km net of regen · ' + t.regen +
-      ' kWh back from regen</div>' : '') +
+    (t.regen > 0 && t.eff_hu != null ? '<div class="calnet">' + t.regen + ' kWh back from regen · head unit shows ' +
+      t.eff_hu + ' (before regen)</div>' : '') +
     (t.days_driven ? '<div class="calsub">' + t.days_driven + (t.days_driven === 1 ? ' day' : ' days') +
       ' driven · ' + (t.trips || 0) + (t.trips === 1 ? ' trip' : ' trips') + ' · ' +
       (t.charges || 0) + (t.charges === 1 ? ' charge' : ' charges') + '</div>' : '') +

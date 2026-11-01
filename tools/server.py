@@ -669,9 +669,15 @@ def day_regen(data, resync_skip):
 
 
 def net_eff(used, regen, km, eff):
-    """kWh/100km net of regen, shown only beside a day whose plain figure passed its gate."""
+    """kWh/100km net of regen -- the dashboard's headline efficiency -- for a day whose drops-only
+    (head-unit) figure passed its 9-30 gate; the gate checks the measurement, the net can be lower."""
     n = used - regen
     return round(n / km * 100, 1) if (eff is not None and km >= 1 and n > 0) else None
+
+
+def net_day(kwh_day, regen_day):
+    """{day: kWh net of regen}: what driving actually took out of the pack that day."""
+    return {k: max(0.0, v - regen_day.get(k, 0.0)) for k, v in kwh_day.items()}
 
 
 def build_sessions(fr, now):
@@ -1171,10 +1177,13 @@ def _summary():
         if eff is not None and not (9 <= eff <= 30):   # 1%-coarse SoC over short trips lies; hide it
             eff = None
         r = regen_day.get(day, 0.0)
-        series.append({"day": day[5:], "km": km, "kwh": round(u, 1), "eff": eff,
-                       "regen": round(r, 1), "net_eff": net_eff(u, r, km, eff)})
+        # headline = net of regen; *_hu = drops only, the way the head unit counts (22.6 vs 13.3
+        # on the Puncak round trip)
+        series.append({"day": day[5:], "km": km, "kwh": round(max(0.0, u - r), 1),
+                       "eff": net_eff(u, r, km, eff), "kwh_hu": round(u, 1), "eff_hu": eff,
+                       "regen": round(r, 1)})
     out["history"] = series
-    res = analyze(data, trips_all, kwh_day)
+    res = analyze(data, trips_all, net_day(kwh_day, regen_day))
     out["battery_kwh"] = res["battery_kwh"]
     out["energy"] = res["energy"]
     # prefer the car's own BMS consumption (byte55) over the coarse SoC-derived estimate.
@@ -1293,14 +1302,15 @@ def month_history(month):
             eff = None
         c = chg.get(k)
         r = regen_day.get(k, 0.0)
-        days.append({"d": day, "km": km, "kwh": round(u, 1), "eff": eff,
-                     "regen": round(r, 1), "net_eff": net_eff(u, r, km, eff),
+        days.append({"d": day, "km": km, "kwh": round(max(0.0, u - r), 1),
+                     "eff": net_eff(u, r, km, eff), "kwh_hu": round(u, 1), "eff_hu": eff,
+                     "regen": round(r, 1),
                      "chg_kwh": round(c["kwh"], 1) if c else 0,
                      "chg_cost": round(c["cost"]) if c else 0,
                      "trips": trips_day.get(k, []),
                      "charges": c["list"] if c else []})
     # month efficiency only over days that pass the same gate, so one bad day cannot skew it
-    ok = [x for x in days if x["eff"] is not None]
+    ok = [x for x in days if x["eff_hu"] is not None]
     ok_km = sum(x["km"] for x in ok)
     return {"month": f"{y:04d}-{m:02d}", "days": days,
             "totals": {"km": sum(x["km"] for x in days),
@@ -1310,10 +1320,11 @@ def month_history(month):
                        "days_driven": sum(1 for x in days if x["km"] > 0),
                        "trips": sum(len(x["trips"]) for x in days),
                        "charges": sum(len(x["charges"]) for x in days),
-                       "eff": round(sum(x["kwh"] for x in ok) / ok_km * 100, 1) if ok_km else None,
-                       "regen": round(sum(x["regen"] for x in days), 1),
-                       "net_eff": round(sum(x["kwh"] - x["regen"] for x in ok) / ok_km * 100, 1)
-                                  if ok_km and sum(x["kwh"] - x["regen"] for x in ok) > 0 else None},
+                       "kwh_hu": round(sum(x["kwh_hu"] for x in days), 1),
+                       "eff": round(sum(x["kwh"] for x in ok) / ok_km * 100, 1)
+                              if ok_km and sum(x["kwh"] for x in ok) > 0 else None,
+                       "eff_hu": round(sum(x["kwh_hu"] for x in ok) / ok_km * 100, 1) if ok_km else None,
+                       "regen": round(sum(x["regen"] for x in days), 1)},
             "resync_km": "skip" if resync_skip else "count"}
 
 # ---- long-trip planner: geocode (Nominatim) + route (OSRM) + SPKLU (Overpass/OSM), all keyless ----
