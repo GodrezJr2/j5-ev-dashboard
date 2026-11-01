@@ -430,6 +430,11 @@
      hole, so the week always reads as seven days. */
   .etrack{fill:var(--card-2)}
   .ebar{fill:var(--acc)}
+  .ebar.net{fill:#fff;fill-opacity:.42}
+  .elegend .sw.swn{background:linear-gradient(90deg,var(--acc) 32%,rgba(255,255,255,.75) 32% 68%,var(--acc) 68%)}
+  .plbl .plsub{display:block;font-size:11.5px;font-weight:500;color:var(--mut);letter-spacing:0;
+    text-transform:none;margin-top:2px}
+  .calnet{font-size:12.5px;color:var(--mut);text-align:center;margin:-2px 0 var(--s3)}
   .eval{font-size:10px;font-weight:700;fill:var(--mut);font-variant-numeric:tabular-nums}
   .eday{font-size:9px;fill:var(--fnt);font-variant-numeric:tabular-nums}
   .eday.off{opacity:.45}
@@ -1575,7 +1580,8 @@ function renderEnergy(){
   const hist = S.history || [];
   const wltp = S.wltp_kwh_100;
   el.innerHTML =
-    '<div class="panel"><div class="plbl">Recent average</div>' +
+    '<div class="panel"><div class="plbl">Rolling average from the car<small class="plsub">the figure the car ' +
+      'itself reports, over its recent driving</small></div>' +
     '<div class="pval num">' + (e.consumption != null ? e.consumption : '\u2014') +
       '<span class="u">kWh/100km</span></div>' +
     '<div class="stats">' +
@@ -1602,6 +1608,7 @@ function drawEnergy(hist, wltp){
   const L = 6, R = 6, T = 30, B = 30;          // room above for value labels, below for dates
   const days = hist.length || 7;
   const vals = hist.map(h => (h.eff == null ? null : h.eff));
+  const nets = hist.map(h => (h.net_eff == null ? null : h.net_eff));
   const present = vals.filter(v => v != null);
 
   if(!present.length){
@@ -1629,6 +1636,14 @@ function drawEnergy(hist, wltp){
       const yy = y(v);
       bars += '<rect class="ebar" x="' + x.toFixed(1) + '" y="' + yy.toFixed(1) + '" width="' + bw.toFixed(1) +
         '" height="' + Math.max(3, base - yy).toFixed(1) + '" rx="' + (bw / 2.6).toFixed(1) + '"/>';
+      // inner bar: the same day net of regen (what actually left the pack)
+      const nv = nets[i];
+      if(nv != null && nv < v){
+        const nw = bw * 0.38, ny = y(nv);
+        bars += '<rect class="ebar net" x="' + (cx(i) - nw / 2).toFixed(1) + '" y="' + ny.toFixed(1) +
+          '" width="' + nw.toFixed(1) + '" height="' + Math.max(3, base - ny - 3).toFixed(1) +
+          '" rx="' + (nw / 2).toFixed(1) + '"><title>' + nv + ' kWh/100km net of regen</title></rect>';
+      }
       labels += '<text class="eval" x="' + cx(i).toFixed(1) + '" y="' + (yy - 8).toFixed(1) +
         '" text-anchor="middle">' + v + '</text>';
     }
@@ -1651,11 +1666,13 @@ function drawEnergy(hist, wltp){
     dates;
 
   const worse = present.filter(v => wltp && v > wltp).length;
+  const netKey = nets.some(v => v != null)
+    ? '<span><i class="sw swn"></i>net of regen</span>' : '';
   $('eLegend').innerHTML = wltp
-    ? '<span><i class="sw"></i>kWh/100km</span><span><i class="sw d"></i>WLTP ' + wltp + '</span>' +
+    ? '<span><i class="sw"></i>kWh/100km</span>' + netKey + '<span><i class="sw d"></i>WLTP ' + wltp + '</span>' +
       '<span class="gap">' + (worse ? worse + ' of ' + present.length + ' days above rating'
                                     : 'every logged day at or under rating') + '</span>'
-    : '<span><i class="sw"></i>kWh/100km</span>';
+    : '<span><i class="sw"></i>kWh/100km</span>' + netKey;
 
   if(!REDUCED()){
     // grow the bars out of the baseline, left to right
@@ -1806,7 +1823,9 @@ function calDay(x, cy, cm){
     {weekday: 'long', day: 'numeric', month: 'long'});
   let h = '<div class="rowcard calcard"><div class="calch">' + when + '</div>' +
     '<div class="caltot">' + calStat(x.km, 'km driven') + calStat(x.kwh || '—', 'kWh used') +
-    calStat(x.eff != null ? x.eff : '—', 'kWh/100km') + '</div>';
+    calStat(x.eff != null ? x.eff : '—', 'kWh/100km') + '</div>' +
+    (x.net_eff != null ? '<div class="calnet">' + x.net_eff + ' kWh/100km net of regen · ' + x.regen +
+      ' kWh back from regen</div>' : '');
   (x.trips || []).forEach(t => {
     h += '<div class="row"><span class="rl">' + t.from + (t.to !== t.from ? ' – ' + t.to : '') +
       (t.min >= 1 ? '<small>' + t.min + ' min</small>' : '') + '</span>' +
@@ -1872,6 +1891,8 @@ async function renderDist(){
     '<div class="caltot mid">' + calStat(t.eff != null ? t.eff : '—', 'kWh/100km') +
       calStat(t.chg_cost ? money(t.chg_cost) : '—', 'charging cost') +
       calStat(per != null ? per : '—', 'km per driving day') + '</div>' +
+    (t.net_eff != null ? '<div class="calnet">' + t.net_eff + ' kWh/100km net of regen · ' + t.regen +
+      ' kWh back from regen</div>' : '') +
     (t.days_driven ? '<div class="calsub">' + t.days_driven + (t.days_driven === 1 ? ' day' : ' days') +
       ' driven · ' + (t.trips || 0) + (t.trips === 1 ? ' trip' : ' trips') + ' · ' +
       (t.charges || 0) + (t.charges === 1 ? ' charge' : ' charges') + '</div>' : '') +

@@ -638,6 +638,42 @@ def day_energy(data, resync_skip):
             out[k] = out.get(k, 0.0) + (b0 - b1) / 100.0 * CAP_KWH
     return out
 
+def day_regen(data, resync_skip):
+    """kWh put back per day by regenerative braking: SoC RISES between consecutive frames while the
+    car was moving or within 15 min of it, never while a charge is running. Same windows and
+    filters as day_energy(), so the two net out. day_energy() counts drops only, which is how the
+    head unit's own figure works (it matched the HU to the decimal on a 190 km Puncak round trip:
+    22.6 kWh/100km); used minus this is the net energy that actually left the pack (14.3 on that
+    trip, 17 kWh back on the descent). 1%-coarse SoC flicker lands in both and cancels in the net.
+    Returns {YYYY-MM-DD: kwh}."""
+    fr = [(ts, d2.get("battery"), d2.get("odometer"),
+           # plugged in = a connector (b56) or the charging state (b57). Not b62-63 power: that
+           # also reads regen kW while driving (16-30 kW on the Puncak descent, state and mode 0)
+           d2.get("charge_state") == 1 or bool(d2.get("charge_mode")))
+          for ts, dt2, d2 in data if d2.get("battery") is not None]
+    out = {}
+    last_move = 0
+    for i in range(1, len(fr)):
+        t0, b0, o0, c0 = fr[i-1]; t1, b1, o1, c1 = fr[i]
+        if t1 - t0 > MAX_PAIR_GAP:
+            last_move = 0
+            continue
+        if o0 is not None and o1 is not None and o1 > o0:
+            if resync_skip and (o1 - o0) > max(ODO_RESYNC_KM, (t1 - t0) / 3600.0 * ODO_MAX_KMH):
+                continue
+            last_move = t1
+        if b0 is not None and b1 is not None and 0 < b1 - b0 <= MAX_SOC_DROP                 and last_move and t1 - last_move <= 900 and not (c0 or c1):
+            k = time.strftime("%Y-%m-%d", time.localtime(t1))
+            out[k] = out.get(k, 0.0) + (b1 - b0) / 100.0 * CAP_KWH
+    return out
+
+
+def net_eff(used, regen, km, eff):
+    """kWh/100km net of regen, shown only beside a day whose plain figure passed its gate."""
+    n = used - regen
+    return round(n / km * 100, 1) if (eff is not None and km >= 1 and n > 0) else None
+
+
 def build_sessions(fr, now):
     """fr = [(ts, soc, odo)] sorted asc. A charge session = parked (odo flat) frames
     where SoC trends up. Robust to dense frames where most steps show 0% change."""
@@ -1112,6 +1148,7 @@ def _summary():
     out["resync_km"] = "skip" if resync_skip else "count"
     trips_all = build_trips(data, resync_skip)
     kwh_day = day_energy(data, resync_skip)
+    regen_day = day_regen(data, resync_skip)
     km_day = {}
     for t in trips_all:
         k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
@@ -1133,7 +1170,9 @@ def _summary():
         eff = round(u / km * 100, 1) if (km >= 1 and u > 0) else None
         if eff is not None and not (9 <= eff <= 30):   # 1%-coarse SoC over short trips lies; hide it
             eff = None
-        series.append({"day": day[5:], "km": km, "kwh": round(u, 1), "eff": eff})
+        r = regen_day.get(day, 0.0)
+        series.append({"day": day[5:], "km": km, "kwh": round(u, 1), "eff": eff,
+                       "regen": round(r, 1), "net_eff": net_eff(u, r, km, eff)})
     out["history"] = series
     res = analyze(data, trips_all, kwh_day)
     out["battery_kwh"] = res["battery_kwh"]
@@ -1221,6 +1260,7 @@ def month_history(month):
     resync_skip = _resync_skip()
     trips = build_trips(data, resync_skip)
     kwh_day = day_energy(data, resync_skip)
+    regen_day = day_regen(data, resync_skip)
     km_day = {}
     for t in trips:
         k = time.strftime("%Y-%m-%d", time.localtime(t["start_ts"]))
@@ -1252,7 +1292,9 @@ def month_history(month):
         if eff is not None and not (9 <= eff <= 30):    # same gate as the 7-day history
             eff = None
         c = chg.get(k)
+        r = regen_day.get(k, 0.0)
         days.append({"d": day, "km": km, "kwh": round(u, 1), "eff": eff,
+                     "regen": round(r, 1), "net_eff": net_eff(u, r, km, eff),
                      "chg_kwh": round(c["kwh"], 1) if c else 0,
                      "chg_cost": round(c["cost"]) if c else 0,
                      "trips": trips_day.get(k, []),
@@ -1268,7 +1310,10 @@ def month_history(month):
                        "days_driven": sum(1 for x in days if x["km"] > 0),
                        "trips": sum(len(x["trips"]) for x in days),
                        "charges": sum(len(x["charges"]) for x in days),
-                       "eff": round(sum(x["kwh"] for x in ok) / ok_km * 100, 1) if ok_km else None},
+                       "eff": round(sum(x["kwh"] for x in ok) / ok_km * 100, 1) if ok_km else None,
+                       "regen": round(sum(x["regen"] for x in days), 1),
+                       "net_eff": round(sum(x["kwh"] - x["regen"] for x in ok) / ok_km * 100, 1)
+                                  if ok_km and sum(x["kwh"] - x["regen"] for x in ok) > 0 else None},
             "resync_km": "skip" if resync_skip else "count"}
 
 # ---- long-trip planner: geocode (Nominatim) + route (OSRM) + SPKLU (Overpass/OSM), all keyless ----
