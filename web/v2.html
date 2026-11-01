@@ -1220,7 +1220,14 @@ function huSeatHtml(seats){
   });
   return h + '<div class="cap">Tap a seat to step its level</div></div>';
 }
+// what the Climate page draws from the car's state; it is redrawn on a poll only when this changes
+let acShown = null;
+function acSig(){
+  return JSON.stringify([S.ac_on, S.defrost_front, S.seat_vent, S.seat_heat, S.ac_temp_c,
+                         S.wheel_heat, S.windshield_heat, S.air_purifier]);
+}
 function renderAc(){
+  acShown = acSig();
   const el = $('pgAcBody');
   const {mn, mx, st} = acRange();
   const ac = (CAPS && CAPS.ac) || {};
@@ -2136,12 +2143,20 @@ async function load(){
     renderHero(); renderQA(); renderCharging(); renderCards();
     if(S._acctDone) renderAcct();
     if(openKey === 'doors') liveDoors();
+    if(openKey === 'ac' && acSig() !== acShown) renderAc();   // only on a real change: a redraw restarts the airflow loop
   }catch(e){ /* auth redirect handled in api() */ }
 }
 $('hRefresh').onclick = async () => {
   const b = $('hRefresh'); b.classList.add('spin');
-  try{ await api('api/refresh'); }catch(e){}
-  await load(); b.classList.remove('spin');
+  // api/refresh pokes the car and answers with the fresh summary, so no second load() round trip
+  try{
+    S = await api('api/refresh');
+    renderHero(); renderQA(); renderCharging(); renderCards();
+    if(S._acctDone) renderAcct();
+    if(openKey === 'doors') liveDoors();
+    if(openKey === 'ac') renderAc();
+  }catch(e){ await load(); }
+  b.classList.remove('spin');
 };
 $('aEye').onclick = () => { vinShown = !vinShown; renderAcct(); };
 
@@ -2155,12 +2170,13 @@ $('aEye').onclick = () => { vinShown = !vinShown; renderAcct(); };
   const h = location.hash.slice(1);
   if(PAGES[h]) openPage(h);           // deep link: v2.html#doors / #tyres / #energy / #ac
   if(h === 'acct') document.querySelector('.tabbar button[data-v="acct"]').click();
-  // 60 s on the home view; 4 s while the Doors page is open, so a door opened at the car shows
-  // on the 3D model within a few seconds (the logger streams near real-time while unlocked).
+  // 15 s on the home view (the logger stores each pushed frame the moment it lands, and the
+  // summary is incremental now, so this is cheap); 4 s on Doors and Climate, so a door or the A/C
+  // switched at the car shows within a few seconds.
   let lastLoad = Date.now();
   setInterval(() => {
     if(document.hidden) return;
-    const every = openKey === 'doors' ? 4000 : 60000;
+    const every = (openKey === 'doors' || openKey === 'ac') ? 4000 : 15000;
     if(Date.now() - lastLoad >= every){ lastLoad = Date.now(); load(); }
   }, 1000);
 })();

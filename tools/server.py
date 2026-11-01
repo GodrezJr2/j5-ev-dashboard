@@ -27,7 +27,7 @@ def live_poll():
         return False, "busy"
     try:
         import logger as L
-        conn = sqlite3.connect(DB)
+        conn = db_connect()
         try:
             st = L.poll_once(conn); conn.commit()
         finally:
@@ -952,6 +952,57 @@ def demo_summary():
     lf["saved"] = max(0, round(lf["km"] * (PETROL_RP_L / PETROL_KM_L - out["insights"].get("rp_per_km", 0))))
     return out
 
+def db_connect():
+    """SQLite connection for the dashboard. WAL lets the logger keep writing while a page reads
+    (in the old rollback-journal mode a reader blocked the logger's commits and it looped on
+    'database is locked'); the timeout makes a brief write lock wait instead of failing."""
+    conn = sqlite3.connect(DB, timeout=15)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+    except sqlite3.OperationalError:
+        pass
+    return conn
+
+
+# Decoded telemetry kept between requests. Decoding every stored frame on each call took 15-30 s
+# once the J5 log passed 300k rows, so the cache reads only rows newer than the last one seen.
+# Frames mostly repeat the previous state byte for byte (17.5k distinct blobs in 308k rows), so
+# decode() results are shared per blob; nothing mutates a decoded dict after decode() returns.
+# If the row count does not add up (rows deleted or rewritten), the cache rebuilds from scratch.
+_TELE = {"ts": None, "n": 0, "data": [], "memo": {}}
+_tele_lock = threading.Lock()
+
+
+def decode_cached(raw):
+    memo = _TELE["memo"]
+    d = memo.get(raw)
+    if d is None:
+        d = memo[raw] = decode(raw)
+    return d
+
+
+def telemetry(conn):
+    """Every online frame as (ts, dt, decoded), oldest first. A fresh list; the dicts are shared."""
+    with _tele_lock:
+        c = _TELE
+        n = conn.execute("SELECT count(*) FROM telemetry").fetchone()[0]
+        if c["ts"] is None:
+            new = conn.execute("SELECT ts,dt,online,raw FROM telemetry ORDER BY ts").fetchall()
+        else:
+            new = conn.execute("SELECT ts,dt,online,raw FROM telemetry WHERE ts > ? ORDER BY ts",
+                               (c["ts"],)).fetchall()
+            if c["n"] + len(new) != n:                 # something other than an append happened
+                c.update(ts=None, n=0, data=[])
+                new = conn.execute("SELECT ts,dt,online,raw FROM telemetry ORDER BY ts").fetchall()
+        for ts, dt, online, raw in new:
+            if online == 1 and raw:
+                c["data"].append((ts, dt, decode_cached(raw)))
+        if new:
+            c["ts"] = new[-1][0]
+        c["n"] += len(new)
+        return list(c["data"])
+
+
 def summary():
     """Public /api/summary payload.
 
@@ -992,15 +1043,12 @@ def _summary():
             "history": [], "resync_km": "skip"}
     if not os.path.exists(DB):
         return out
-    conn = sqlite3.connect(DB)
-    rows = conn.execute(
-        "SELECT ts,dt,online,raw FROM telemetry ORDER BY ts").fetchall()
-    # decode authoritatively from the stored raw blob (offset fixes apply to all history)
-    data = []
-    for ts, dt, online, raw in rows:
-        if online != 1 or not raw:
-            continue
-        data.append((ts, dt, decode(raw)))
+    conn = db_connect()
+    try:
+        # decoded authoritatively from the stored raw blob (offset fixes apply to all history)
+        data = telemetry(conn)
+    finally:
+        conn.close()
     if not data:
         return out
     ts, dt, dec = data[-1]
@@ -1160,15 +1208,14 @@ def month_history(month):
              "resync_km": "skip"}
     if not os.path.exists(DB):
         return empty
-    conn = sqlite3.connect(DB)
-    rows = conn.execute(
-        "SELECT ts,dt,online,raw FROM telemetry WHERE ts >= ? AND ts < ? ORDER BY ts",
-        (t0, t1)).fetchall()
-    data = []
-    for ts, dt, online, raw in rows:
-        if online != 1 or not raw:
-            continue
-        data.append((ts, dt, decode(raw)))
+    conn = db_connect()
+    try:
+        rows = conn.execute(
+            "SELECT ts,dt,online,raw FROM telemetry WHERE ts >= ? AND ts < ? ORDER BY ts",
+            (t0, t1)).fetchall()
+    finally:
+        conn.close()
+    data = [(ts, dt, decode_cached(raw)) for ts, dt, online, raw in rows if online == 1 and raw]
     if not data:
         return empty
     resync_skip = _resync_skip()

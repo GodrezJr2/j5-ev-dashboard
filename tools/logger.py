@@ -363,7 +363,11 @@ def main():
     ap.add_argument("--adaptive", action="store_true", help="fast when awake, slow when parked")
     ap.add_argument("--stream", action="store_true", help="persistent WS socket, push-driven (recommended)")
     args = ap.parse_args()
-    conn = sqlite3.connect(DB)
+    conn = sqlite3.connect(DB, timeout=15)
+    try:                                   # WAL: the dashboard can read while this keeps writing
+        conn.execute("PRAGMA journal_mode=WAL")
+    except sqlite3.OperationalError:
+        pass
     conn.executescript(SCHEMA)
     _init_glitch_guard(conn)
     if args.stream:
