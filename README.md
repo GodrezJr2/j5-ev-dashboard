@@ -32,19 +32,34 @@ project just reads your own account and presents it properly.
 
 ## Demo
 
-https://github.com/user-attachments/assets/f17d167d-cbf9-4eb0-92b4-44361f6da6a5
+<p align="center"><img src="docs/media/walkthrough.gif" width="800" alt="Walkthrough of the v2 interface: home, energy, distance calendar, 3D doors view, charging and the charge calculator"></p>
 
-*1½ minutes of the dashboard running live on a phone against a real Jaecoo J5 EV — plate and VIN masked. Also [downloadable](https://github.com/GodrezJr2/j5-ev-dashboard/releases/download/assets/j5-dashboard-demo.mp4).*
+*One continuous take of the v2 interface on a phone-sized screen, running the built-in demo mode
+(`python server.py --demo`, sample data, no account needed). Cut in [Motion Studio](https://github.com/GodrezJr2/motion-studio).*
+
+Recorded on a real car instead: [1½ minutes on a phone against a real Jaecoo J5 EV](https://github.com/user-attachments/assets/f17d167d-cbf9-4eb0-92b4-44361f6da6a5)
+(Classic interface, plate and VIN masked, also [downloadable](https://github.com/GodrezJr2/j5-ev-dashboard/releases/download/assets/j5-dashboard-demo.mp4)).
 
 ## Screenshots
 
-| Dashboard | Charging |
-| :---: | :---: |
-| ![Home dashboard — battery, range, tyres, efficiency, insights](docs/screenshots/home.png) | ![Charge tab — battery care, charge stats, charge-to planner](docs/screenshots/charge.png) |
-| **Trip planner** | **SPKLU map** |
-| ![Long-trip planner — route, on-route charge stops with connectors and arrival %](docs/screenshots/trip-planner.png) | ![Interactive SPKLU map — pins, live availability, directions](docs/screenshots/spklu-map.png) |
+The **v2 interface** (`/v2.html`, or pick it as the default under Settings). The pictures follow your GitHub theme;
+both a light and a dark theme are built in.
 
-*Plate and VIN are masked by default (privacy eye-toggle). Light theme shown — a dark theme and EN/ID language toggle are built in.*
+<table>
+<tr><th>Home</th><th>Energy</th><th>Distance</th></tr>
+<tr><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-home-dark.jpg"><img src="docs/screenshots/v2-home-light.jpg" width="260" alt="Home: range, battery, climate, doors and tyres"></picture></td><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-energy-dark.jpg"><img src="docs/screenshots/v2-energy-light.jpg" width="260" alt="Energy: kWh/100 km per day, net of regen, beside the head-unit figure"></picture></td><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-dist-dark.jpg"><img src="docs/screenshots/v2-dist-light.jpg" width="260" alt="Distance: a calendar of km, energy and charging cost per day"></picture></td></tr>
+<tr><th>Doors &amp; windows</th><th>Charging</th><th>Charge calculator</th></tr>
+<tr><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-doors-dark.jpg"><img src="docs/screenshots/v2-doors-light.jpg" width="260" alt="Doors and windows on a 3D car you can turn, with remote controls"></picture></td><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-chg-dark.jpg"><img src="docs/screenshots/v2-chg-light.jpg" width="260" alt="Charging: last session curve, kWh in and cost"></picture></td><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-plan-dark.jpg"><img src="docs/screenshots/v2-plan-light.jpg" width="260" alt="Charge calculator: time, kWh and cost to a target %"></picture></td></tr>
+</table>
+
+*Shown with demo data. Plate and VIN are masked by default (privacy eye-toggle).*
+
+The **Classic interface** (the default at `/`) adds the long-trip planner and the SPKLU map:
+
+<table>
+<tr><th>Trip planner</th><th>SPKLU map</th></tr>
+<tr><td align="center" valign="top"><img src="docs/screenshots/trip-planner.png" width="300" alt="Long-trip planner — route, on-route charge stops with connectors and arrival %"></td><td align="center" valign="top"><img src="docs/screenshots/spklu-map.png" width="300" alt="Interactive SPKLU map — pins, live availability, directions"></td></tr>
+</table>
 
 ---
 

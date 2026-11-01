@@ -33,20 +33,35 @@ project ini cuma baca akunmu sendiri dan nampilinnya dengan benar.
 
 ## Demo
 
-https://github.com/user-attachments/assets/f17d167d-cbf9-4eb0-92b4-44361f6da6a5
+<p align="center"><img src="docs/media/walkthrough.gif" width="800" alt="Walkthrough tampilan v2: beranda, energi, kalender jarak, tampilan pintu 3D, pengisian dan kalkulator cas"></p>
 
-*1½ menit dashboard-nya jalan langsung di HP, datanya dari Jaecoo J5 EV asli — plat & VIN disamarkan. Bisa juga [diunduh](https://github.com/GodrezJr2/j5-ev-dashboard/releases/download/assets/j5-dashboard-demo.mp4).*
+*Satu rekaman utuh tampilan v2 di layar seukuran HP, jalan di mode demo bawaan
+(`python server.py --demo`, data contoh, tanpa akun). Diedit di [Motion Studio](https://github.com/GodrezJr2/motion-studio).*
+
+Versi mobil asli: [1½ menit di HP dengan Jaecoo J5 EV asli](https://github.com/user-attachments/assets/f17d167d-cbf9-4eb0-92b4-44361f6da6a5)
+(tampilan Classic, plat & VIN disamarkan, bisa juga [diunduh](https://github.com/GodrezJr2/j5-ev-dashboard/releases/download/assets/j5-dashboard-demo.mp4)).
 
 ## Screenshot
 
-| Dashboard | Pengisian |
-| :---: | :---: |
-| ![Dashboard utama](docs/screenshots/home.png) | ![Tab charge](docs/screenshots/charge.png) |
-| **Perencana perjalanan** | **Peta SPKLU** |
-| ![Perencana perjalanan](docs/screenshots/trip-planner.png) | ![Peta SPKLU](docs/screenshots/spklu-map.png) |
+**Tampilan v2** (`/v2.html`, atau jadikan default lewat Pengaturan). Gambarnya ikut tema GitHub kamu;
+tema terang dan gelap dua-duanya sudah ada.
 
-*Plat & VIN disembunyikan secara default (tombol mata privasi). Tema terang yang ditampilkan —
-tema gelap & toggle bahasa EN/ID juga sudah ada.*
+<table>
+<tr><th>Beranda</th><th>Energi</th><th>Jarak</th></tr>
+<tr><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-home-dark.jpg"><img src="docs/screenshots/v2-home-light.jpg" width="260" alt="Home: range, battery, climate, doors and tyres"></picture></td><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-energy-dark.jpg"><img src="docs/screenshots/v2-energy-light.jpg" width="260" alt="Energy: kWh/100 km per day, net of regen, beside the head-unit figure"></picture></td><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-dist-dark.jpg"><img src="docs/screenshots/v2-dist-light.jpg" width="260" alt="Distance: a calendar of km, energy and charging cost per day"></picture></td></tr>
+<tr><th>Pintu &amp; jendela</th><th>Pengisian</th><th>Kalkulator cas</th></tr>
+<tr><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-doors-dark.jpg"><img src="docs/screenshots/v2-doors-light.jpg" width="260" alt="Doors and windows on a 3D car you can turn, with remote controls"></picture></td><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-chg-dark.jpg"><img src="docs/screenshots/v2-chg-light.jpg" width="260" alt="Charging: last session curve, kWh in and cost"></picture></td><td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2-plan-dark.jpg"><img src="docs/screenshots/v2-plan-light.jpg" width="260" alt="Charge calculator: time, kWh and cost to a target %"></picture></td></tr>
+</table>
+
+
+*Pakai data demo. Plat & VIN disembunyikan secara default (tombol mata privasi).*
+
+**Tampilan Classic** (default di `/`) punya tambahan perencana perjalanan jauh dan peta SPKLU:
+
+<table>
+<tr><th>Perencana perjalanan</th><th>Peta SPKLU</th></tr>
+<tr><td align="center" valign="top"><img src="docs/screenshots/trip-planner.png" width="300" alt="Perencana perjalanan"></td><td align="center" valign="top"><img src="docs/screenshots/spklu-map.png" width="300" alt="Peta SPKLU"></td></tr>
+</table>
 
 ---
 

@@ -185,6 +185,15 @@ def _vehicle_raw(force=False):
 def control_caps():
     """What THIS car can be told to do, straight from CarLinko's vehicleControlConfig -- so the
     Control tab only renders buttons the car actually supports."""
+    if DEMO:                       # a J5's own config, never the account's (plate included)
+        return {"lock": True, "windows": {"open": True, "close": True, "vent": True},
+                "sunroof": {"open": True, "tilt": True}, "liftgate": True, "trunk": False,
+                "find": True, "charging": True,
+                "ac": {"switch": True, "temp": True, "min": 15.5, "max": 30.5, "step": 0.5,
+                       "rapidCool": True, "rapidHeat": True, "defog": True, "purifier": False},
+                "seats": {"heat": {"left": 0, "right": 0, "rear": 0},
+                          "vent": {"left": 3, "right": 3, "rear": 0}},
+                "steering_heat": False, "windshield_heat": False, "plate": "B 1234 DEMO"}
     v = _vehicle_raw()
     cfg = v.get("vehicleControlConfig")
     if isinstance(cfg, str):
@@ -937,6 +946,44 @@ def insights(out):
         ins["range_verdict"] = "accurate" if 0.95 <= r <= 1.06 else ("optimistic" if r < 0.95 else "conservative")
     return ins
 
+def demo_month(y, m, ndays):
+    """Fictional calendar month for demo mode: seeded per month so it never changes between
+    loads, filled up to today only."""
+    import random
+    rnd = random.Random(y * 100 + m)
+    now = time.localtime()
+    last = ndays if (y, m) < (now.tm_year, now.tm_mon) else (now.tm_mday if (y, m) == (now.tm_year, now.tm_mon) else 0)
+    days = []
+    for d in range(1, ndays + 1):
+        km = 0 if d > last or rnd.random() < 0.2 else rnd.choice((8, 14, 22, 31, 38, 46, 57, 64, 112))
+        eff = round(rnd.uniform(11.6, 14.4), 1) if km >= 10 else None
+        kwh = round(km * (eff or 13.0) / 100, 1)
+        rg = round(kwh * rnd.uniform(0.05, 0.12), 1)
+        chg = d <= last and d % 6 == 2
+        ck = round(rnd.uniform(24, 46), 1) if chg else 0
+        days.append({"d": d, "km": km, "kwh": kwh, "eff": eff, "kwh_hu": round(kwh + rg, 1),
+                     "eff_hu": round((kwh + rg) / km * 100, 1) if eff else None, "regen": rg,
+                     "chg_kwh": ck, "chg_cost": round(ck / 0.92 * TARIFF_IDR) if chg else 0,
+                     "trips": [{"from": "07:40", "to": "08:25", "km": km, "min": 45}] if km else [],
+                     "charges": [{"at": "19:10", "kwh": ck, "cost": round(ck / 0.92 * TARIFF_IDR),
+                                  "soc0": 34, "soc1": 88, "min": 38, "avg_kw": 48.5}] if chg else []})
+    ok = [x for x in days if x["eff"] is not None]
+    ok_km = sum(x["km"] for x in ok)
+    return {"month": f"{y:04d}-{m:02d}", "days": days, "demo": True,
+            "totals": {"km": sum(x["km"] for x in days),
+                       "kwh": round(sum(x["kwh"] for x in days), 1),
+                       "chg_kwh": round(sum(x["chg_kwh"] for x in days), 1),
+                       "chg_cost": round(sum(x["chg_cost"] for x in days)),
+                       "days_driven": sum(1 for x in days if x["km"] > 0),
+                       "trips": sum(len(x["trips"]) for x in days),
+                       "charges": sum(len(x["charges"]) for x in days),
+                       "kwh_hu": round(sum(x["kwh_hu"] for x in days), 1),
+                       "eff": round(sum(x["kwh"] for x in ok) / ok_km * 100, 1) if ok_km else None,
+                       "eff_hu": round(sum(x["kwh_hu"] for x in ok) / ok_km * 100, 1) if ok_km else None,
+                       "regen": round(sum(x["regen"] for x in days), 1)},
+            "resync_km": "skip"}
+
+
 def demo_summary():
     """A self-consistent, fictional J5 payload for demo mode. No real account, car or DB —
     every number here is made up but plausible, so people can explore the UI before setting up.
@@ -950,7 +997,10 @@ def demo_summary():
     km7  = [0, 41, 18, 63, 0, 27, 52]
     eff7 = [None, 12.6, 13.4, 12.1, None, 14.0, 12.9]
     kwh7 = [0, 5.2, 2.4, 7.6, 0, 3.8, 6.7]
-    history = [{"day": day(6 - i), "km": km7[i], "kwh": kwh7[i], "eff": eff7[i]} for i in range(7)]
+    hu7  = [None, 14.1, 15.0, 13.9, None, 15.2, 16.8]   # head-unit style, before regen
+    rg7  = [0, 0.6, 0.4, 1.1, 0, 0.3, 1.4]
+    history = [{"day": day(6 - i), "km": km7[i], "kwh": kwh7[i], "eff": eff7[i], "eff_hu": hu7[i],
+                "kwh_hu": round(kwh7[i] + rg7[i], 1), "regen": rg7[i]} for i in range(7)]
     # charge-curve series (minutes, SoC) for the last session detail chart
     series = [{"m": round(i * 47 / 24, 1), "soc": round(18 + (88 - 18) * (i / 24))} for i in range(25)]
     chist = [
@@ -972,7 +1022,7 @@ def demo_summary():
         "unlocked": False, "speed": None, "moving": False, "avg_speed": 41,
         "doors": 0, "trunk_open": False, "windows": 0, "sunroof_open": False,
         "window_state": ["closed"] * 4, "sunroof": "closed",
-        "ac_on": False, "ac_temp_c": None, "seat_heat": [0, 0], "seat_vent": [0, 0],
+        "ac_on": True, "ac_temp_c": 44, "seat_heat": [0, 0], "seat_vent": [0, 0],
         "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
         "battery_kwh": cap, "battery_kwh_source": "known", "wltp_kwh_100": 14.8,
         "chemistry_known": True, "powertrain": "bev", "fuel": None,
@@ -1278,6 +1328,8 @@ def month_history(month):
     empty = {"month": f"{y:04d}-{m:02d}", "days": [],
              "totals": {"km": 0, "kwh": 0.0, "chg_kwh": 0.0, "chg_cost": 0},
              "resync_km": "skip"}
+    if DEMO:
+        return demo_month(y, m, ndays)
     if not os.path.exists(DB):
         return empty
     conn = db_connect()
@@ -1717,6 +1769,9 @@ class H(BaseHTTPRequestHandler):
         if path == "/car-photo":     # the owner's own upload if there is one, else a cached proxy
             try:                     # for CarLinko's render of this exact car. Behind the gate:
                                      # the render gives away model + colour.
+                if DEMO:                                  # demo: the bundled J5 render, never the owner's
+                    with open(os.path.join(WEB, "car-front.png"), "rb") as f:
+                        self._send(200, f.read(), "image/png"); return
                 if os.path.exists(_CAR_PHOTO_OWNER):      # an upload outranks the render, and
                     with open(_CAR_PHOTO_OWNER, "rb") as f:   # survives every path that busts
                         blob = f.read()                   # the cache below
