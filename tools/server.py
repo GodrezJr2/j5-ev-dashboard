@@ -299,7 +299,14 @@ def pressure(x):
     if TYRE_UNIT == "bar": return round(kpa / 100.0, 2)
     if TYRE_UNIT == "kpa": return round(kpa)
     return round(kpa * 0.145038, 1)
-def temp(x): return None if x == 0xFF else round(x * 0.65 - 40, 1)
+def temp(x): return None if x == 0xFF else int(x * 0.65 - 40)   # truncated, as the app does (#15)
+
+# CarLinko's own "no reading" sentinels for the charge-time field, as published in every car's
+# vehicleControlConfig (chargingTimeInvalidValue). An exact set, not ">= 0x3FE": a slow AC charge
+# can legitimately need 1022+ minutes (~17 h) to full (#15).
+CHG_TIME_INVALID = {0x3FE, 0x3FF, 0x7FE, 0x7FF}
+WIN_STATE = {0: "closed", 1: "open", 2: "partial"}       # byte 8, 2 bits per window (#15)
+SUNROOF_STATE = {0x00: "closed", 0x08: "open", 0x0B: "tilt"}   # byte 9 (#15, E5-verified)
 
 def decode(hexstr):
     """Decode the action:6 status blob. Validated offsets: battery, range, odometer."""
@@ -316,7 +323,12 @@ def decode(hexstr):
         # it doubles as a "car is in use / awake" hint, which is all the logger needs it for.
         d["speed"] = round(int.from_bytes(b[14:16], "big") / 16.0, 1)  # km/h: bytes14-15 BE /16 (calibrated live: raw 320 = 20 km/h)
     if len(b) > 55:
-        d["consumption"] = round(b[55] * 0.1, 1)           # car's own avg kWh/100km (byte55 x0.1; matches dash 12.2)
+        # Car's own avg kWh/100km: a signed 12-bit value across b54-55 (#15). High nibble of b54 is
+        # a mode flag (1 = offset by -100), low nibble the top 4 bits. On a BEV b54 is always 0, so
+        # this is b55 x 0.1 (matches the J5 dash 12.2); on the Tiggo 8 PHEV b54 = 0x14 and it
+        # reproduces both paired dash readings exactly (b55 98 -> 12.2, 145 -> 16.9).
+        _mag = ((b[54] & 0x0F) << 8) | b[55]
+        d["consumption"] = round(_mag * 0.1 - (100 if b[54] >> 4 == 1 else 0), 1)
         # PHEV-only fields. Both bytes are 0 in all 13,018 logged J5 (BEV) frames, and on a Chery
         # Tiggo 8 PHEV they read exactly what its dash showed (58% tank, 0.80 L/100km) -- see #2.
         # Kept raw here; summary() decides whether this car has a fuel tank at all.
@@ -327,7 +339,7 @@ def decode(hexstr):
         d["charge_mode"] = b[56]                           # connector: 0=none, 1=AC, 16=DC fast
         d["charge_state"] = b[57]                          # 0=idle 1=charging 2=complete 3=canceled 4=hot 5=stop
         d["charge_remain"] = int.from_bytes(b[58:60], "big")  # minutes to done; CarLinko sentinels >= 0x3FE = invalid
-        if d["charge_remain"] >= 0x3FE: d["charge_remain"] = None
+        if d["charge_remain"] in CHG_TIME_INVALID: d["charge_remain"] = None
         d["charge_power"] = round(int.from_bytes(b[62:64], "big") * 0.1, 1)  # instant power (x0.1 kW; 0 when idle)
         # NOTE: b62-63 is bidirectional -- the same pair carries regen power while braking
         # (issue #5, E5 owner). summary() only surfaces it as charge power when b57 == 1.
@@ -339,13 +351,23 @@ def decode(hexstr):
         d["doors"] = b[2]                                   # door bitmask (E5, #5): 1=driver,
                                                             # 2=passenger, 4=rear-driver, 8=rear-passenger
         d["trunk_open"] = bool(b[4])                        # 0 = closed
-        d["windows"] = b[8]                                 # 2 bits per window: closed/open bits,
-                                                            # both clear = partial (E5, #5)
+        d["windows"] = b[8]                                 # raw; 0 = all closed (E5, #5)
+        # 2 bits per window, MSB first: driver, passenger, rear-driver, rear-passenger.
+        # 00 closed, 01 open, 10 partially open (E5 live test, #15). 11 never seen -> raw number.
+        d["window_state"] = [WIN_STATE.get((b[8] >> s) & 3, (b[8] >> s) & 3) for s in (6, 4, 2, 0)]
         d["sunroof_open"] = bool(b[9])                      # 0 = fully closed (E5, #5)
+        d["sunroof"] = SUNROOF_STATE.get(b[9], b[9])        # closed / open / tilt, else raw (#15)
         d["ac_temp_c"] = b[24] if b[24] else None           # A/C target temp, raw degC (E5, #5);
                                                             # the J5 reads 159-169 here -> model-specific
         d["seat_heat"] = [b[32], b[33]]                     # L, R (0 = off)
         d["seat_vent"] = [b[37], b[38]]                     # L, R (0 = off)
+        # Rear seats and climate extras from #15. Untested live (the E5 has none of them and they
+        # read 0 on every J5 frame), so pass-through only, not shown anywhere yet.
+        d["seat_heat_rear"] = [b[34], b[36]]                # L, R, same 0-3 levels as the front
+        d["seat_vent_rear"] = [b[39], b[41]]
+        d["windshield_heat"] = bool(b[64])
+        d["wheel_heat"] = bool(b[65])
+        d["air_purifier"] = bool(b[66])
         d["defrost_front"] = bool(b[42])
         # Rated (WLTC) range, historically NOT a mirror of EV range (b29-30): on the J5 they
         # differed in 137,553 of 183,885 logged frames (334 vs 302 at 66% -- 302/0.66 = 457.6,
@@ -857,6 +879,7 @@ def demo_summary():
         "online": True, "battery": 72, "range_km": 318, "odometer": 8421, "volt12": 13.6,
         "unlocked": False, "speed": None, "moving": False, "avg_speed": 41,
         "doors": 0, "trunk_open": False, "windows": 0, "sunroof_open": False,
+        "window_state": ["closed"] * 4, "sunroof": "closed",
         "ac_on": False, "ac_temp_c": None, "seat_heat": [0, 0], "seat_vent": [0, 0],
         "updated": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 180)), "age_min": 3.0,
         "battery_kwh": cap, "battery_kwh_source": "known", "wltp_kwh_100": 14.8,
@@ -959,7 +982,8 @@ def _summary():
                unlocked=dec.get("unlocked"), speed=None, updated=dt,
                # body-state bytes, decoded since #5 — pass-through for the V  2 status surfaces
                doors=dec.get("doors"), trunk_open=dec.get("trunk_open"),
-               windows=dec.get("windows"), sunroof_open=dec.get("sunroof_open"),
+               windows=dec.get("windows"), window_state=dec.get("window_state"),
+               sunroof_open=dec.get("sunroof_open"), sunroof=dec.get("sunroof"),
                ac_on=dec.get("ac_on"), ac_temp_c=dec.get("ac_temp_c"),
                seat_heat=dec.get("seat_heat"), seat_vent=dec.get("seat_vent"))
     out["age_min"] = round((time.time() - ts) / 60, 1)

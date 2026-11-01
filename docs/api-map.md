@@ -147,8 +147,8 @@ careless field rename becomes somebody else's outage rather than just ours.
 | `doors` | byte 2 | bitmask: `1`=driver, `2`=passenger, `4`=rear-driver, `8`=rear-passenger (live per-door test, E5, #5) |
 | `unlocked` | byte 3 | **LOCK state: `0`=locked, `!=0`=unlocked.** VERIFIED ✅ — live lock/unlock test on the Omoda E5 (#5) *and* J5 data: 217 parked 0→1 flips, and the byte lingers at 1 for a median 105 s after driving stops (the walk-away-and-lock delay). Previously mistaken for ignition |
 | `trunk_open` | byte 4 | 0 = closed (E5-verified, #5) |
-| `windows` | byte 8 | 2 bits per window: a closed-bit and an open-bit — both clear = partially open. Practical check: `>0` = not fully closed (E5, #5) |
-| `sunroof_open` | byte 9 | several values by position; `0` = fully closed (E5, #5) |
+| `windows` / `window_state` | byte 8 | 2 bits per window, MSB → LSB: driver, passenger, rear-driver, rear-passenger. `00` = closed, `01` = open, `10` = partially open (`11` never seen). `0x00` = all closed, `0x55` = all open, `0xAA` = all half-open. Live-verified window by window on the E5 ([#15](https://github.com/GodrezJr2/j5-ev-dashboard/issues/15)); `window_state` is the decoded list |
+| `sunroof_open` / `sunroof` | byte 9 | enum: `0x00` = closed, `0x08` = open (slid back), `0x0B` = tilted/vent (E5 live, #15). Other values are passed through raw |
 | `volt12` | bytes 12–13 (BE u16 ×0.01) | 13.84 V |
 | `speed_kmh` | bytes 14–15 (BE u16 ÷16) | raw 320 = 20 km/h |
 | `odometer` | bytes 18–20 (BE u24) | 882 |
@@ -159,13 +159,16 @@ careless field rename becomes somebody else's outage rather than just ours.
 | `range_km` (EV) | bytes 29–30 (BE u16) | 248 |
 | `seat_heat` | bytes 32–33 | L, R (0 = off) |
 | `seat_vent` | bytes 37–38 | L, R (0 = off) |
+| `seat_heat_rear` | bytes 34, 36 | L, R, 0–3 — from #15, **untested live** (0 on every J5 frame) |
+| `seat_vent_rear` | bytes 39, 41 | L, R, 0–3 — from #15, **untested live** |
+| `windshield_heat` / `wheel_heat` / `air_purifier` | bytes 64 / 65 / 66 | 0 = off, 1 = on — from #15, **untested live** (0 on every J5 frame) |
 | `defrost_front` | byte 42 | 0 = off |
 | tyre block (4 pressure + 4 temp) | bytes 44–51 | `FF` on indirect TPMS (J5); real values on direct TPMS. temp = `raw × 0.65 − 40` |
 | `fuel_l_100` **(PHEV)** | byte 53 (×0.1) | 0.8 L/100 km — `0` on every BEV frame |
-| `consumption` | byte 55 (×0.1) | 12.4 kWh/100 km (matches the J5 dash exactly; on the PHEV it reads `dash − 2.4` — see below) |
+| `consumption` | bytes 54–55 | signed 12-bit: `mode = b54 >> 4`, `mag = (b54 & 0x0F) << 8 \| b55`, value = `mag × 0.1 − (100 if mode == 1)`. On a BEV b54 = 0, so it is `b55 × 0.1` (12.4 kWh/100 km, matches the J5 dash). Decoded in #15; it reproduces both Tiggo 8 PHEV dash readings exactly |
 | `charge_mode` | byte 56 | connector: `0`=none, `1`=AC, `16`=DC fast. [#5](https://github.com/GodrezJr2/j5-ev-dashboard/issues/5) |
 | `charge_state` | byte 57 | `0`=idle, `1`=charging, `2`=complete, `3`=canceled, `4`=hot, `5`=stop-charging |
-| `charge_remain_min` | bytes 58–59 (BE u16) | minutes to done; `0x3FE`/`0x3FF` = invalid (CarLinko's own `chargingTimeInvalidValue` sentinel) |
+| `charge_remain_min` | bytes 58–59 (BE u16) | minutes to done; exactly `0x3FE`/`0x3FF`/`0x7FE`/`0x7FF` = invalid (CarLinko's own `chargingTimeInvalidValue`). Not `>= 0x3FE`: a slow AC charge can need 1022+ min (#15) |
 | `charge_power_kw` | bytes 62–63 (BE u16 ×0.1) | instant power; 62 is the overflow byte past 25.5 kW. `0` when idle. ⚠️ **Bidirectional**: the same pair carries **regen power while braking** — gate on b57 (`!= idle`) before calling it charge power (E5-verified, #5) |
 | `wltc_range_km` | bytes 68–69 (BE u16) | **rated (WLTC) range** — *not* a mirror of EV range. See below |
 | headline range | bytes 70–71 (BE u16) | EV range on a BEV (mirrors `range_km`); **fuel range** on a PHEV (652 km) |
@@ -244,12 +247,10 @@ rules out "a constant". Surfaced as `fuel.range_km`, PHEV only.
 (742 = 90 + 652, 687 = 38 + 649), so `fuel.total_range_km` is computed here and labelled as such.
 
 **Still unidentified:**
-- **byte 55 on a PHEV.** It reads `dash − 2.4` on both paired samples (98 → dash 12.20;
-  145 → dash 16.90 — slope exactly 10.0, offset exactly 2.4). Not fuel-derived: fuel consumption
-  went 0.80 → 0.20 L/100 km between them and the offset didn't budge. On the J5 the same byte
-  matches its dash with no offset, so the PHEV either averages over a different window or reports a
-  different metric. Left as-is rather than shipped as a two-point fit — needs a third paired sample.
-- **byte 54** — 20 on the PHEV in all three frames, `0` on every BEV frame. Meaning unknown.
+- ~~byte 55 on a PHEV reads `dash − 2.4`; byte 54 unknown~~ — **solved in #15.** Bytes 54–55 are
+  one signed 12-bit value: b54 = 20 = `0x14` is mode 1 plus a high nibble of 4, so
+  `(4 << 8 | 98) × 0.1 − 100 = 12.2` and `(4 << 8 | 145) × 0.1 − 100 = 16.9`, both exactly the
+  dash. Still worth a third PHEV capture, ideally one where the dash shows a negative value.
 
 **Negative results worth keeping** (so nobody re-runs the experiment):
 - **b56 = 2 ("connected, not charging")** — hypothesized in #5, but never observed: AC left
