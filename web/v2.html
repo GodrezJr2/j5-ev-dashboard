@@ -226,7 +226,7 @@
   .card .chv{position:absolute;top:var(--s4);right:var(--s4);width:7px;height:12px;color:var(--fnt);opacity:.5}
 
   /* A/C card carries its own stepper, like the BYD climate tile */
-  .clim{display:flex;flex-direction:column;justify-content:space-between;min-height:132px}
+  .clim{display:flex;flex-direction:column;justify-content:space-between;min-height:132px;cursor:pointer}
   .clim .cr{display:flex;align-items:center;justify-content:space-between}
   .clim .temp{font-size:28px;font-weight:750;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
   .step{width:32px;height:32px;flex:none;border-radius:50%;background:var(--card-2);color:var(--ink);
@@ -1072,7 +1072,7 @@ function renderCards(){
 
   // climate tile is hand-built: it carries a stepper, so it is a control, not a link
   $('cardGrid').innerHTML =
-    '<div class="card clim">' +
+    '<div class="card clim" data-page="ac">' +
       '<div class="cr"><button class="step" data-step="-1" aria-label="Cooler">&minus;</button>' +
         '<span class="temp num" id="climTemp">' + acTarget + '\u00b0</span>' +
         '<button class="step" data-step="1" aria-label="Warmer">+</button></div>' +
