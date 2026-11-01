@@ -204,8 +204,29 @@ def control_caps():
         "ac": {"switch": bool(ac.get("Switch")), "temp": bool(ac.get("SetTemperature")),
                "min": ac.get("SetTemperatureMin"), "max": ac.get("SetTemperatureMax"),
                "step": ac.get("TemperatureStepValue"), "rapidCool": bool(ac.get("RapidCool")),
-               "rapidHeat": bool(ac.get("RapidHeat")), "defog": bool(ac.get("Defogging"))},
+               "rapidHeat": bool(ac.get("RapidHeat")), "defog": bool(ac.get("Defogging")),
+               "purifier": bool(ac.get("AirPurification"))},
+        "seats": _seat_caps(ac),
+        "steering_heat": bool(cfg.get("SteeringWheelHeater")),
+        "windshield_heat": bool(cfg.get("FrontWindshieldHeater")),
         "plate": v.get("licenseNumber") or "",
+    }
+
+def _seat_caps(ac):
+    """Seat heat / vent levels per seat, from the car's own A/C config. A seat counts only when
+    its feature flag is on AND its level list offers something: the J5 publishes
+    RearHeaterList [true,true,true] with RearHeater false, and has no rear heater.
+    Lists are [level1, level2, level3]; the answer is the highest level offered (0 = none)."""
+    def lv(flag, lst):
+        if not flag or not isinstance(lst, list): return 0
+        return max([i + 1 for i, ok in enumerate(lst) if ok] or [0])
+    heat_on = ac.get("DriverHeater") or ac.get("AssistantHeater")
+    vent_on = ac.get("DriverVent") or ac.get("AssistantVent")
+    return {
+        "heat": {"left": lv(heat_on, ac.get("LeftHeaterList")), "right": lv(heat_on, ac.get("RightHeaterList")),
+                 "rear": lv(ac.get("RearHeater"), ac.get("RearHeaterList"))},
+        "vent": {"left": lv(vent_on, ac.get("LeftVentList")), "right": lv(vent_on, ac.get("RightVentList")),
+                 "rear": lv(ac.get("RearVent"), ac.get("RearVentList"))},
     }
 
 # opcodes we've actually seen the app POST (real, safe to replay). Labels unknown until the owner
@@ -991,7 +1012,9 @@ def _summary():
                windows=dec.get("windows"), window_state=dec.get("window_state"),
                sunroof_open=dec.get("sunroof_open"), sunroof=dec.get("sunroof"),
                ac_on=dec.get("ac_on"), ac_temp_c=dec.get("ac_temp_c"),
-               seat_heat=dec.get("seat_heat"), seat_vent=dec.get("seat_vent"))
+               seat_heat=dec.get("seat_heat"), seat_vent=dec.get("seat_vent"),
+               defrost_front=dec.get("defrost_front"), wheel_heat=dec.get("wheel_heat"),
+               windshield_heat=dec.get("windshield_heat"), air_purifier=dec.get("air_purifier"))
     out["age_min"] = round((time.time() - ts) / 60, 1)
     out["online"] = out["age_min"] is not None and out["age_min"] < 40
     # Fuel side of a PHEV. Decided over the whole window, not the latest frame, so a car sitting at

@@ -399,6 +399,9 @@
   .acacts button.on{color:var(--acc-ink)}
   .acacts button.on .cic{color:var(--acc-ink);box-shadow:0 2px 6px var(--acc-sf),0 10px 24px var(--acc-sf)}
   .acacts .cic svg{width:23px;height:23px}
+  .acseats{margin-top:var(--s5)}
+  .acseats .rl small{display:block;font-size:11.5px;font-weight:500;color:var(--mut)}
+  .acseats .seg button{min-width:40px;min-height:36px}
 
   /* energy bars ----------------------------------------------------------------
      A faint full-height track keeps a no-driving day visible as an empty slot instead of a
@@ -831,12 +834,36 @@ const OP_TEXT = {
   '740F02': ['Sunroof tilting', 'tilt the sunroof'],
   '740F01': ['Sunroof opening', 'open the sunroof'],
   '742701': ['Charging stopped', 'stop charging'],
+  '742401': ['Steering wheel heat on', 'heat the steering wheel'],
+  '742400': ['Steering wheel heat off', 'turn steering wheel heat off'],
+  '742301': ['Windshield heat on', 'heat the windshield'],
+  '742300': ['Windshield heat off', 'turn windshield heat off'],
+  '742501': ['Air purifier on', 'turn the air purifier on'],
+  '742500': ['Air purifier off', 'turn the air purifier off'],
+  '741201': ['Defog on', 'turn defog on'],
+  '741200': ['Defog off', 'turn defog off'],
 };
+// Seat heat / vent opcodes: 74 <seat cmd> <level 00-03> (#11 jump table, docs/control-opcodes.md).
+const SEAT_CMD = {heat: {L: '15', R: '16', RL: '17', RR: '19'},
+                  vent: {L: '1A', R: '1B', RL: '1C', RR: '1E'}};
+const SEAT_NAME = {L: 'Left seat', R: 'Right seat', RL: 'Rear left seat', RR: 'Rear right seat'};
+function seatOp(kind, seat, level){ return '74' + SEAT_CMD[kind][seat] + '0' + level; }
+// A/C set-point: 7411 + one byte = 0x80 + 2 x degC, so half degrees fit (7411AC = 22.0 degC).
+// Captured from the vendor app in PR #16; the old whole-degC byte read as -53 degC on the car.
+function tempOp(c){ return '7411' + (0x80 + Math.round(c * 2)).toString(16).toUpperCase().padStart(2, '0'); }
 function opText(op){
   const k = String(op).toUpperCase();
   if(OP_TEXT[k]) return OP_TEXT[k];
-  const m = /^7411([0-9A-F]{2})$/.exec(k);       // A/C target temp, one hex byte of degC
-  if(m){ const c = parseInt(m[1], 16); return ['A/C set to ' + c + '°C', 'set the A/C to ' + c + '°C']; }
+  const m = /^7411([0-9A-F]{2})$/.exec(k);       // A/C target temp: 0x80 + 2 x degC
+  if(m){ const c = (parseInt(m[1], 16) - 0x80) / 2; return ['A/C set to ' + c + '°C', 'set the A/C to ' + c + '°C']; }
+  const sm = /^74([0-9A-F]{2})0([0-3])$/.exec(k);
+  if(sm){
+    for(const kind in SEAT_CMD) for(const seat in SEAT_CMD[kind]) if(SEAT_CMD[kind][seat] === sm[1]){
+      const what = SEAT_NAME[seat] + (kind === 'heat' ? ' heat' : ' vent');
+      const lv = sm[2] === '0' ? 'off' : 'level ' + sm[2];
+      return [what + ' ' + lv, 'set ' + what.toLowerCase() + ' to ' + lv];
+    }
+  }
   return ['Done', 'do that'];
 }
 async function fire(op, btn){
@@ -951,6 +978,15 @@ function cabinTemp(){
   return (S.ac_temp_c && S.ac_temp_c < 60) ? S.ac_temp_c : null;
 }
 
+// On the J5, byte 24 is the A/C SET-POINT in half degrees, not a cabin reading: 2 x degC with an
+// optional 0x80 flag (Jun-Aug 2026 it read 170-181, since the early-Sep OTA 38-53 -- both are
+// 19-26.5 degC, odd values are the .5 steps). Same encoding the 7411 set-point command uses.
+function acSetPoint(){
+  if(!isJ5() || !S.ac_temp_c) return null;
+  const c = (S.ac_temp_c & 0x7F) / 2;
+  return (c >= 15 && c <= 32) ? c : null;
+}
+
 function doorSummary(){
   const parts = [];
   const openDoors = S.doors == null ? null : (S.doors & 15) !== 0;
@@ -999,8 +1035,11 @@ function row(ic, label, val, cls, page){
     (page ? CHEV : '') + '</' + tag + '>';
 }
 
+let acSynced = false;
 function renderCards(){
   const ds = doorSummary();
+  const sp = acSetPoint();
+  if(!acSynced && sp != null){ acTarget = sp; acSynced = true; }   // start the stepper at the car's own set-point
   const e = S.energy || {};
   const cons = e.consumption != null ? e.consumption + ' kWh/100km' : 'No data yet';
   const tyreSub = S.tyre_indirect === false
@@ -1010,6 +1049,7 @@ function renderCards(){
   const cabin = ct != null ? ct + '\u00b0C Cabin Temp' : (S.ac_on ? 'On' : 'Not turned on');
   const seatsKnown = (S.seat_heat && (S.seat_heat[0] || S.seat_heat[1])) ||
                      (S.seat_vent && (S.seat_vent[0] || S.seat_vent[1]));
+  const seatCaps = seatControls().length > 0;
   const chgSub = (S.charging && S.charging.active)
     ? 'Charging' + (S.charging.rate_kw != null ? ' \u00b7 ' + S.charging.rate_kw + ' kW' : '')
     : (S.charging && S.charging.month_kwh ? S.charging.month_kwh + ' kWh this month' : 'No sessions yet');
@@ -1038,7 +1078,8 @@ function renderCards(){
   $('rowsHost').innerHTML = '<div class="rowcard">' +
     row('chart', 'Energy consumption', cons, '', 'energy') +
     row('car',   'Distance',  distSub, '', 'dist') +
-    row('seat',  'Seats', seatsKnown ? 'Active' : 'Not available', '', null) +
+    row('seat',  'Seats', seatsKnown ? 'Active' : (seatCaps ? 'Off' : 'Not available'), '',
+        seatCaps ? 'ac' : null) +
     '</div>';
 
   const hosts = [$('cardGrid'), $('rowsHost')];
@@ -1046,10 +1087,8 @@ function renderCards(){
     b.onclick = ev => { ev.stopPropagation(); openPage(b.dataset.page); }));
   $('cardGrid').querySelectorAll('[data-step]').forEach(b => b.onclick = ev => {
     ev.stopPropagation();
-    const caps = (CAPS && CAPS.ac) || {};
-    const mn = caps.min != null ? Math.ceil(caps.min) : 16;
-    const mx = caps.max != null ? Math.floor(caps.max) : 30;
-    acTarget = Math.min(mx, Math.max(mn, acTarget + Number(b.dataset.step)));
+    const r = acRange();
+    acTarget = Math.min(r.mx, Math.max(r.mn, acTarget + Number(b.dataset.step) * r.st));
     $('climTemp').textContent = acTarget + '\u00b0';
     sendTemp();
   });
@@ -1065,24 +1104,63 @@ function renderCards(){
 
 // ---- subpages ----
 let acTarget = 24, acTimer = null;
+function acRange(){                       // the car's own set-point range and step (J5: 15.5-30.5, 0.5)
+  const c = (CAPS && CAPS.ac) || {};
+  return {mn: c.min != null ? c.min : 16, mx: c.max != null ? c.max : 30, st: c.step || 0.5};
+}
 function sendTemp(){
-  // 7411 + temp as one hex byte (#11, jump table). Encoding is integer degC, pending runtime
-  // verification; debounced so stepping does not spam the car.
+  // debounced so stepping does not spam the car
   clearTimeout(acTimer);
-  acTimer = setTimeout(() => fire('7411' + Math.round(acTarget).toString(16).padStart(2, '0')), 800);
+  acTimer = setTimeout(() => fire(tempOp(acTarget)), 800);
+}
+// Seat rows this car offers, from its own vehicleControlConfig (CAPS.seats). Each row carries its
+// kind, seat, highest level and the level the status blob reports now (front seats only).
+function seatControls(){
+  const sc = CAPS && CAPS.seats;
+  if(!sc || !S) return [];
+  const out = [];
+  ['heat', 'vent'].forEach(kind => {
+    const k = sc[kind] || {};
+    const now = kind === 'heat' ? (S.seat_heat || []) : (S.seat_vent || []);
+    if(k.left)  out.push({kind, seat: 'L', max: k.left,  now: now[0] || 0});
+    if(k.right) out.push({kind, seat: 'R', max: k.right, now: now[1] || 0});
+    if(k.rear){ out.push({kind, seat: 'RL', max: k.rear, now: null});
+                out.push({kind, seat: 'RR', max: k.rear, now: null}); }
+  });
+  return out;
 }
 function renderAc(){
   const el = $('pgAcBody');
-  const caps = (CAPS && CAPS.ac) || {};
-  const mn = caps.min != null ? Math.ceil(caps.min) : 16;
-  const mx = caps.max != null ? Math.floor(caps.max) : 30;
+  const {mn, mx, st} = acRange();
+  const ac = (CAPS && CAPS.ac) || {};
+  const seats = seatControls();
+  const seatHtml = seats.length ? '<div class="rowcard acseats">' + seats.map(r =>
+    '<div class="row"><span class="ri">' + icon(r.kind === 'heat' ? 'heat' : 'seat') + '</span>' +
+    '<span class="rl">' + SEAT_NAME[r.seat] + '<small>' + (r.kind === 'heat' ? 'Heat' : 'Ventilation') +
+    '</small></span><span class="seg">' +
+    [0, 1, 2, 3].filter(l => l <= r.max).map(l =>
+      '<button data-seat="' + r.kind + ':' + r.seat + ':' + l + '"' + (r.now === l ? ' class="on"' : '') +
+      ' aria-pressed="' + (r.now === l) + '">' + (l ? l : 'Off') + '</button>').join('') +
+    '</span></div>').join('') + '</div>' : '';
+  const extras = [];
+  if(ac.defog) extras.push(['Front defog', S.defrost_front, '7412']);
+  if(CAPS && CAPS.steering_heat) extras.push(['Steering wheel heat', S.wheel_heat, '7424']);
+  if(CAPS && CAPS.windshield_heat) extras.push(['Windshield heat', S.windshield_heat, '7423']);
+  if(ac.purifier) extras.push(['Air purifier', S.air_purifier, '7425']);
+  const extraHtml = extras.length ? '<div class="rowcard acseats">' + extras.map(x =>
+    '<div class="row"><span class="ri">' + icon('ac') + '</span><span class="rl">' + x[0] + '</span>' +
+    '<span class="seg"><button data-xop="' + x[2] + '00"' + (x[1] ? '' : ' class="on"') +
+    ' aria-pressed="' + !x[1] + '">Off</button>' +
+    '<button data-xop="' + x[2] + '01"' + (x[1] ? ' class="on"' : '') +
+    ' aria-pressed="' + !!x[1] + '">On</button></span></div>').join('') + '</div>' : '';
   const ct = cabinTemp();
   const cabin = ct != null ? ct + '°C' : null;
   el.innerHTML =
-    '<div class="acsub ov">' + (cabin ? 'Cabin now ' + cabin : 'Set a target, then power on') + '</div>' +
-    '<div class="acbig"><span class="side">' + Math.max(mn, acTarget - 1) + '</span>' +
+    '<div class="acsub ov">' + (cabin ? 'Cabin now ' + cabin
+      : (acSetPoint() != null ? 'Car is set to ' + acSetPoint() + '°C' : 'Set a target, then power on')) + '</div>' +
+    '<div class="acbig"><span class="side">' + Math.max(mn, acTarget - st) + '</span>' +
     '<span class="cur num">' + acTarget + '<u>°C</u></span>' +
-    '<span class="side">' + Math.min(mx, acTarget + 1) + '</span></div>' +
+    '<span class="side">' + Math.min(mx, acTarget + st) + '</span></div>' +
     '<div class="acrow">' +
       '<button class="step" id="acMinus" aria-label="Cooler">&minus;</button>' +
       '<button class="step" id="acPlus" aria-label="Warmer">+</button></div>' +
@@ -1091,10 +1169,17 @@ function renderAc(){
     '<button data-ac="cool"><span class="cic">' + icon('cool') + '</span>Cool</button>' +
     '<button data-ac="pwr"><span class="cic">' + icon('power') + '</span><span id="acPwrLbl">' +
       (S.ac_on ? 'Turn off' : 'Turn on') + '</span></button></div>' +
-    '<div class="note">Setting a target temperature is not confirmed on the car yet. Power and quick ' +
-    'heat/cool are.</div>';
-  $('acMinus').onclick = () => { acTarget = Math.max(mn, acTarget - 1); renderAc(); sendTemp(); };
-  $('acPlus').onclick  = () => { acTarget = Math.min(mx, acTarget + 1); renderAc(); sendTemp(); };
+    seatHtml + extraHtml +
+    '<div class="note">Power and quick heat/cool are confirmed on a J5. The set-point encoding and ' +
+    'the seat, heater and purifier commands come from the vendor app and are not confirmed on a J5 ' +
+    'yet. Only what this car\'s own CarLinko config offers is shown.</div>';
+  $('acMinus').onclick = () => { acTarget = Math.max(mn, acTarget - st); renderAc(); sendTemp(); };
+  $('acPlus').onclick  = () => { acTarget = Math.min(mx, acTarget + st); renderAc(); sendTemp(); };
+  el.querySelectorAll('[data-seat]').forEach(b => b.onclick = () => {
+    const [kind, seat, lv] = b.dataset.seat.split(':');
+    fire(seatOp(kind, seat, lv), b);
+  });
+  el.querySelectorAll('[data-xop]').forEach(b => b.onclick = () => fire(b.dataset.xop, b));
   el.querySelector('[data-ac="heat"]').onclick = () => fire(S.ac_on ? '741F00' : '741F01');
   el.querySelector('[data-ac="cool"]').onclick = () => fire(S.ac_on ? '742000' : '742001');
   el.querySelector('[data-ac="pwr"]').onclick  = () => fire(S.ac_on ? '741000' : '741001');

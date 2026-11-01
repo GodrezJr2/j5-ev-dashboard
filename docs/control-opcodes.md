@@ -68,10 +68,10 @@ on a live car (that's what the Control tab tester is for).
 | Sunroof close / open / tilt | `740F00` / `740F01` / `740F02` | static decode (no sunroof on J5 — needs Omoda 9 / Noble) |
 | Engine on / off | `740700` / `740800` | static decode, pending |
 | A/C on / off | `741001` / `741000` | ✅ runtime-confirmed (J5 EV Noble, IL, 2026-09-04 — @idoeilon, [#6](https://github.com/GodrezJr2/j5-ev-dashboard/issues/6)) |
-| A/C set temperature | `7411` + temp payload | encoding TBD — °C raw or half-degrees? |
+| A/C set temperature | `7411` + one byte | **`0x80 + 2 × °C`** (`7411AC` = 22.0 °C), captured from the vendor app in PR #16 (Tiggo 7). Range/step come from `vehicleControlConfig` (J5: 15.5–30.5, 0.5). The J5 status byte 24 uses the same half-degree encoding |
 | Front defog on / off | `741201` / `741200` | static decode, pending |
-| Seat heat L1–L3 / off — left, right, left-rear, right-rear | `741501–03`/`00`, `741601–03`/`00`, `741701–03`/`00`, `741901–03`/`00` | static decode (no seat heat on J5) |
-| Seat vent L1–L3 / off — left, right, left-rear, right-rear | `741A01–03`/`00`, `741B01–03`/`00`, `741C01–03`/`00`, `741E01–03`/`00` | static decode (no seat vent on J5) |
+| Seat heat L1–L3 / off — left, right, left-rear, right-rear | `741501–03`/`00`, `741601–03`/`00`, `741701–03`/`00`, `741901–03`/`00` | static decode (no seat heat on J5: `DriverHeater`/`AssistantHeater` false) |
+| Seat vent L1–L3 / off — left, right, left-rear, right-rear | `741A01–03`/`00`, `741B01–03`/`00`, `741C01–03`/`00`, `741E01–03`/`00` | static decode. **The J5's own config offers front vent, both sides, 3 levels** (`DriverVent`/`AssistantVent` true, `LeftVentList`/`RightVentList` all true) — wired in v2's Climate page, pending one-tap |
 | Quick heat on / off | `741F01` / `741F00` | static decode, pending |
 | Quick cool on / off | `742001` / `742000` | static decode, pending |
 | Windshield heat on / off | `742301` / `742300` | static decode, pending |
