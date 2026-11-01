@@ -400,6 +400,17 @@
   .acacts button.on .cic{color:var(--acc-ink);box-shadow:0 2px 6px var(--acc-sf),0 10px 24px var(--acc-sf)}
   .acacts .cic svg{width:23px;height:23px}
   .acseats{margin-top:var(--s5)}
+  /* head-unit seat panel: the HU's own cabin render + seat glows (web/hu/, see tools/hu_assets.py) */
+  .hucab{position:relative;width:min(100%,340px);aspect-ratio:874/968;margin:var(--s5) auto 0}
+  .hucab>img{position:absolute;inset:0;width:100%;height:100%}
+  .hucab .glow{position:absolute;width:30.21%;height:30.79%;pointer-events:none;
+    transition:opacity var(--t-mid) linear}
+  .hucab .sb{position:absolute;width:10.07%;aspect-ratio:1;border-radius:50%;padding:0;
+    transform:translate(0,0);transition:transform .12s ease}
+  .hucab .sb:active{transform:scale(.9)}
+  .hucab .sb img{width:100%;height:100%;display:block}
+  .hucab .sb.busy{opacity:.55}
+  .hucab .cap{position:absolute;bottom:-4px;left:0;right:0;text-align:center;font-size:11.5px;color:var(--mut)}
   .acseats .rl small{display:block;font-size:11.5px;font-weight:500;color:var(--mut)}
   .acseats .seg button{min-width:40px;min-height:36px}
 
@@ -866,8 +877,9 @@ function opText(op){
   }
   return ['Done', 'do that'];
 }
-async function fire(op, btn){
+async function fire(op, btn){        // resolves true when the car accepted the command
   const [done, doing] = opText(op);
+  let ok = false;
   if(btn) btn.classList.add('busy');
   try{
     await api('api/control', {method: 'POST', headers: {'content-type': 'application/json'},
@@ -875,12 +887,13 @@ async function fire(op, btn){
     await new Promise(r => setTimeout(r, 600));
     const d = await api('api/control', {method: 'POST', headers: {'content-type': 'application/json'},
       body: JSON.stringify({data: op, timeOut: 20})});
-    if(d.ok){ toast(done); setTimeout(load, 1800); }
+    if(d.ok){ ok = true; toast(done); setTimeout(load, 1800); }
     else if(String(d.code) === '50043') toast('Car is asleep or out of signal');
     else if(String(d.code) === '9997') toast('CarLinko login expired');
     else toast('Could not ' + doing);
   }catch(e){ toast('Could not reach the dashboard server'); }
   if(btn) btn.classList.remove('busy');
+  return ok;
 }
 
 // ---- hero ----
@@ -1129,12 +1142,56 @@ function seatControls(){
   });
   return out;
 }
+
+// Head-unit art for the seat panel. Optional: web/hu/ is not in the repo (Chery's art), it is
+// generated from your own head unit's APK by tools/hu_assets.py. Without it the plain level
+// buttons stay.
+let HU_OK = null;
+(function(){ const i = new Image(); i.onload = () => { HU_OK = true; if(openKey === 'ac') renderAc(); };
+  i.onerror = () => { HU_OK = false; }; i.src = 'hu/vent1.webp'; })();
+// Right-hand drive markets get the HU's mirrored cabin (wheel on the right). Guessed from the
+// browser's time zone; it only changes the picture, not which seat a button drives.
+function rhd(){
+  try{ const z = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    return /^(Asia\/(Jakarta|Pontianak|Makassar|Jayapura|Kuala_Lumpur|Kuching|Singapore|Bangkok|Tokyo|Kolkata|Calcutta|Karachi|Dhaka|Colombo|Hong_Kong|Macau|Brunei|Kathmandu|Thimphu)|Australia\/|Pacific\/(Auckland|Fiji)|Europe\/(London|Dublin|Malta)|Africa\/(Johannesburg|Nairobi|Harare|Lusaka|Maputo|Gaborone|Windhoek|Kampala|Dar_es_Salaam|Maseru|Mbabane|Blantyre)|Indian\/Mauritius|America\/(Jamaica|Barbados|Port_of_Spain|Guyana|Nassau))/.test(z);
+  }catch(e){ return false; }
+}
+const SEAT_POS = {L: [148, 173], R: [460, 173], RL: [152, 517], RR: [460, 517]};   // HU layout, px of 874x968
+const seatLocal = {};          // last level we sent, for seats the status blob does not report
+function huSeatHtml(seats){
+  const dark = isDark();
+  const cab = 'hu/cabin' + (rhd() ? '-r' : '') + (dark ? '-dark' : '-light') + '.webp';
+  const kinds = new Set(seats.map(r => r.kind));
+  let h = '<div class="hucab"><img src="' + cab + '" alt="Cabin seen from above">';
+  seats.forEach(r => {
+    // what we just sent wins for a minute (the status blob lags a poll behind), then the car's word
+    const mine = seatLocal[r.kind + r.seat];
+    const lv = (mine && Date.now() - mine.t < 60000) || r.now == null ? (mine ? mine.lv : 0) : r.now;
+    const [x, y] = SEAT_POS[r.seat];
+    const front = r.seat === 'L' || r.seat === 'R';
+    const both = kinds.size > 1;
+    if(lv && front)
+      h += '<img class="glow" src="hu/' + r.kind + '-glow' + lv + '.webp" alt="" style="left:' +
+        (x / 8.74).toFixed(2) + '%;top:' + (y / 9.68).toFixed(2) + '%">';
+    // one button per seat sits on the cushion like the HU; with heat AND vent the second one
+    // goes just below it
+    const by = y + 105 + (both && r.kind === 'heat' ? 100 : 0);
+    const icon = 'hu/' + r.kind + Math.min(lv, 3) + (r.seat === 'R' || r.seat === 'RR' ? '-r' : '') + '.webp';
+    const nxt = (lv + 1) % (r.max + 1);
+    h += '<button class="sb" data-seat="' + r.kind + ':' + r.seat + ':' + nxt + '" style="left:' +
+      ((x + 88) / 8.74).toFixed(2) + '%;top:' + (by / 9.68).toFixed(2) + '%" aria-label="' +
+      SEAT_NAME[r.seat] + (r.kind === 'heat' ? ' heat' : ' ventilation') + ', level ' + lv + ' of ' + r.max +
+      '. Tap for ' + (nxt ? 'level ' + nxt : 'off') + '"><img src="' + icon + '" alt=""></button>';
+  });
+  return h + '<div class="cap">Tap a seat to step its level</div></div>';
+}
 function renderAc(){
   const el = $('pgAcBody');
   const {mn, mx, st} = acRange();
   const ac = (CAPS && CAPS.ac) || {};
   const seats = seatControls();
-  const seatHtml = seats.length ? '<div class="rowcard acseats">' + seats.map(r =>
+  const seatHtml = (seats.length && HU_OK) ? huSeatHtml(seats) :
+    seats.length ? '<div class="rowcard acseats">' + seats.map(r =>
     '<div class="row"><span class="ri">' + icon(r.kind === 'heat' ? 'heat' : 'seat') + '</span>' +
     '<span class="rl">' + SEAT_NAME[r.seat] + '<small>' + (r.kind === 'heat' ? 'Heat' : 'Ventilation') +
     '</small></span><span class="seg">' +
@@ -1175,9 +1232,10 @@ function renderAc(){
     'yet. Only what this car\'s own CarLinko config offers is shown.</div>';
   $('acMinus').onclick = () => { acTarget = Math.max(mn, acTarget - st); renderAc(); sendTemp(); };
   $('acPlus').onclick  = () => { acTarget = Math.min(mx, acTarget + st); renderAc(); sendTemp(); };
-  el.querySelectorAll('[data-seat]').forEach(b => b.onclick = () => {
+  el.querySelectorAll('[data-seat]').forEach(b => b.onclick = async () => {
     const [kind, seat, lv] = b.dataset.seat.split(':');
-    fire(seatOp(kind, seat, lv), b);
+    if(await fire(seatOp(kind, seat, lv), b)) seatLocal[kind + seat] = {lv: +lv, t: Date.now()};
+    if(HU_OK && openKey === 'ac') renderAc();
   });
   el.querySelectorAll('[data-xop]').forEach(b => b.onclick = () => fire(b.dataset.xop, b));
   el.querySelector('[data-ac="heat"]').onclick = () => fire(S.ac_on ? '741F00' : '741F01');

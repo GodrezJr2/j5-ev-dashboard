@@ -30,3 +30,6 @@ data/
 # pre-cleanup DB snapshots taken on the server before deglitching
 *.db.bak*
 build/
+
+# head-unit art extracted from your own HU APK by tools/hu_assets.py (Chery's, not ours to publish)
+web/hu/

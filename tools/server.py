@@ -1694,7 +1694,7 @@ class H(BaseHTTPRequestHandler):
             return
         ctype = {"html": "text/html", "js": "text/javascript", "css": "text/css",
                  "webmanifest": "application/manifest+json", "json": "application/json",
-                 "svg": "image/svg+xml", "png": "image/png"}.get(fp.rsplit(".", 1)[-1], "text/plain")
+                 "svg": "image/svg+xml", "png": "image/png", "webp": "image/webp"}.get(fp.rsplit(".", 1)[-1], "text/plain")
         with open(fp, "rb") as f:
             self._send(200, f.read(), ctype + ("; charset=utf-8" if ctype.startswith("text") or "manifest" in ctype or ctype.endswith("svg+xml") else ""))
 
