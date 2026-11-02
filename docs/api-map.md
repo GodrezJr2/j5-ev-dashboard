@@ -120,7 +120,7 @@ without it.
 |---|---|---|
 | *(absent)* | — | Any build before 2026-09-11. Treat a missing `api_version` as version 0. |
 | `1` | 2026-09-11 | First versioned payload. No field changes; the existing shape is what v1 means. |
-| `2` | 2026-11-02 | `history[].kwh` and `history[].eff` are **net of regen** (what driving took out of the pack). In v1 they counted SoC drops only, the way the head unit does; that figure is now `kwh_hu` / `eff_hu`, and `regen` is the kWh put back. The insights built from daily kWh use the net figure too. `/api/history` days and month totals changed the same way. |
+| `2` | 2026-11-02 | `history[].kwh` and `history[].eff` are **net of regen** (what driving took out of the pack). In v1 they counted SoC drops only, the way the head unit does; that figure is now `kwh_hu` / `eff_hu`, and `regen` is the kWh put back. `energy.week_consumption` is net of regen too, and so is `energy.consumption` when the car reports no figure of its own (the car's own figure, `energy.source: "car"`, is unchanged); `insights` follow. `/api/history` days and month totals changed the same way. |
 
 **Rules for bumping:**
 
