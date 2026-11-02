@@ -4,6 +4,9 @@
   `GET /api/maintenance-guide` and `GET /api/service-centres`.
 - Added the `maintenance_guide` and `service_centres` capability IDs to public
   `/api/status`. Demo mode advertises these two implemented reads.
-- `/api/summary` remains at `api_version: 1`; its payload contract is unchanged.
+- `/api/summary` moves to `api_version: 2`: `history[].kwh` and `.eff` are net of regen; the
+  drops-only (head-unit) figures are now `kwh_hu` / `eff_hu`. `/api/history` changed the same way.
+  See the version table in `docs/api-map.md`.
+- `/api/controls` keeps `seatHeat` / `seatVent` beside the new `seats`, for clients that read them.
 - Voltmoss can open the maintenance guide from the Vehicle tab. Older clients
   can ignore the new capability IDs and routes.

@@ -120,6 +120,7 @@ without it.
 |---|---|---|
 | *(absent)* | — | Any build before 2026-09-11. Treat a missing `api_version` as version 0. |
 | `1` | 2026-09-11 | First versioned payload. No field changes; the existing shape is what v1 means. |
+| `2` | 2026-11-02 | `history[].kwh` and `history[].eff` are **net of regen** (what driving took out of the pack). In v1 they counted SoC drops only, the way the head unit does; that figure is now `kwh_hu` / `eff_hu`, and `regen` is the kWh put back. The insights built from daily kWh use the net figure too. `/api/history` days and month totals changed the same way. |
 
 **Rules for bumping:**
 
@@ -141,7 +142,7 @@ careless field rename becomes somebody else's outage rather than just ours.
 
 ```json
 {
-  "api_version": 1,
+  "api_version": 2,
   "capabilities": ["settings_read", "target_soc", "charge_schedule", "scheduled_travel", "vehicle_alerts", "climate_settings", "climate_seats", "maintenance_guide", "service_centres"]
 }
 ```

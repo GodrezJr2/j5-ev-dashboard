@@ -31,7 +31,7 @@ def _log_exception(context, exc, level=logging.ERROR):
 #     and say what changed in docs/api-map.md.
 # Clients should treat an api_version they do not recognise as "newer than me" and degrade rather
 # than guess, and should treat a missing api_version as version 0 (any build before 2026-09-11).
-API_VERSION = 1
+API_VERSION = 2
 
 # Stable operation IDs advertised by /api/status. These describe server code,
 # not whether a particular vehicle or CarLinko account supports an operation.
