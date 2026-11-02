@@ -190,6 +190,9 @@ so a client only offers what the car supports:
   seats (0 = none). A seat counts only when its `Driver*`/`Assistant*`/`Rear*` flag is
   on and its `Left*List`/`Right*List`/`Rear*List` offers a level. Sides keep CarLinko's
   left/right naming; which side the driver sits on depends on LHD/RHD.
+- `seatHeat` / `seatVent`: the same levels as lists, `{"levels": {"left": [1, 2, 3], …}}`.
+  This is the shape the first build of this API used, and the Voltmoss app reads it.
+  It is derived from `seats`, so the two always agree.
 - `steering_heat`, `windshield_heat`, `scheduledCharging`, `scheduledTravel`
 
 `ScheduledTravel` (the app's "Advance travel": have the cabin ready by a departure

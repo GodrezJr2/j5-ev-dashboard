@@ -217,7 +217,22 @@ def _vehicle_raw(force=False):
 
 def control_caps():
     """What THIS car can be told to do, straight from CarLinko's vehicleControlConfig -- so the
-    Control tab only renders buttons the car actually supports."""
+    Control tab only renders buttons the car actually supports.
+
+    The legacy seat keys are added here rather than inside _control_caps(), so the demo and live
+    paths cannot drift apart on them."""
+    caps = _control_caps()
+    caps["seatHeat"] = _legacy_seat_levels(caps["seats"]["heat"])
+    caps["seatVent"] = _legacy_seat_levels(caps["seats"]["vent"])
+    return caps
+
+def _legacy_seat_levels(top):
+    """`seatHeat` / `seatVent` in the shape the first build of this API used, kept for clients
+    that read it (the Voltmoss app): the levels each side offers, as a list. Derived from
+    `seats`, so the two can never disagree."""
+    return {"levels": {side: list(range(1, n + 1)) for side, n in top.items()}}
+
+def _control_caps():
     if DEMO:                       # a J5's own config, never the account's (plate included)
         return {"lock": True, "windows": {"open": True, "close": True, "vent": True},
                 "sunroof": {"open": True, "tilt": True}, "liftgate": True, "trunk": False,
