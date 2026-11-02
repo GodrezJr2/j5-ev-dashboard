@@ -1,0 +1,6060 @@
+{
+  "Chery Omoda E5": {
+    "price_date_label": "1 May 2026",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Air-Cond Filter",
+            "price": 135.3,
+            "required": true
+          },
+          {
+            "name": "Labour",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 235.3,
+        "with_recommended_price": 235.3
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Air-Cond Filter",
+            "price": 135.3,
+            "required": true
+          },
+          {
+            "name": "Labour",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R&L)",
+            "price": 175.7,
+            "required": false
+          }
+        ],
+        "required_price": 235.5,
+        "with_recommended_price": 411.0
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Drive Motor Anti-Freeze @ 6L",
+            "price": 283.6,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil",
+            "price": 200.0,
+            "required": true
+          },
+          {
+            "name": "Air-Cond Filter",
+            "price": 135.3,
+            "required": true
+          },
+          {
+            "name": "Labour",
+            "price": 200.0,
+            "required": true
+          }
+        ],
+        "required_price": 868.9,
+        "with_recommended_price": 868.9
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Air-Cond Filter",
+            "price": 135.3,
+            "required": true
+          },
+          {
+            "name": "Labour",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R&L)",
+            "price": 175.7,
+            "required": false
+          }
+        ],
+        "required_price": 235.3,
+        "with_recommended_price": 411.0
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Air-Cond Filter",
+            "price": 135.3,
+            "required": true
+          },
+          {
+            "name": "Labour",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Brake Pad - Front (R&L)",
+            "price": 593.3,
+            "required": false
+          },
+          {
+            "name": "Brake Pad - Rear (R&L)",
+            "price": 542.2,
+            "required": false
+          }
+        ],
+        "required_price": 235.5,
+        "with_recommended_price": 1370.8
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Drive Motor Anti-Freeze @ 6L",
+            "price": 283.6,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil",
+            "price": 200.0,
+            "required": true
+          },
+          {
+            "name": "Air-Cond Filter",
+            "price": 135.3,
+            "required": true
+          },
+          {
+            "name": "Labour",
+            "price": 200.0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R&L)",
+            "price": 175.7,
+            "required": false
+          }
+        ],
+        "required_price": 868.9,
+        "with_recommended_price": 1044.6
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Air-Cond Filter",
+            "price": 135.3,
+            "required": true
+          },
+          {
+            "name": "Labour",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 235.3,
+        "with_recommended_price": 235.3
+      },
+      {
+        "km": 160000,
+        "months": 96,
+        "items": [
+          {
+            "name": "Air-Cond Filter",
+            "price": 135.3,
+            "required": true
+          },
+          {
+            "name": "Labour",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R&L)",
+            "price": 175.7,
+            "required": false
+          }
+        ],
+        "required_price": 235.3,
+        "with_recommended_price": 411.0
+      },
+      {
+        "km": 180000,
+        "months": 108,
+        "items": [
+          {
+            "name": "Drive Motor Anti-Freeze @ 6L",
+            "price": 283.6,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil",
+            "price": 200.0,
+            "required": true
+          },
+          {
+            "name": "Air-Cond Filter",
+            "price": 135.3,
+            "required": true
+          },
+          {
+            "name": "Labour",
+            "price": 200.0,
+            "required": true
+          }
+        ],
+        "required_price": 868.9,
+        "with_recommended_price": 868.9
+      },
+      {
+        "km": 200000,
+        "months": 120,
+        "items": [
+          {
+            "name": "Air-Cond Filter",
+            "price": 135.3,
+            "required": true
+          },
+          {
+            "name": "Labour",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R&L)",
+            "price": 175.7,
+            "required": false
+          },
+          {
+            "name": "Brake Pad - Front (R&L)",
+            "price": 593.3,
+            "required": false
+          },
+          {
+            "name": "Brake Pad - Rear (R&L)",
+            "price": 542.2,
+            "required": false
+          }
+        ],
+        "required_price": 235.3,
+        "with_recommended_price": 1546.5
+      }
+    ]
+  },
+  "Chery Omoda 5": {
+    "price_date_label": "29 Aug 2025",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 10000,
+        "months": 6,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 403.5,
+        "with_recommended_price": 403.5
+      },
+      {
+        "km": 30000,
+        "months": 18,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 622.9,
+        "with_recommended_price": 622.9
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "CVT Transmission Oil (4L)",
+            "price": 320.0,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 773.5,
+        "with_recommended_price": 773.5
+      },
+      {
+        "km": 50000,
+        "months": 30,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 547.3,
+        "with_recommended_price": 547.3
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 570.9,
+        "with_recommended_price": 570.9
+      },
+      {
+        "km": 70000,
+        "months": 42,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "CVT Transmission Oil (4L)",
+            "price": 320.0,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 773.5,
+        "with_recommended_price": 773.5
+      },
+      {
+        "km": 90000,
+        "months": 54,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 622.9,
+        "with_recommended_price": 622.9
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 545.3,
+        "with_recommended_price": 545.3
+      },
+      {
+        "km": 110000,
+        "months": 66,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "CVT Transmission Oil (4L)",
+            "price": 320.0,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 300.0,
+            "required": true
+          }
+        ],
+        "required_price": 1240.9,
+        "with_recommended_price": 1240.9
+      },
+      {
+        "km": 130000,
+        "months": 78,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 553.5,
+        "with_recommended_price": 553.5
+      },
+      {
+        "km": 150000,
+        "months": 90,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 764.7,
+        "with_recommended_price": 764.7
+      }
+    ]
+  },
+  "Chery O5": {
+    "price_date_label": "10 Sept 2025",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 10000,
+        "months": 6,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 403.5,
+        "with_recommended_price": 403.5
+      },
+      {
+        "km": 30000,
+        "months": 18,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 157.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 563.1,
+        "with_recommended_price": 563.1
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.3L)",
+            "price": 580.0,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 1175.3,
+        "with_recommended_price": 1175.3
+      },
+      {
+        "km": 50000,
+        "months": 30,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 157.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 561.1,
+        "with_recommended_price": 561.1
+      },
+      {
+        "km": 70000,
+        "months": 42,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.3L)",
+            "price": 580.0,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 1175.3,
+        "with_recommended_price": 1175.3
+      },
+      {
+        "km": 90000,
+        "months": 54,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 157.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 563.1,
+        "with_recommended_price": 563.1
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 403.5,
+        "with_recommended_price": 403.5
+      },
+      {
+        "km": 110000,
+        "months": 66,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.3L)",
+            "price": 580.0,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 157.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 250.0,
+            "required": true
+          }
+        ],
+        "required_price": 1582.9,
+        "with_recommended_price": 1582.9
+      },
+      {
+        "km": 130000,
+        "months": 78,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 503.5,
+        "with_recommended_price": 503.5
+      },
+      {
+        "km": 150000,
+        "months": 90,
+        "items": [
+          {
+            "name": "Fully Synthetic Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 157.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 563.1,
+        "with_recommended_price": 563.1
+      }
+    ]
+  },
+  "Chery Tiggo 7 Pro": {
+    "price_date_label": "29 Aug 2025",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 10000,
+        "months": 6,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 406.5,
+        "with_recommended_price": 406.5
+      },
+      {
+        "km": 30000,
+        "months": 18,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 622.9,
+        "with_recommended_price": 622.9
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 456.5,
+        "with_recommended_price": 456.5
+      },
+      {
+        "km": 50000,
+        "months": 30,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.25L)",
+            "price": 580.0,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 1177.3,
+        "with_recommended_price": 1177.3
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 573.9,
+        "with_recommended_price": 573.9
+      },
+      {
+        "km": 70000,
+        "months": 42,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 456.5,
+        "with_recommended_price": 456.5
+      },
+      {
+        "km": 90000,
+        "months": 54,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 622.9,
+        "with_recommended_price": 622.9
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.25L)",
+            "price": 580.0,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 1128.3,
+        "with_recommended_price": 1128.3
+      },
+      {
+        "km": 110000,
+        "months": 66,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 250.0,
+            "required": true
+          }
+        ],
+        "required_price": 873.9,
+        "with_recommended_price": 873.9
+      },
+      {
+        "km": 130000,
+        "months": 78,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 556.5,
+        "with_recommended_price": 556.5
+      },
+      {
+        "km": 150000,
+        "months": 90,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.25L)",
+            "price": 580.0,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 1344.7,
+        "with_recommended_price": 1344.7
+      }
+    ]
+  },
+  "Chery Tiggo 7 PHEV": {
+    "price_date_label": "27 August 2026",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 10000,
+        "months": 6,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 407.5,
+        "with_recommended_price": 407.5
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 444.6,
+        "with_recommended_price": 622.9
+      },
+      {
+        "km": 30000,
+        "months": 18,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plugs",
+            "price": 308.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": false
+          }
+        ],
+        "required_price": 715.9,
+        "with_recommended_price": 745.4
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (0.85L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.5L)",
+            "price": 399.2,
+            "required": true
+          },
+          {
+            "name": "Coolant (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Transmission Filter",
+            "price": 68.6,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 1085.6,
+        "with_recommended_price": 1332.5
+      },
+      {
+        "km": 50000,
+        "months": 30,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 407.5,
+        "with_recommended_price": 407.5
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Spark Plugs",
+            "price": 308.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Charcoal Canister Filter",
+            "price": 90.7,
+            "required": false
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Front)",
+            "price": 593.3,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Rear)",
+            "price": 440.7,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 753.0,
+        "with_recommended_price": 2085.5
+      },
+      {
+        "km": 70000,
+        "months": 42,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 407.5,
+        "with_recommended_price": 407.5
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (0.85L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.5L)",
+            "price": 399.2,
+            "required": true
+          },
+          {
+            "name": "Coolant (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Transmission Filter",
+            "price": 68.6,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 1085.6,
+        "with_recommended_price": 1332.5
+      },
+      {
+        "km": 90000,
+        "months": 54,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plugs",
+            "price": 308.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": false
+          }
+        ],
+        "required_price": 715.9,
+        "with_recommended_price": 745.4
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 444.6,
+        "with_recommended_price": 622.9
+      },
+      {
+        "km": 110000,
+        "months": 66,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 407.5,
+        "with_recommended_price": 407.5
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Spark Plugs",
+            "price": 308.4,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (0.85L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.5L)",
+            "price": 399.2,
+            "required": true
+          },
+          {
+            "name": "Coolant (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Filter",
+            "price": 68.6,
+            "required": false
+          },
+          {
+            "name": "Charcoal Canister Filter",
+            "price": 90.7,
+            "required": false
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Front)",
+            "price": 593.3,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Rear)",
+            "price": 440.7,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 1644.0,
+        "with_recommended_price": 3045.1
+      },
+      {
+        "km": 130000,
+        "months": 78,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 407.5,
+        "with_recommended_price": 407.5
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 544.6,
+        "with_recommended_price": 722.9
+      },
+      {
+        "km": 150000,
+        "months": 90,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plugs",
+            "price": 308.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": false
+          }
+        ],
+        "required_price": 715.9,
+        "with_recommended_price": 745.4
+      }
+    ]
+  },
+  "Chery Tiggo 8": {
+    "price_date_label": "27 March 2026",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 10000,
+        "months": 6,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 90.0,
+            "required": true
+          }
+        ],
+        "required_price": 395.5,
+        "with_recommended_price": 395.5
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 406.5,
+        "with_recommended_price": 406.5
+      },
+      {
+        "km": 30000,
+        "months": 18,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 130.0,
+            "required": true
+          }
+        ],
+        "required_price": 602.9,
+        "with_recommended_price": 602.9
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 506.5,
+        "with_recommended_price": 506.5
+      },
+      {
+        "km": 50000,
+        "months": 30,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 130.0,
+            "required": true
+          }
+        ],
+        "required_price": 577.3,
+        "with_recommended_price": 577.3
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.25L)",
+            "price": 580.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 1153.9,
+        "with_recommended_price": 1153.9
+      },
+      {
+        "km": 70000,
+        "months": 42,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 90.0,
+            "required": true
+          }
+        ],
+        "required_price": 395.5,
+        "with_recommended_price": 395.5
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 506.5,
+        "with_recommended_price": 506.5
+      },
+      {
+        "km": 90000,
+        "months": 54,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 130.0,
+            "required": true
+          }
+        ],
+        "required_price": 602.9,
+        "with_recommended_price": 602.9
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 548.3,
+        "with_recommended_price": 548.3
+      },
+      {
+        "km": 110000,
+        "months": 66,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 90.0,
+            "required": true
+          }
+        ],
+        "required_price": 395.5,
+        "with_recommended_price": 395.5
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.25L)",
+            "price": 580.0,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 240.0,
+            "required": true
+          }
+        ],
+        "required_price": 1493.9,
+        "with_recommended_price": 1493.9
+      },
+      {
+        "km": 130000,
+        "months": 78,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 90.0,
+            "required": true
+          }
+        ],
+        "required_price": 395.5,
+        "with_recommended_price": 395.5
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 110.0,
+            "required": true
+          }
+        ],
+        "required_price": 516.5,
+        "with_recommended_price": 516.5
+      },
+      {
+        "km": 150000,
+        "months": 90,
+        "items": [
+          {
+            "name": "Engine Oil SP 5W30 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 170.0,
+            "required": true
+          }
+        ],
+        "required_price": 784.7,
+        "with_recommended_price": 784.7
+      }
+    ]
+  },
+  "Chery Tiggo 8 Pro": {
+    "price_date_label": "29 Aug 2025",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 10000,
+        "months": 6,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 385.5,
+        "with_recommended_price": 385.5
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 386.5,
+        "with_recommended_price": 386.5
+      },
+      {
+        "km": 30000,
+        "months": 18,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 233.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 669.1,
+        "with_recommended_price": 669.1
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 436.5,
+        "with_recommended_price": 436.5
+      },
+      {
+        "km": 50000,
+        "months": 30,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.25L)",
+            "price": 400.0,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 977.3,
+        "with_recommended_price": 977.3
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 233.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 620.1,
+        "with_recommended_price": 620.1
+      },
+      {
+        "km": 70000,
+        "months": 42,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 385.5,
+        "with_recommended_price": 385.5
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 436.5,
+        "with_recommended_price": 436.5
+      },
+      {
+        "km": 90000,
+        "months": 54,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 233.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 669.1,
+        "with_recommended_price": 669.1
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.25L)",
+            "price": 400.0,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 928.3,
+        "with_recommended_price": 928.3
+      },
+      {
+        "km": 110000,
+        "months": 66,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 385.5,
+        "with_recommended_price": 385.5
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 233.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 250.0,
+            "required": true
+          }
+        ],
+        "required_price": 920.1,
+        "with_recommended_price": 920.1
+      },
+      {
+        "km": 130000,
+        "months": 78,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 385.5,
+        "with_recommended_price": 385.5
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 536.5,
+        "with_recommended_price": 536.5
+      },
+      {
+        "km": 150000,
+        "months": 90,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W20 (4.0L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.25L)",
+            "price": 400.0,
+            "required": true
+          },
+          {
+            "name": "Radiator Coolant Long Life (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 233.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 1210.9,
+        "with_recommended_price": 1210.9
+      }
+    ]
+  },
+  "Chery Tiggo 8 PHEV": {
+    "price_date_label": "27 August 2026",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 10000,
+        "months": 6,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 407.5,
+        "with_recommended_price": 407.5
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 444.6,
+        "with_recommended_price": 622.9
+      },
+      {
+        "km": 30000,
+        "months": 18,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plugs",
+            "price": 308.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": false
+          }
+        ],
+        "required_price": 715.9,
+        "with_recommended_price": 745.4
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (0.85L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.5L)",
+            "price": 399.2,
+            "required": true
+          },
+          {
+            "name": "Coolant (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Transmission Filter",
+            "price": 68.6,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 1085.6,
+        "with_recommended_price": 1332.5
+      },
+      {
+        "km": 50000,
+        "months": 30,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 407.5,
+        "with_recommended_price": 407.5
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Spark Plugs",
+            "price": 308.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Charcoal Canister Filter",
+            "price": 90.7,
+            "required": false
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Front)",
+            "price": 727.2,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Rear)",
+            "price": 897.3,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 753.0,
+        "with_recommended_price": 2676.0
+      },
+      {
+        "km": 70000,
+        "months": 42,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 407.5,
+        "with_recommended_price": 407.5
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (0.85L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.5L)",
+            "price": 399.2,
+            "required": true
+          },
+          {
+            "name": "Coolant (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Transmission Filter",
+            "price": 68.6,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 1085.6,
+        "with_recommended_price": 1332.5
+      },
+      {
+        "km": 90000,
+        "months": 54,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plugs",
+            "price": 308.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": false
+          }
+        ],
+        "required_price": 715.9,
+        "with_recommended_price": 745.4
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 444.6,
+        "with_recommended_price": 622.9
+      },
+      {
+        "km": 110000,
+        "months": 66,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 407.5,
+        "with_recommended_price": 407.5
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Spark Plugs",
+            "price": 308.4,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (0.85L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.5L)",
+            "price": 399.2,
+            "required": true
+          },
+          {
+            "name": "Coolant (4L)",
+            "price": 141.8,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Filter",
+            "price": 68.6,
+            "required": false
+          },
+          {
+            "name": "Charcoal Canister Filter",
+            "price": 90.7,
+            "required": false
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Front)",
+            "price": 727.2,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Rear)",
+            "price": 897.3,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 1644.0,
+        "with_recommended_price": 3635.6
+      },
+      {
+        "km": 130000,
+        "months": 78,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 407.5,
+        "with_recommended_price": 407.5
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 137.1,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 544.6,
+        "with_recommended_price": 722.9
+      },
+      {
+        "km": 150000,
+        "months": 90,
+        "items": [
+          {
+            "name": "Engine Oil C5 0W-20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 3.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plugs",
+            "price": 308.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": false
+          }
+        ],
+        "required_price": 715.9,
+        "with_recommended_price": 745.4
+      }
+    ]
+  },
+  "Chery Tiggo 9": {
+    "price_date_label": "23 June 2026",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 10000,
+        "months": 6,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 90.0,
+            "required": true
+          }
+        ],
+        "required_price": 395.5,
+        "with_recommended_price": 395.5
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": false
+          }
+        ],
+        "required_price": 305.5,
+        "with_recommended_price": 406.5
+      },
+      {
+        "km": 30000,
+        "months": 18,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 233.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 120.0,
+            "required": true
+          }
+        ],
+        "required_price": 688.6,
+        "with_recommended_price": 688.6
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": false
+          },
+          {
+            "name": "Radiator Coolant Long Life (7.5L)",
+            "price": 283.6,
+            "required": false
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 790.1
+      },
+      {
+        "km": 50000,
+        "months": 30,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Transfer Fluid Fu Zhen (500ML)",
+            "price": 150.0,
+            "required": true
+          },
+          {
+            "name": "Rear Final Drive Fluid Fu Zhen (600ML)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 150.0,
+            "required": true
+          }
+        ],
+        "required_price": 705.5,
+        "with_recommended_price": 705.5
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.3L)",
+            "price": 580.0,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 233.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": false
+          },
+          {
+            "name": "Charcoal canister filter (complete with carbon box)",
+            "price": 985.6,
+            "required": false
+          }
+        ],
+        "required_price": 1148.6,
+        "with_recommended_price": 2235.2
+      },
+      {
+        "km": 70000,
+        "months": 42,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 90.0,
+            "required": true
+          }
+        ],
+        "required_price": 395.5,
+        "with_recommended_price": 395.5
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": false
+          },
+          {
+            "name": "Radiator Coolant Long Life (7.5L)",
+            "price": 283.6,
+            "required": false
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 790.1
+      },
+      {
+        "km": 90000,
+        "months": 54,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 233.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 120.0,
+            "required": true
+          }
+        ],
+        "required_price": 688.6,
+        "with_recommended_price": 688.6
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Transfer Fluid Fu Zhen (500ML)",
+            "price": 150.0,
+            "required": true
+          },
+          {
+            "name": "Rear Final Drive Fluid Fu Zhen (600ML)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": false
+          }
+        ],
+        "required_price": 555.5,
+        "with_recommended_price": 656.5
+      },
+      {
+        "km": 110000,
+        "months": 66,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 90.0,
+            "required": true
+          }
+        ],
+        "required_price": 395.5,
+        "with_recommended_price": 395.5
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "DCT Transmission Oil (4.3L)",
+            "price": 580.0,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 233.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 210.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": false
+          },
+          {
+            "name": "Charcoal canister filter (complete with carbon box)",
+            "price": 985.6,
+            "required": false
+          },
+          {
+            "name": "Radiator Coolant Long Life (7.5L)",
+            "price": 283.6,
+            "required": false
+          }
+        ],
+        "required_price": 1458.6,
+        "with_recommended_price": 2828.8
+      },
+      {
+        "km": 130000,
+        "months": 78,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 90.0,
+            "required": true
+          }
+        ],
+        "required_price": 395.5,
+        "with_recommended_price": 395.5
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 90.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 101.0,
+            "required": false
+          }
+        ],
+        "required_price": 395.5,
+        "with_recommended_price": 496.5
+      },
+      {
+        "km": 150000,
+        "months": 90,
+        "items": [
+          {
+            "name": "Engine Oil 0W20 (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Fuel Filter",
+            "price": 29.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 233.6,
+            "required": true
+          },
+          {
+            "name": "Transfer Fluid Fu Zhen (500ML)",
+            "price": 150.0,
+            "required": true
+          },
+          {
+            "name": "Rear Final Drive Fluid Fu Zhen (600ML)",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 180.0,
+            "required": true
+          }
+        ],
+        "required_price": 998.6,
+        "with_recommended_price": 998.6
+      }
+    ]
+  },
+  "Chery Tiggo Cross HEV": {
+    "price_date_label": "17 September 2026",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 10000,
+        "months": 6,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 385.5,
+        "with_recommended_price": 385.5
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 99.2,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 384.7,
+        "with_recommended_price": 563.0
+      },
+      {
+        "km": 30000,
+        "months": 18,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 552.9,
+        "with_recommended_price": 552.9
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.7L)",
+            "price": 399.2,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 99.2,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          },
+          {
+            "name": "Coolant (10.5L)",
+            "price": 425.4,
+            "required": false
+          }
+        ],
+        "required_price": 833.9,
+        "with_recommended_price": 1437.6
+      },
+      {
+        "km": 50000,
+        "months": 30,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 385.5,
+        "with_recommended_price": 385.5
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 99.2,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Brake Pad (Front)",
+            "price": 483.1,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Rear)",
+            "price": 383.3,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 552.1,
+        "with_recommended_price": 1596.8
+      },
+      {
+        "km": 70000,
+        "months": 42,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 385.5,
+        "with_recommended_price": 385.5
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.7L)",
+            "price": 399.2,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 99.2,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          },
+          {
+            "name": "Coolant (10.5L)",
+            "price": 425.4,
+            "required": false
+          }
+        ],
+        "required_price": 833.9,
+        "with_recommended_price": 1437.6
+      },
+      {
+        "km": 90000,
+        "months": 54,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 552.9,
+        "with_recommended_price": 552.9
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 99.2,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 384.7,
+        "with_recommended_price": 563.0
+      },
+      {
+        "km": 110000,
+        "months": 66,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 385.5,
+        "with_recommended_price": 385.5
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.7L)",
+            "price": 399.2,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 99.2,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 200.0,
+            "required": true
+          },
+          {
+            "name": "Brake Pad (Front)",
+            "price": 483.1,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Rear)",
+            "price": 382.3,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          },
+          {
+            "name": "Coolant (10.5L)",
+            "price": 425.4,
+            "required": false
+          }
+        ],
+        "required_price": 1201.3,
+        "with_recommended_price": 2670.4
+      },
+      {
+        "km": 130000,
+        "months": 78,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 385.5,
+        "with_recommended_price": 385.5
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 99.2,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 484.7,
+        "with_recommended_price": 663.0
+      },
+      {
+        "km": 150000,
+        "months": 90,
+        "items": [
+          {
+            "name": "Engine Oil (4L)",
+            "price": 250.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 167.4,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 552.9,
+        "with_recommended_price": 552.9
+      }
+    ]
+  },
+  "Chery Tiggo Cross 1.5T": {
+    "price_date_label": "17 September 2026",
+    "stops": [
+      {
+        "km": 1000,
+        "months": 1,
+        "items": [
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          }
+        ],
+        "required_price": 0,
+        "with_recommended_price": 0
+      },
+      {
+        "km": 10000,
+        "months": 6,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 20000,
+        "months": 12,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 403.5,
+        "with_recommended_price": 581.8
+      },
+      {
+        "km": 30000,
+        "months": 18,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 157.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 563.1,
+        "with_recommended_price": 563.1
+      },
+      {
+        "km": 40000,
+        "months": 24,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          },
+          {
+            "name": "Coolant (8L)",
+            "price": 283.6,
+            "required": false
+          }
+        ],
+        "required_price": 453.5,
+        "with_recommended_price": 915.4
+      },
+      {
+        "km": 50000,
+        "months": 30,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 60000,
+        "months": 36,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 157.6,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.4L)",
+            "price": 464.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Brake Pad (Front)",
+            "price": 483.1,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Rear)",
+            "price": 383.3,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 1025.1,
+        "with_recommended_price": 2069.8
+      },
+      {
+        "km": 70000,
+        "months": 42,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 80000,
+        "months": 48,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          },
+          {
+            "name": "Coolant (8L)",
+            "price": 283.6,
+            "required": false
+          }
+        ],
+        "required_price": 453.5,
+        "with_recommended_price": 915.4
+      },
+      {
+        "km": 90000,
+        "months": 54,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 157.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 563.1,
+        "with_recommended_price": 563.1
+      },
+      {
+        "km": 100000,
+        "months": 60,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 403.5,
+        "with_recommended_price": 581.8
+      },
+      {
+        "km": 110000,
+        "months": 66,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 120000,
+        "months": 72,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 157.6,
+            "required": true
+          },
+          {
+            "name": "Brake Fluid (1L)",
+            "price": 50.0,
+            "required": true
+          },
+          {
+            "name": "Transmission Oil (3.4L)",
+            "price": 464.0,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 200.0,
+            "required": true
+          },
+          {
+            "name": "Brake Pad (Front)",
+            "price": 483.1,
+            "required": false
+          },
+          {
+            "name": "Brake Pad (Rear)",
+            "price": 383.3,
+            "required": false
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          },
+          {
+            "name": "Coolant (8L)",
+            "price": 283.6,
+            "required": false
+          }
+        ],
+        "required_price": 1275.1,
+        "with_recommended_price": 2603.4
+      },
+      {
+        "km": 130000,
+        "months": 78,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 405.5,
+        "with_recommended_price": 405.5
+      },
+      {
+        "km": 140000,
+        "months": 84,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Element Air Filter",
+            "price": 98.0,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          },
+          {
+            "name": "Wiper Blade (R & L)",
+            "price": 178.3,
+            "required": false
+          }
+        ],
+        "required_price": 503.5,
+        "with_recommended_price": 681.8
+      },
+      {
+        "km": 150000,
+        "months": 90,
+        "items": [
+          {
+            "name": "Engine Oil (4.7L)",
+            "price": 270.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Filter",
+            "price": 34.0,
+            "required": true
+          },
+          {
+            "name": "Engine Oil Washer",
+            "price": 1.5,
+            "required": true
+          },
+          {
+            "name": "Spark Plug",
+            "price": 157.6,
+            "required": true
+          },
+          {
+            "name": "Labour Fee",
+            "price": 100.0,
+            "required": true
+          }
+        ],
+        "required_price": 563.1,
+        "with_recommended_price": 563.1
+      }
+    ]
+  }
+}
