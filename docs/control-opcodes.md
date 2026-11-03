@@ -59,6 +59,8 @@ Runtime-confirmed so far: `742701` (app log) plus lock/unlock, trunk open/close 
 open/close (J5 EV, ID, 2026-08-30) — the rest are a static decode awaiting one-tap verification
 on a live car (that's what the Control tab tester is for).
 
+**Reading the result:** the reply to a `74xxyy` command is `<deviceSn>__74xxyyRR`. `RR` = `00` means the car did it; any other byte is the car refusing (for A/C: `96` key inside, `2A` moving, `95` low battery, ...). Full table and how `/api/control` reports it: [api-map.md](api-map.md#apicontrol--the-cars-own-verdict-since-2026-11-03).
+
 | Action | Opcode | Status |
 |---|---|---|
 | Lock / unlock | `740100` / `740200` | ✅ runtime-confirmed (J5 EV, ID, 2026-08-30) |

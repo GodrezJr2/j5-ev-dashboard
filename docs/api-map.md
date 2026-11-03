@@ -134,6 +134,51 @@ than me" and degrade gracefully rather than guessing at the new shape.
 This exists because there are now clients this repo does not control — see issue #12 — so a
 careless field rename becomes somebody else's outage rather than just ours.
 
+### `/api/stream` — realtime summary (Server-Sent Events, since 2026-11-03)
+
+`GET /api/stream` answers `text/event-stream`. Each `data:` event is a complete `/api/summary`
+payload (same shape, same `api_version`), so a client can swap it in exactly as it would a polled
+summary. Same auth gate as `/api/summary`.
+
+- One watcher thread in `server.py` checks the newest `telemetry` row every **1 s** and publishes a
+  new summary only when the stored frame (`raw`) changed. The logger stores each frame the car
+  pushes the moment it lands, so a lock/unlock or A/C change reaches every open tab about a second
+  after the car reports it.
+- An unchanged summary is re-sent every **30 s** (keeps "updated x ago" honest) and an SSE comment
+  `: ping` every **15 s** keeps proxies (tailscale serve / funnel) from closing an idle stream.
+- N open tabs cost one DB check per second, not N polls. `retry: 3000` tells the browser to
+  reconnect after 3 s.
+- v2 uses it and falls back to polling (15 s home, 4 s Doors / Climate) only while the stream is
+  down; it closes the stream when the tab is hidden and reopens it on return.
+
+### `/api/control` — the car's own verdict (since 2026-11-03)
+
+`POST /api/control {data, timeOut}` returns `{ok, code, msg, result, reason}`.
+
+CarLinko's `code: "0000"` only means the command **reached the T-Box**. The car's answer is in the
+reply's `data`, as `<deviceSn>__74<CMD><STATE><RESULT>`:
+
+| `RESULT` | Meaning |
+|---|---|
+| `00` | done |
+| anything else | the car refused; `ok` is `false` |
+
+So `ok` is now `true` only when the cloud accepted **and** the car answered `00`; before this,
+`ok` was `true` on `0000` alone and a refused A/C still toasted "A/C is on". `result` is the raw
+byte, `reason` a human text where one is known. For A/C (`CMD 0x10`) the codes come from the app's
+`vehicle_control_response_handle.dart`, texts from its `assets/i18n/module_en.json`:
+
+| Code | Reason | Code | Reason |
+|---|---|---|---|
+| `2A` | vehicle in motion | `96` | key detected inside the car |
+| `93` | not in remote mode | `22` | a door is unlocked |
+| `23` | vehicle is started | `99` | T-Box authentication failed |
+| `94` | high-voltage fault | `9A` | not in P |
+| `95` | battery too low | `9B` | hazard lights are on |
+
+Other commands report `Car refused (code 0x..)` until their branches are mapped. Seen live
+2026-11-03: `741001` → `…__74100196` (key inside, owner at the car), `740100` → `…__74010000`.
+
 ---
 
 ## Standalone access — VALIDATED ✅
