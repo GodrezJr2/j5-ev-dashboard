@@ -1719,6 +1719,73 @@ def trip_plan(frm, to, soc, cons, reserve=10.0, target=80.0, derate=1.0, a=None,
             "total_cost": round(sum(s["cost"] for s in stops)),
             "src": "google" if _gkey() else "osm"}
 
+# ---- realtime: /api/stream (Server-Sent Events) ----
+# The logger stores each frame the car pushes the moment it lands. One watcher thread looks at the
+# newest row once a second and rebuilds the summary only when the frame itself changed (the logger
+# also re-stores an unchanged frame every 30 s to keep "updated" fresh, so those get a slower beat).
+# Every open dashboard tab waits on the same condition, so N tabs cost one DB check, not N polls.
+STREAM_TICK = 1.0     # how often the watcher looks at the newest row
+STREAM_FRESH = 30     # re-send an unchanged summary this often so "Updated x ago" stays honest
+STREAM_PING = 15      # SSE comment so proxies (tailscale serve) keep an idle stream open
+_stream_cv = threading.Condition()
+_stream_state = {"seq": 0, "body": None, "started": False}
+
+def _latest_raw():
+    conn = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
+    try:
+        r = conn.execute("SELECT raw FROM telemetry ORDER BY rowid DESC LIMIT 1").fetchone()
+        return r[0] if r else None
+    finally:
+        conn.close()
+
+def _stream_publish():
+    body = json.dumps(summary()).encode()
+    with _stream_cv:
+        _stream_state["seq"] += 1
+        _stream_state["body"] = body
+        _stream_cv.notify_all()
+
+def _stream_watch():
+    last_raw, last_pub = object(), 0.0
+    while True:
+        try:
+            raw = None if DEMO else _latest_raw()
+            if raw != last_raw or time.time() - last_pub >= STREAM_FRESH:
+                _stream_publish(); last_raw, last_pub = raw, time.time()
+        except Exception as e:
+            print("stream watcher:", repr(e)[:160])
+        time.sleep(STREAM_TICK)
+
+def _stream_start():
+    with _stream_cv:
+        if _stream_state["started"]:
+            return
+        _stream_state["started"] = True
+    threading.Thread(target=_stream_watch, name="stream-watch", daemon=True).start()
+
+# Car's own verdict on a command: the reply carries "<deviceSn>__74<CMD><STATE><RESULT>", where
+# RESULT 00 = done and anything else = the car refused (vehicle_control_response_handle.dart).
+# The cloud's code 0000 only means the command reached the T-Box.
+AC_REFUSALS = {   # the A/C branch of that handler; texts are the app's own module_en.json strings
+    "2A": "Vehicle in motion", "93": "Vehicle not in remote mode", "23": "Vehicle is started",
+    "94": "High-voltage fault", "95": "Battery too low", "96": "Key detected inside the car",
+    "22": "A door is unlocked", "99": "T-Box authentication failed", "9A": "Not in P",
+    "9B": "Hazard lights are on",
+}
+
+def control_verdict(op, data):
+    """(accepted, result_byte, reason) from the car's reply to a 74xxyy command."""
+    op = str(op).upper()
+    tail = str(data or "").split("__")[-1].upper()
+    if not op.startswith("74") or len(op) != 6 or not tail.startswith(op) or len(tail) < 8:
+        return True, None, None                      # not an actuation, or no verdict in the reply
+    res = tail[6:8]
+    if res == "00":
+        return True, res, None
+    reason = AC_REFUSALS.get(res) if op[2:4] == "10" else None
+    return False, res, reason or f"Car refused (code 0x{res})"
+
+
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a):  # quiet
         pass
@@ -1756,6 +1823,32 @@ class H(BaseHTTPRequestHandler):
             return
         if path == "/api/summary":
             self._send(200, json.dumps(summary()).encode(), "application/json")
+            return
+        if path == "/api/stream":                      # realtime: a summary each time the car pushes
+            _stream_start()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Accel-Buffering", "no")
+            self.end_headers()
+            try:
+                self.wfile.write(b"retry: 3000\n\n")
+                with _stream_cv:
+                    seq, body = _stream_state["seq"], _stream_state["body"]
+                if body is None:                       # watcher hasn't published yet
+                    body = json.dumps(summary()).encode()
+                while True:
+                    if body is not None:
+                        self.wfile.write(b"data: " + body + b"\n\n"); self.wfile.flush()
+                        body = None
+                    with _stream_cv:
+                        _stream_cv.wait_for(lambda: _stream_state["seq"] != seq, timeout=STREAM_PING)
+                        if _stream_state["seq"] != seq:
+                            seq, body = _stream_state["seq"], _stream_state["body"]
+                    if body is None:
+                        self.wfile.write(b": ping\n\n"); self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                pass                                   # tab closed
             return
         if path == "/api/controls":                    # what this car supports + opcodes to test
             if not self._authed():
@@ -1944,8 +2037,11 @@ class H(BaseHTTPRequestHandler):
                     self._send(200, json.dumps({"ok": False, "error": "opcode must be short hex"}).encode(),
                                "application/json"); return
                 d = send_control(op, body.get("timeOut") or 20)
-                self._send(200, json.dumps({"ok": str(d.get("code")) == "0000",
-                                            "code": d.get("code"), "msg": d.get("msg")}).encode(),
+                reached = str(d.get("code")) == "0000"
+                done, res, reason = control_verdict(op, d.get("data")) if reached else (False, None, None)
+                self._send(200, json.dumps({"ok": reached and done, "code": d.get("code"),
+                                            "msg": d.get("msg"), "result": res,
+                                            "reason": reason}).encode(),
                            "application/json")
             except Exception as e:
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(), "application/json")

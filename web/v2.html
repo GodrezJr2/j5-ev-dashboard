@@ -608,9 +608,42 @@
   @keyframes draw{to{stroke-dashoffset:0}}
   .drawf{opacity:0;animation:drawf 520ms linear 420ms forwards}
   @keyframes drawf{to{opacity:1}}
+
+  /* ---------- first-load skeleton ----------
+     Same shapes as what replaces it (hero lines, round quick actions, the 2-up cards, the row
+     list), so nothing jumps when the summary lands. One slow sheen, transform only; reduced
+     motion keeps the blocks static. Every render replaces these nodes, so they never linger. */
+  .sk{display:block;position:relative;overflow:hidden;border-radius:var(--r1);
+    background:color-mix(in oklch,var(--ink) 9%,transparent)}
+  .sk:after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+    background:linear-gradient(90deg,transparent,color-mix(in oklch,var(--card) 55%,transparent),transparent);
+    animation:sheen 1.4s ease-in-out infinite}
+  @keyframes sheen{to{transform:translateX(100%)}}
+  @media (prefers-reduced-motion:reduce){ .sk:after{display:none} }
+  .sk-model{width:132px;height:15px;margin-top:2px}
+  .sk-state{width:150px;height:10px;margin-top:8px}
+  .sk-range{width:150px;height:62px;margin:6px auto 0;border-radius:var(--r2)}
+  .sk-bar{width:120px;height:9px;margin:0 auto;border-radius:var(--rf)}
+  .qa .sk-qa{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .qa .sk-qa .sk:first-child{width:54px;height:54px;border-radius:50%}
+  .qa .sk-qa .sk:last-child{width:40px;height:9px}
+  .card.skc{min-height:94px}
+  .card.skc .sk:nth-child(1){width:26px;height:26px;border-radius:8px;margin-bottom:var(--s3)}
+  .card.skc .sk:nth-child(2){width:62%;height:13px}
+  .card.skc .sk:nth-child(3){width:44%;height:10px;margin-top:8px}
+  .card.skc.tall{min-height:132px}
+  .rowcard .skr{display:flex;align-items:center;gap:var(--s3);padding:var(--s4)}
+  .rowcard .skr + .skr{border-top:1px solid var(--line)}
+  .rowcard .skr .sk:first-child{width:22px;height:22px;border-radius:7px;flex:none}
+  .rowcard .skr .sk:nth-child(2){width:38%;height:12px}
+  .rowcard .skr .sk:last-child{width:22%;height:12px;margin-left:auto}
+  body.loading .hcar{opacity:.35}
+  .hcar{transition:opacity var(--t-slow) linear}
+  body.loading .hrange u{display:none}
+  .hrange .sk-range{display:inline-block;vertical-align:bottom}
 </style>
 </head>
-<body>
+<body class="loading">
 <!-- DIRECTION CONTRACT (v2, "Instrument", 2026-09-11)
 THESIS: A well-made gauge, not an app screen. The range numeral is the whole first viewport; everything
 else is a hairline list beneath it. Refuses both the stat-tile dashboard and the card-grid car app.
@@ -632,14 +665,14 @@ MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduc
   <header class="hero">
     <div class="hbar">
       <div class="hname">
-        <span class="hm" id="hModel">&mdash;</span>
-        <span class="hs"><i class="dot" id="hDot"></i><span id="hState">&mdash;</span>
+        <span class="hm" id="hModel"><i class="sk sk-model"></i></span>
+        <span class="hs"><i class="dot" id="hDot"></i><span id="hState"><i class="sk sk-state"></i></span>
           <span id="hWhen"></span></span>
       </div>
       <button class="rf" id="hRefresh" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 9.5a8 8 0 0113.3-2.7L20.5 9.5"/><path d="M20.5 4.5v5h-5"/><path d="M19.5 14.5a8 8 0 01-13.3 2.7L3.5 14.5"/><path d="M3.5 19.5v-5h5"/></svg></button>
     </div>
-    <div class="hrange"><b class="num" id="hRange">&mdash;</b><u>km</u></div>
-    <div class="bars" id="hBars"></div>
+    <div class="hrange"><b class="num" id="hRange"><i class="sk sk-range"></i></b><u>km</u></div>
+    <div class="bars" id="hBars"><i class="sk sk-bar"></i></div>
     <div class="carwrap" id="carWrap">
       <img class="hcar" id="hCar" src="car-generic.svg" alt="Your car" width="330" height="212">
       <div class="chgshot" aria-hidden="true">
@@ -653,10 +686,22 @@ MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduc
       </div>
     </div>
   </header>
-  <nav class="qa" id="qaRow" aria-label="Quick actions"></nav>
+  <nav class="qa" id="qaRow" aria-label="Quick actions" aria-busy="true">
+    <span class="sk-qa"><i class="sk"></i><i class="sk"></i></span><span class="sk-qa"><i class="sk"></i><i class="sk"></i></span>
+    <span class="sk-qa"><i class="sk"></i><i class="sk"></i></span><span class="sk-qa"><i class="sk"></i><i class="sk"></i></span>
+  </nav>
   <div class="chg" id="chgPill" hidden></div>
-  <div class="grid" id="cardGrid"></div>
-  <div id="rowsHost"></div>
+  <div class="grid" id="cardGrid" aria-hidden="true">
+    <div class="card skc tall"><i class="sk"></i><i class="sk"></i><i class="sk"></i></div>
+    <div class="card skc tall"><i class="sk"></i><i class="sk"></i><i class="sk"></i></div>
+    <div class="card skc"><i class="sk"></i><i class="sk"></i><i class="sk"></i></div>
+    <div class="card skc"><i class="sk"></i><i class="sk"></i><i class="sk"></i></div>
+  </div>
+  <div id="rowsHost" aria-hidden="true"><div class="rowcard" style="margin:var(--s3) var(--pad) 0">
+    <div class="skr"><i class="sk"></i><i class="sk"></i><i class="sk"></i></div>
+    <div class="skr"><i class="sk"></i><i class="sk"></i><i class="sk"></i></div>
+    <div class="skr"><i class="sk"></i><i class="sk"></i><i class="sk"></i></div>
+  </div></div>
 </div>
 
 <div id="viewAcct" hidden>
@@ -893,6 +938,12 @@ function opText(op){
   }
   return ['Done', 'do that'];
 }
+// state a command leaves behind once the car has confirmed it (result byte 00)
+const OPTIMISTIC = {
+  '740100': {unlocked: false}, '740200': {unlocked: true},
+  '741001': {ac_on: true},     '741000': {ac_on: false},
+  '740300': {trunk_open: true}, '740A00': {trunk_open: false},
+};
 async function fire(op, btn){        // resolves true when the car accepted the command
   const [done, doing] = opText(op);
   let ok = false;
@@ -903,7 +954,14 @@ async function fire(op, btn){        // resolves true when the car accepted the 
     await new Promise(r => setTimeout(r, 600));
     const d = await api('api/control', {method: 'POST', headers: {'content-type': 'application/json'},
       body: JSON.stringify({data: op, timeOut: 20})});
-    if(d.ok){ ok = true; toast(done); setTimeout(load, 1800); }
+    if(d.ok){
+      ok = true; toast(done);
+      // the car answered 00 (done), so show the new state now; the next pushed frame confirms it
+      const patch = OPTIMISTIC[String(op).toUpperCase()];
+      if(patch && S){ Object.assign(S, patch); renderAll(); }
+      if(!liveOk()) setTimeout(load, 1800);
+    }
+    else if(d.reason) toast('Could not ' + doing + ': ' + d.reason);
     else if(String(d.code) === '50043') toast('Car is asleep or out of signal');
     else if(String(d.code) === '9997') toast('CarLinko login expired');
     else toast('Could not ' + doing);
@@ -2159,32 +2217,62 @@ document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => {
 });
 
 // ---- data ----
-async function load(){
-  try{
-    S = await api('api/summary');
-    renderHero(); renderQA(); renderCharging(); renderCards();
-    if(S._acctDone) renderAcct();
-    if(openKey === 'doors') liveDoors();
-    if(openKey === 'ac' && acSig() !== acShown) renderAc();   // only on a real change: a redraw restarts the airflow loop
-  }catch(e){ /* auth redirect handled in api() */ }
+function renderAll(forceAc){
+  const acct = S && S._acctDone;
+  renderHero(); renderQA(); renderCharging(); renderCards();
+  if(acct) renderAcct();
+  if(openKey === 'doors') liveDoors();
+  if(openKey === 'ac' && (forceAc || acSig() !== acShown)) renderAc();   // only on a real change: a redraw restarts the airflow loop
+  document.body.classList.remove('loading');
+  $('qaRow').removeAttribute('aria-busy');
+  $('cardGrid').removeAttribute('aria-hidden'); $('rowsHost').removeAttribute('aria-hidden');
 }
+function take(next){                  // new summary in; keep per-session view flags (_acctDone, _painted)
+  if(S) for(const k in S) if(k[0] === '_' && !(k in next)) next[k] = S[k];
+  S = next;
+}
+async function load(){
+  try{ take(await api('api/summary')); renderAll(); }
+  catch(e){ /* auth redirect handled in api() */ }
+}
+
+// ---- realtime: the server pushes a summary every time the car sends a frame ----
+let es = null, lastPush = 0;
+const liveOk = () => es && es.readyState === 1 && Date.now() - lastPush < 45000;
+function live(){
+  if(!window.EventSource || es) return;
+  es = new EventSource('api/stream');
+  es.onmessage = ev => {
+    lastPush = Date.now();
+    try{ take(JSON.parse(ev.data)); renderAll(); }catch(e){}
+  };
+  es.onerror = () => {                // the browser retries on its own; a 401 means the session ended
+    if(es.readyState === 2){ es = null; setTimeout(live, 5000); }
+  };
+}
+document.addEventListener('visibilitychange', () => {
+  // phones freeze background tabs; reopen the stream on return instead of trusting a dead socket
+  if(document.hidden){ if(es){ es.close(); es = null; } }
+  else { load(); live(); }
+});
+
 $('hRefresh').onclick = async () => {
   const b = $('hRefresh'); b.classList.add('spin');
   // api/refresh pokes the car and answers with the fresh summary, so no second load() round trip
-  try{
-    S = await api('api/refresh');
-    renderHero(); renderQA(); renderCharging(); renderCards();
-    if(S._acctDone) renderAcct();
-    if(openKey === 'doors') liveDoors();
-    if(openKey === 'ac') renderAc();
-  }catch(e){ await load(); }
+  try{ take(await api('api/refresh')); renderAll(true); }
+  catch(e){ await load(); }
   b.classList.remove('spin');
 };
 $('aEye').onclick = () => { vinShown = !vinShown; renderAcct(); };
 
 (async () => {
-  try{ CAPS = (await api('api/controls')).caps; }catch(e){ CAPS = null; }
-  await load();
+  // caps and the summary in parallel: the skeleton is up until the first paint
+  const caps = api('api/controls').then(r => r.caps).catch(() => null);
+  const first = api('api/summary').catch(() => null);
+  CAPS = await caps;
+  const s0 = await first;
+  if(s0){ take(s0); renderAll(); } else await load();
+  live();
   // first paint only: the instrument comes up top-down, then the actions
   stagger([$('hModel').parentNode, $('hRange').parentNode, document.querySelector('.hlbl'),
            document.querySelector('.hmeta'), $('hCar')], 40, 0);
@@ -2192,12 +2280,11 @@ $('aEye').onclick = () => { vinShown = !vinShown; renderAcct(); };
   const h = location.hash.slice(1);
   if(PAGES[h]) openPage(h);           // deep link: v2.html#doors / #tyres / #energy / #ac
   if(h === 'acct') document.querySelector('.tabbar button[data-v="acct"]').click();
-  // 15 s on the home view (the logger stores each pushed frame the moment it lands, and the
-  // summary is incremental now, so this is cheap); 4 s on Doors and Climate, so a door or the A/C
-  // switched at the car shows within a few seconds.
+  // Fallback only: while the stream is live it carries every change. Without it (old browser,
+  // proxy dropped it) poll 15 s on home, 4 s on Doors and Climate.
   let lastLoad = Date.now();
   setInterval(() => {
-    if(document.hidden) return;
+    if(document.hidden || liveOk()) return;
     const every = (openKey === 'doors' || openKey === 'ac') ? 4000 : 15000;
     if(Date.now() - lastLoad >= every){ lastLoad = Date.now(); load(); }
   }, 1000);
