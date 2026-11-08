@@ -2273,11 +2273,16 @@ const HU_ILL = {
     '<text class="hs-lbl" x="160" y="96">Phone</text><text class="hs-lbl" x="160" y="109">hotspot</text>' +
     '<text class="hs-lbl" x="263" y="96">Head unit</text><text class="hs-lbl" x="263" y="109">WiFi on</text></svg>',
   menu: huScr(
-    '<text class="hs-txt" x="105" y="24">Engineering</text>' +
-    [0, 1, 2, 3, 4].map(i => '<rect class="' + (i === 2 ? 'hs-hi' : 'hs-bar') + '" x="103" y="' + (34 + i * 22) + '" width="94" height="16" rx="4"/>').join('') +
-    '<text class="hs-txt" x="110" y="' + (34 + 44 + 11) + '">Debug</text>'),
+    '<text class="hs-sub" x="105" y="20">Settings &#8250; System</text>' +
+    '<rect class="hs-hi" x="103" y="28" width="94" height="22" rx="4"/>' +
+    '<text class="hs-txt" x="109" y="42">Version info</text>' +
+    '<circle cx="186" cy="39" r="10.5" fill="var(--acc)"/>' +
+    '<text x="186" y="42.5" fill="#fff" font-size="8.5" font-weight="750" text-anchor="middle">&#215;10</text>' +
+    ['Software  V2.x', 'Hardware', 'APP Version', 'SOC Version'].map((t, i) =>
+      '<rect class="hs-bar" x="103" y="' + (56 + i * 22) + '" width="94" height="16" rx="4"/>' +
+      '<text class="hs-sub" x="109" y="' + (56 + i * 22 + 11) + '">' + t + '</text>').join('')),
   adb: huScr(
-    '<text class="hs-txt" x="105" y="24">Debug</text>' +
+    '<text class="hs-txt" x="105" y="24">Engineering mode</text>' +
     '<rect class="hs-bar" x="103" y="34" width="94" height="16" rx="4"/><rect class="hs-hi" x="103" y="56" width="94" height="22" rx="4"/>' +
     '<text class="hs-txt" x="109" y="70">Enable ADB</text>' +
     '<rect class="hs-on" x="172" y="61" width="20" height="12" rx="6"/><circle cx="186" cy="67" r="4.4" fill="#fff"/>' +
@@ -2325,12 +2330,14 @@ function renderHu(){
 
     '<div class="sech husech"><span class="ov">Steps</span></div>' +
     step('menu', 1, 'Open the engineering menu', HU_ILL.menu +
-      '<p>On the head unit, open the engineering menu and go to its <b class="k">Debug</b> page.</p>' +
-      '<div class="hutodo">The exact taps and photos for this step are being added. If you already know how to reach ' +
-      'the engineering menu on your J5, go ahead.</div>') +
+      '<p>On the head unit open <b class="k">Settings</b>, then <b class="k">System</b>, then ' +
+      '<b class="k">Version information</b>. Tap the title row <b class="k">ten times</b>. A password box opens: ' +
+      'type the engineering password and tap <b class="k">OK</b>.</p>' +
+      '<div class="hutodo">A password helper is coming here. For now, the J5 community tutorial at ' +
+      'j5.lingkunganplus.com works it out from your head unit's ID. Photos for this step are being added.</div>') +
     '<div style="height:var(--s3)"></div>' +
     step('adb', 2, 'Turn on Enable ADB', HU_ILL.adb +
-      '<p>Switch <b class="k">Enable ADB</b> on. Leave it on: the add-on uses it from inside the head unit to reach the A/C. ' +
+      '<p>In <b class="k">Engineering mode</b>, switch <b class="k">Enable ADB</b> on. Leave it on: the add-on uses it from inside the head unit to reach the A/C. ' +
       'Once installed, the add-on closes this port to WiFi so nothing else can use it.</p>') +
     '<div style="height:var(--s3)"></div>' +
     step('wifi', 3, 'Join the same hotspot', HU_ILL.wifi +
