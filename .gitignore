@@ -33,3 +33,7 @@ build/
 
 # head-unit art extracted from your own HU APK by tools/hu_assets.py (Chery's, not ours to publish)
 web/hu/
+
+# head-unit add-on signing key and build output (the built APK goes to headunit/dist/)
+headunit/*/debug.keystore
+*.idsig

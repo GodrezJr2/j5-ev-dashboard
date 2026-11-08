@@ -641,6 +641,98 @@
   .hcar{transition:opacity var(--t-slow) linear}
   body.loading .hrange u{display:none}
   .hrange .sk-range{display:inline-block;vertical-align:bottom}
+
+  /* ---------- head unit add-ons ---------- */
+  .huhero{padding:var(--s4)}
+  .pbody .husech{padding:var(--s5) 2px var(--s2)}
+  .huhero h3{font-size:19px;font-weight:750;letter-spacing:-.02em;margin-top:var(--s3)}
+  .huhero p{font-size:13.5px;line-height:1.55;color:var(--mut);margin-top:6px}
+  .hutags{display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--s3)}
+  .hutag{font-size:11px;font-weight:700;padding:5px 9px;border-radius:var(--rf);background:var(--card-2);color:var(--mut)}
+  .hutag.ok{background:var(--acc-sf);color:var(--acc-ink)}
+  .humedia{border-radius:var(--r2);overflow:hidden;background:var(--card-2);position:relative}
+  .humedia svg,.humedia video{display:block;width:100%;height:auto}
+  .humedia .cap{position:absolute;left:10px;bottom:9px;font-size:11.5px;font-weight:700;color:var(--mut);
+    letter-spacing:.04em}
+  .huill{display:block;width:100%;height:auto;margin:var(--s3) 0 var(--s1)}
+  .hs-scr{fill:oklch(0.22 0.016 255);stroke:var(--line);stroke-width:1.2}
+  .hs-bar{fill:oklch(0.34 0.014 255)}
+  .hs-hi{fill:oklch(0.42 0.05 250)}
+  .hs-txt{fill:oklch(0.93 0.005 250);font-size:10.5px;font-weight:650}
+  .hs-sub{fill:oklch(0.76 0.01 255);font-size:8.5px;font-weight:600}
+  .hs-on{fill:var(--acc)}
+  .hs-dev{fill:var(--card);stroke:var(--mut);stroke-width:1.5}
+  .hs-fill{fill:var(--card-2)}
+  .hs-lnk{fill:none;stroke:var(--acc);stroke-width:1.6;stroke-dasharray:3 4;animation:huflow2 1.6s linear infinite}
+  @keyframes huflow2{to{stroke-dashoffset:-14}}
+  .hs-lbl{fill:var(--mut);font-size:11px;font-weight:650;text-anchor:middle}
+  .hs-wave{fill:none;stroke:var(--acc);stroke-width:1.6;stroke-linecap:round}
+
+  /* gesture demo: two fingers rest, slide sideways (fan), then up (temperature) */
+  .hg-f{fill:oklch(0.98 0 0 / .92);stroke:var(--acc);stroke-width:2;animation:hgmove 6s var(--eo) infinite}
+  .hg-hud{animation:hghud 6s linear infinite}
+  .hg-fan{transform-box:fill-box;transform-origin:left center;animation:hgfan 6s var(--eo) infinite}
+  .hg-tmp{transform-box:fill-box;transform-origin:center bottom;animation:hgtmp 6s var(--eo) infinite}
+  @keyframes hgmove{
+    0%{opacity:0;transform:translate(0,0)} 6%,14%{opacity:1;transform:translate(0,0)}
+    40%{transform:translate(44px,0)} 48%{transform:translate(44px,0)}
+    78%{opacity:1;transform:translate(44px,-46px)} 88%,100%{opacity:0;transform:translate(44px,-46px)}}
+  @keyframes hghud{0%,12%{opacity:0} 16%,90%{opacity:1} 97%,100%{opacity:0}}
+  @keyframes hgfan{0%,14%{transform:scaleX(.3)} 40%,100%{transform:scaleX(.8)}}
+  @keyframes hgtmp{0%,48%{transform:scaleY(.45)} 78%,100%{transform:scaleY(.8)}}
+
+  .hustep{position:relative}
+  .hustep .hn{display:flex;align-items:center;gap:var(--s3)}
+  .hustep .hn b{width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;
+    justify-content:center;font-size:12.5px;font-weight:750;background:var(--card-2);color:var(--ink);
+    transition:background var(--t-mid) linear,color var(--t-mid) linear}
+  .hustep.done .hn b{background:var(--acc);color:var(--btn-ink)}
+  .hustep .hn h4{flex:1;font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .hustep p,.hustep li{font-size:13px;line-height:1.6;color:var(--mut)}
+  .hustep p{margin-top:var(--s2)}
+  .hustep ol,.hustep ul{margin:var(--s2) 0 0 18px}
+  .hustep b.k{color:var(--ink);font-weight:700}
+  .hudone{font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:var(--rf);background:var(--card-2);
+    color:var(--mut);transition:background var(--t-mid) linear,color var(--t-mid) linear}
+  .hustep.done .hudone{background:var(--acc-sf);color:var(--acc-ink)}
+  .hutodo{margin-top:var(--s3);padding:10px 12px;border-radius:var(--r1);border:1px dashed var(--line);
+    font-size:12.5px;line-height:1.5;color:var(--mut)}
+
+  .hutool{margin-top:var(--s3)}
+  .hubtn2{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;
+    border-radius:var(--r1);background:var(--card-2);color:var(--ink);font-size:13px;font-weight:700;
+    transition:transform var(--t-fast) var(--eo)}
+  .hubtn2:active{transform:scale(.97)}
+  .hutool .bigbtn:disabled,.hubtn2:disabled{opacity:.45}
+  .huip{display:flex;gap:var(--s2);margin-top:var(--s3)}
+  .huip input{flex:1;min-width:0;padding:10px 12px;border-radius:var(--r1);border:1px solid var(--line);
+    background:var(--card);color:var(--ink);font:inherit;font-size:14px;font-variant-numeric:tabular-nums}
+  .hulist{margin-top:var(--s3);border-radius:var(--r2);background:var(--card-2);overflow:hidden}
+  .hulist button{display:flex;align-items:center;gap:var(--s3);width:100%;padding:12px;text-align:left;color:inherit}
+  .hulist button+button{border-top:1px solid var(--line)}
+  .hulist button.on{background:var(--acc-sf)}
+  .hulist .rl{flex:1;min-width:0;font-size:13.5px;font-weight:650}
+  .hulist small{display:block;font-size:11.5px;font-weight:500;color:var(--fnt);margin-top:2px}
+  .hukv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin-top:var(--s3);font-size:12.5px}
+  .hukv dt{color:var(--fnt)} .hukv dd{color:var(--ink);font-weight:600;min-width:0;overflow-wrap:anywhere}
+  .huprog{margin-top:var(--s3);list-style:none;padding:0}
+  .huprog li{display:flex;gap:var(--s2);align-items:flex-start;font-size:12.5px;line-height:1.5;padding:5px 0;color:var(--mut)}
+  .huprog li .ckc{color:var(--acc-ink);flex:none;padding-top:2px}
+  .huprog li.bad .ckc{color:var(--bad)}
+  .huprog li span.d{min-width:0;overflow-wrap:anywhere}
+  .humsg{margin-top:var(--s3);font-size:12.5px;line-height:1.5;color:var(--mut)}
+  .humsg.bad{color:var(--bad)} .humsg.ok{color:var(--acc-ink)}
+  .huspin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;
+    animation:spin .8s linear infinite;display:inline-block;vertical-align:-2px}
+  .hucode{margin-top:var(--s3);padding:12px;border-radius:var(--r1);background:var(--card-2);
+    font:500 11.5px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink);
+    white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow-y:auto;
+    user-select:text;-webkit-user-select:text}
+  .hurow{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
+  .huwarn li{font-size:12.5px;line-height:1.6;color:var(--mut);margin-top:6px}
+  .huwarn ul{margin:var(--s2) 0 0 18px}
+  .huwarn .plbl{color:var(--warn)}
+  details.hudet summary{cursor:pointer;font-size:13px;font-weight:700;margin-top:var(--s4);color:var(--ink)}
 </style>
 </head>
 <body class="loading">
@@ -742,6 +834,8 @@ MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduc
   <div class="pbody" id="pgFlexBody"></div></div>
 <div class="page" id="pgPlan" data-k="plan"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Charge calculator</h2></div>
   <div class="pbody" id="pgPlanBody"></div></div>
+<div class="page" id="pgHu" data-k="hu"><div class="phead"><button class="pback" data-close aria-label="Back"><svg viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1L2 10l8 9"/></svg></button><h2>Head unit add-ons</h2></div>
+  <div class="pbody" id="pgHuBody"></div></div>
 
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true">
@@ -2112,6 +2206,7 @@ function renderAcct(){
     {ic: 'gauge',  t: 'Classic dashboard', s: 'Trips, SPKLU planner, full stats', fn: () => location.href = 'index.html'},
     {ic: 'plug',   t: 'Charge calculator', s: 'Cost and kWh to any target %',     fn: () => openPage('plan')},
     {ic: 'chart',  t: 'Share card',        s: 'Month stats as a shareable card',  fn: () => openPage('flex')},
+    {ic: 'ac',     t: 'Head unit add-ons', s: 'Climate Gesture: fan and temp by swipe', fn: () => openPage('hu')},
     {ic: 'camera', t: 'Update car photo',  s: 'Re-fetch the render from CarLinko', fn: async () => {
         const d = await api('api/photorefresh', {method: 'POST'});
         toast(d.ok ? 'Photo updated' : (d.error || 'failed')); if(d.ok) load(); }},
@@ -2138,12 +2233,275 @@ function renderAcct(){
   $('aNote').textContent = 'Data source: your own CarLinko account, self-hosted. Nothing leaves this server.';
 }
 
+// ---- head unit add-ons: tutorial + find/install over the head unit's own ADB ----
+// The dashboard server does the ADB work (tools/headunit.py), so it must run on a laptop that is on the
+// same hotspot as the car. Steps marked done are remembered on this device only.
+const HU = {meta: null, scan: null, ip: '', probe: null, busy: '', steps: null, msg: '', bad: false};
+const huEsc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+function huDone(){ try{ return JSON.parse(localStorage.getItem('huDone') || '[]'); }catch(e){ return []; } }
+function huSetDone(k, on){
+  const d = huDone().filter(x => x !== k); if(on) d.push(k);
+  try{ localStorage.setItem('huDone', JSON.stringify(d)); }catch(e){}
+}
+async function huPost(action, body){
+  const r = await fetch('api/hu/' + action, {method: 'POST', headers: {'Content-Type': 'application/json'},
+                                             body: JSON.stringify(body || {})});
+  if(r.status === 401){ location.href = './'; throw 0; }
+  return r.json();
+}
+function huCopy(text, btn){
+  const ok = () => { const o = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => btn.textContent = o, 1400); };
+  if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(ok, () => toast('Select and copy the text'));
+  else { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+    try{ document.execCommand('copy'); ok(); }catch(e){ toast('Select and copy the text'); } t.remove(); }
+}
+
+// own drawings, head unit portrait screen 110x150 centred in a 300-wide frame
+const huScr = inner => '<svg class="huill" viewBox="0 0 300 166" aria-hidden="true">' +
+  '<rect class="hs-scr" x="95" y="6" width="110" height="154" rx="9"/>' + inner + '</svg>';
+const HU_ILL = {
+  need: '<svg class="huill" viewBox="0 0 320 116" aria-hidden="true">' +
+    // laptop
+    '<rect class="hs-dev" x="22" y="26" width="64" height="42" rx="4"/><rect class="hs-fill" x="28" y="32" width="52" height="30" rx="2"/>' +
+    '<path class="hs-dev" d="M14 72h80l-5 6H19z"/>' +
+    // phone + hotspot waves
+    '<rect class="hs-dev" x="146" y="22" width="28" height="52" rx="6"/><path class="hs-wave" d="M151 14a14 14 0 0118 0M155 9a22 22 0 0110 0" opacity=".9"/>' +
+    // head unit (portrait)
+    '<rect class="hs-dev" x="240" y="14" width="46" height="64" rx="5"/><rect class="hs-fill" x="245" y="19" width="36" height="54" rx="2"/>' +
+    '<path class="hs-lnk" d="M96 48h44M180 48h54"/>' +
+    '<text class="hs-lbl" x="54" y="96">Laptop running</text><text class="hs-lbl" x="54" y="109">this dashboard</text>' +
+    '<text class="hs-lbl" x="160" y="96">Phone</text><text class="hs-lbl" x="160" y="109">hotspot</text>' +
+    '<text class="hs-lbl" x="263" y="96">Head unit</text><text class="hs-lbl" x="263" y="109">WiFi on</text></svg>',
+  menu: huScr(
+    '<text class="hs-txt" x="105" y="24">Engineering</text>' +
+    [0, 1, 2, 3, 4].map(i => '<rect class="' + (i === 2 ? 'hs-hi' : 'hs-bar') + '" x="103" y="' + (34 + i * 22) + '" width="94" height="16" rx="4"/>').join('') +
+    '<text class="hs-txt" x="110" y="' + (34 + 44 + 11) + '">Debug</text>'),
+  adb: huScr(
+    '<text class="hs-txt" x="105" y="24">Debug</text>' +
+    '<rect class="hs-bar" x="103" y="34" width="94" height="16" rx="4"/><rect class="hs-hi" x="103" y="56" width="94" height="22" rx="4"/>' +
+    '<text class="hs-txt" x="109" y="70">Enable ADB</text>' +
+    '<rect class="hs-on" x="172" y="61" width="20" height="12" rx="6"/><circle cx="186" cy="67" r="4.4" fill="#fff"/>' +
+    '<rect class="hs-bar" x="103" y="84" width="94" height="16" rx="4"/><rect class="hs-bar" x="103" y="106" width="94" height="16" rx="4"/>'),
+  wifi: huScr(
+    '<text class="hs-txt" x="105" y="24">WiFi</text>' +
+    '<rect class="hs-hi" x="103" y="34" width="94" height="24" rx="4"/>' +
+    '<text class="hs-txt" x="109" y="45">Your hotspot</text><text class="hs-sub" x="109" y="54">Connected</text>' +
+    '<path d="M184 42l3 3 6-6" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<rect class="hs-bar" x="103" y="64" width="94" height="16" rx="4"/><rect class="hs-bar" x="103" y="86" width="94" height="16" rx="4"/>'),
+  gesture: '<svg viewBox="0 0 300 200" aria-hidden="true">' +
+    '<rect class="hs-scr" x="80" y="8" width="140" height="184" rx="10"/>' +
+    '<g class="hg-hud"><rect x="104" y="58" width="92" height="62" rx="9" fill="oklch(0.30 0.016 255)"/>' +
+      '<rect x="114" y="66" width="9" height="40" rx="4.5" fill="oklch(0.40 0.014 255)"/>' +
+      '<rect class="hg-tmp" x="114" y="66" width="9" height="40" rx="4.5" fill="var(--warn)"/>' +
+      '<text x="134" y="92" fill="oklch(0.96 0.004 250)" font-size="22" font-weight="750">22°</text>' +
+      '<rect x="134" y="102" width="52" height="5" rx="2.5" fill="oklch(0.40 0.014 255)"/>' +
+      '<rect class="hg-fan" x="134" y="102" width="52" height="5" rx="2.5" fill="var(--acc)"/></g>' +
+    '<circle class="hg-f" cx="128" cy="150" r="9"/><circle class="hg-f" cx="150" cy="156" r="9"/>' +
+    '</svg>',
+};
+
+function renderHu(){
+  const el = $('pgHuBody'), done = huDone();
+  const step = (k, n, title, body) =>
+    '<div class="panel hustep' + (done.includes(k) ? ' done' : '') + '" data-step="' + k + '"><div class="hn"><b>' + n + '</b>' +
+    '<h4>' + title + '</h4><button class="hudone" data-done="' + k + '">' + (done.includes(k) ? 'Done' : 'Mark done') +
+    '</button></div>' + body + '</div>';
+  el.innerHTML =
+    '<div class="panel huhero"><div class="humedia" id="huMedia">' + HU_ILL.gesture +
+      '<span class="cap">DEMO · VIDEO COMING</span></div>' +
+      '<h3>Climate Gesture</h3>' +
+      '<p>Rest two fingers on the head unit screen for a moment, then slide. Sideways sets the fan (1 to 10), ' +
+      'up and down sets the temperature (15.5 to 30.5 °C). A small card shows the value while you slide. ' +
+      'It starts by itself after every restart.</p>' +
+      '<div class="hutags"><span class="hutag ok">Tested on a real Jaecoo J5 EV</span>' +
+      '<span class="hutag">Head unit T13J-INTL 00.04.15</span><span class="hutag">Android 12</span>' +
+      '<span class="hutag" id="huSize"></span></div></div>' +
+
+    '<div class="sech husech"><span class="ov">What you need</span></div>' +
+    '<div class="panel">' + HU_ILL.need +
+      '<p class="note" style="margin-top:var(--s2)">A laptop running this dashboard (<b>python tools/server.py</b>) and the head unit on the same ' +
+      'phone hotspot. The installer talks to the head unit over the local network, so the copy of this dashboard on a ' +
+      'home server cannot reach your car. About 10 minutes, parked.</p></div>' +
+
+    '<div class="sech husech"><span class="ov">Steps</span></div>' +
+    step('menu', 1, 'Open the engineering menu', HU_ILL.menu +
+      '<p>On the head unit, open the engineering menu and go to its <b class="k">Debug</b> page.</p>' +
+      '<div class="hutodo">The exact taps and photos for this step are being added. If you already know how to reach ' +
+      'the engineering menu on your J5, go ahead.</div>') +
+    '<div style="height:var(--s3)"></div>' +
+    step('adb', 2, 'Turn on Enable ADB', HU_ILL.adb +
+      '<p>Switch <b class="k">Enable ADB</b> on. Leave it on: the add-on uses it from inside the head unit to reach the A/C. ' +
+      'Once installed, the add-on closes this port to WiFi so nothing else can use it.</p>') +
+    '<div style="height:var(--s3)"></div>' +
+    step('wifi', 3, 'Join the same hotspot', HU_ILL.wifi +
+      '<p>Turn on your phone hotspot. Connect the head unit WiFi and the laptop to it.</p>' +
+      '<p>While the head unit WiFi is on, wireless CarPlay and Android Auto do not work. Turn the WiFi off after the ' +
+      'install; the add-on keeps working without it.</p>') +
+    '<div style="height:var(--s3)"></div>' +
+    step('install', 4, 'Find and install', '<div class="hutool" id="huTool"></div>') +
+    '<div style="height:var(--s3)"></div>' +
+    step('try', 5, 'Try it', '<p>Rest two fingers on the screen for about a third of a second, then slide. ' +
+      'You can switch between sideways and up-down without lifting.</p>' +
+      '<p>To update later, open the <b class="k">Climate gesture</b> app on the head unit and tap ' +
+      '<b class="k">Open ADB 5 min</b> first, then run step 4 again.</p>') +
+
+    '<div class="sech husech"><span class="ov">Use an AI agent instead</span></div>' +
+    '<div class="panel"><div class="hurow"><span class="plbl">Prompt for Claude Code, Codex or similar</span>' +
+      '<button class="hubtn2" id="huCopyP">Copy</button></div>' +
+      '<div class="hucode" id="huPrompt"></div>' +
+      '<details class="hudet"><summary>Manual commands</summary><div class="hucode" id="huCmds"></div></details></div>' +
+
+    '<div class="panel huwarn" style="margin-top:var(--s3)"><span class="plbl">Before you start</span><ul>' +
+      '<li>With Enable ADB on, anyone on the same WiFi as the head unit can control it fully. The add-on blocks that ' +
+      'from outside once it runs; before that, only use your own hotspot.</li>' +
+      '<li>This is not from Jaecoo or Chery. It changes no system files, but use it at your own risk.</li>' +
+      '<li>A head unit software update may stop it working. The installer checks the A/C first and stops on a head unit it does not know.</li>' +
+      '<li>It only sets fan speed and temperature, the same way the climate screen does.</li></ul></div>' +
+    '<p class="note" style="color:var(--mut)">Add-on source: headunit/climate-gesture in this repo. Nothing is sent anywhere except your own head unit.</p>';
+
+  el.querySelectorAll('[data-done]').forEach(b => b.onclick = () => {
+    const k = b.dataset.done, on = !huDone().includes(k);
+    huSetDone(k, on);
+    const p = b.closest('.hustep'); p.classList.toggle('done', on); b.textContent = on ? 'Done' : 'Mark done';
+  });
+  $('huCopyP').onclick = ev => huCopy($('huPrompt').textContent, ev.currentTarget);
+  huText();
+  huTool();
+  if(!HU.meta) api('api/hu/addons').then(d => { HU.meta = d; huText(); huTool(); }).catch(() => {});
+}
+
+function huText(){
+  const a = HU.meta && HU.meta.addons && HU.meta.addons[0];
+  const apkUrl = new URL('api/hu/apk?addon=climate-gesture', location.href).href;
+  if(a && a.size) $('huSize').textContent = Math.round(a.size / 1024) + ' KB';
+  else $('huSize').hidden = true;
+  const H = 'android.hardware.automotive.vehicle@2.0::IVehicle/default';
+  const cmds =
+    '# laptop and head unit on the same hotspot, Enable ADB on\n' +
+    'adb connect <head-unit-ip>:5555\n' +
+    'adb shell getprop ro.build.display.id\n' +
+    'adb shell lshal debug ' + H + ' --get 557847208   # must print a value\n' +
+    'adb install -r climate-gesture.apk\n' +
+    'adb shell appops set id.jaylabb.climategesture SYSTEM_ALERT_WINDOW allow\n' +
+    'adb shell am start-foreground-service -a id.jaylabb.climategesture.OPEN_ADB -n id.jaylabb.climategesture/.GestureService\n' +
+    'adb shell tail -5 /data/data/id.jaylabb.climategesture/files/log.txt   # expect "car link ok"';
+  $('huCmds').textContent = cmds;
+  $('huPrompt').textContent =
+    'Help me install the Climate Gesture add-on on my car\'s head unit (Jaecoo J5 EV, Android 12). My laptop and the ' +
+    'head unit are on the same phone hotspot. "Enable ADB" is on in the head unit\'s engineering menu, so it accepts ' +
+    '`adb connect <ip>:5555` without a key prompt and its adb shell runs as root.\n\n' +
+    'APK: download ' + apkUrl + (a && a.sha256 ? ' (sha256 ' + a.sha256 + ')' : '') + ' and check the hash.\n\n' +
+    'Do only these steps, in order, and show me every command and its output:\n' +
+    '1. Find the head unit: list the hosts on my hotspot subnet with TCP 5555 open and `adb connect` to it. ' +
+    'Tell me `getprop ro.product.model` and `getprop ro.build.display.id`.\n' +
+    '2. Check it is supported: `adb shell lshal debug ' + H + ' --get 557847208` must print a value. ' +
+    'If it errors or prints nothing, stop and tell me the head unit is not supported.\n' +
+    '3. `adb install -r climate-gesture.apk`\n' +
+    '4. `adb shell appops set id.jaylabb.climategesture SYSTEM_ALERT_WINDOW allow`\n' +
+    '5. `adb shell am start-foreground-service -a id.jaylabb.climategesture.OPEN_ADB -n id.jaylabb.climategesture/.GestureService`\n' +
+    '6. Wait 5 seconds, then `adb shell tail -5 /data/data/id.jaylabb.climategesture/files/log.txt`. It should say "car link ok".\n\n' +
+    'Hard limits: never run `lshal debug --set`, `setprop`, `settings put`, `remount`, `reboot`, or `pm uninstall`; ' +
+    'never write to /system or /vendor; do not touch any other app or setting. If anything differs from what I ' +
+    'described, stop and ask me before going further.';
+}
+
+function huTool(){
+  const t = $('huTool'); if(!t) return;
+  const m = HU.meta;
+  if(!m){ t.innerHTML = '<div class="humsg"><span class="huspin"></span> Checking this dashboard…</div>'; return; }
+  if(m.demo || !m.local || !(m.networks || []).length){
+    t.innerHTML = '<p>The one-tap installer works when this dashboard runs on a laptop that is on the same hotspot as the car.</p>' +
+      '<div class="humsg">' + (m.demo ? 'This is the demo, so there is no head unit to reach.' :
+        !m.local ? 'This browser is not on the same network as the dashboard server.' :
+        'This dashboard server is not on a local network.') +
+      ' Run <b>python tools/server.py</b> on your laptop and open it there, or use the AI agent prompt below.</div>';
+    return;
+  }
+  const busy = HU.busy;
+  let h = '<p>Searches ' + huEsc(m.networks.join(', ')) + ' for a head unit with Enable ADB on.</p>' +
+    '<button class="bigbtn" id="huScan"' + (busy ? ' disabled' : '') + '>' +
+      (busy === 'scan' ? '<span class="huspin"></span> Searching…' : 'Find head unit') + '</button>' +
+    '<div class="huip"><input id="huIp" inputmode="decimal" placeholder="or type its IP, e.g. 172.20.10.3" value="' + huEsc(HU.ip) + '">' +
+      '<button class="hubtn2" id="huGo"' + (busy ? ' disabled' : '') + '>Check</button></div>';
+  if(HU.scan){
+    const f = HU.scan.found || [];
+    h += f.length ? '<div class="hulist">' + f.map(d =>
+        '<button data-ip="' + huEsc(d.ip) + '"' + (d.ip === HU.ip ? ' class="on"' : '') + '><span class="rl">' +
+        huEsc(d.model || d.device || 'Android device') + '<small>' + huEsc(d.ip) + (d.error ? ' · ' + huEsc(d.error) : '') +
+        '</small></span>' + CHEV + '</button>').join('') + '</div>'
+      : '<div class="humsg bad">No head unit found. Check that Enable ADB is on and the head unit is on the same hotspot, ' +
+        'then try again. If the add-on is already installed, tap Open ADB 5 min in its app first.</div>';
+  }
+  const p = HU.probe;
+  if(p){
+    h += '<dl class="hukv"><dt>Device</dt><dd>' + huEsc(p.model || p.device) + '</dd>' +
+      '<dt>Software</dt><dd>' + huEsc(p.build) + '</dd><dt>Android</dt><dd>' + huEsc(p.android) + '</dd>' +
+      '<dt>A/C access</dt><dd>' + (p.compatible ? CK_OK + 'works</span>' : 'not found') + '</dd>' +
+      '<dt>Climate Gesture</dt><dd>' + (p.installed ? 'v' + huEsc(p.installed) + (p.running ? ', running' : ', stopped') : 'not installed') + '</dd></dl>';
+    h += p.compatible
+      ? '<button class="bigbtn" id="huInst"' + (busy ? ' disabled' : '') + '>' +
+          (busy === 'install' ? '<span class="huspin"></span> Installing…' : (p.installed ? 'Update Climate Gesture' : 'Install Climate Gesture')) + '</button>'
+      : '<div class="humsg bad">This head unit does not expose the A/C the way the J5 does, so the installer stops here. ' +
+        'Nothing was changed.</div>';
+  }
+  if(HU.steps){
+    const L = {check: 'Check head unit', upload: 'Upload', install: 'Install', start: 'Start', verify: 'Talk to the A/C', root: 'Root shell', apk: 'APK'};
+    h += '<ul class="huprog">' + HU.steps.map(s => '<li' + (s.ok ? '' : ' class="bad"') + '>' + (s.ok ? CK_OK : CK_BAD) + '</span>' +
+      '<span class="d"><b>' + (L[s.step] || huEsc(s.step)) + '</b>' + (s.step === 'verify' || !s.detail ? '' : ' · ' + huEsc(s.detail)) +
+      '</span></li>').join('') + '</ul>';
+  }
+  if(HU.msg) h += '<div class="humsg' + (HU.bad ? ' bad' : ' ok') + '">' + huEsc(HU.msg) + '</div>';
+  t.innerHTML = h;
+
+  const ipIn = $('huIp');
+  ipIn.oninput = () => HU.ip = ipIn.value.trim();
+  $('huScan').onclick = () => huRun('scan');
+  $('huGo').onclick = () => { HU.ip = ipIn.value.trim(); if(HU.ip) huRun('probe'); };
+  ipIn.onkeydown = ev => { if(ev.key === 'Enter') $('huGo').click(); };
+  t.querySelectorAll('[data-ip]').forEach(b => b.onclick = () => { HU.ip = b.dataset.ip; huRun('probe'); });
+  if($('huInst')) $('huInst').onclick = () => huRun('install');
+}
+
+async function huRun(action){
+  if(HU.busy) return;
+  HU.busy = action; HU.msg = ''; HU.bad = false;
+  if(action !== 'install') HU.steps = null;
+  if(action === 'scan') HU.probe = null;
+  if(action === 'probe') HU.probe = null;
+  huTool();
+  try{
+    const d = await huPost(action, {ip: HU.ip, addon: 'climate-gesture'});
+    if(action === 'scan'){
+      HU.scan = d.ok ? d : {found: []};
+      if(!d.ok){ HU.msg = d.error || 'Search failed'; HU.bad = true; }
+      const j = (HU.scan.found || []).filter(x => !x.error);
+      if(d.ok && j.length === 1){ HU.ip = j[0].ip; HU.busy = ''; return huRun('probe'); }
+    } else if(action === 'probe'){
+      if(d.ok) HU.probe = d; else { HU.msg = d.error || 'Could not reach that IP'; HU.bad = true; }
+    } else {
+      HU.steps = d.steps || null;
+      if(d.ok){
+        HU.msg = 'Installed. Try two fingers on the head unit screen.'; huSetDone('install', true);
+        const p = document.querySelector('[data-step="install"]');
+        if(p){ p.classList.add('done'); p.querySelector('.hudone').textContent = 'Done'; }
+        const q = await huPost('probe', {ip: HU.ip, addon: 'climate-gesture'}).catch(() => null);
+        if(q && q.ok) HU.probe = q;
+      } else { HU.msg = d.error || 'Install stopped. See the step that failed above.'; HU.bad = true; }
+    }
+  }catch(e){
+    if(e === 0) return;
+    HU.msg = 'The dashboard server did not answer.'; HU.bad = true;
+  }
+  HU.busy = '';
+  huTool();
+}
+
 // ---- navigation: two tabs + right-slide pages, now with back gesture and history ----
 const PAGES = {ac: ['pgAc', renderAc], doors: ['pgDoors', renderDoors],
                tyres: ['pgTyres', renderTyres], energy: ['pgEnergy', renderEnergy],
                batt: ['pgBatt', renderBatt], chg: ['pgChg', renderChg],
                dist: ['pgDist', renderDist], flex: ['pgFlex', renderFlex],
-               plan: ['pgPlan', renderPlan]};
+               plan: ['pgPlan', renderPlan], hu: ['pgHu', renderHu]};
 let openKey = null;
 
 function openPage(k, fromHistory){

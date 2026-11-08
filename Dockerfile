@@ -5,6 +5,7 @@ RUN pip install --no-cache-dir requests websocket-client
 
 COPY tools/ /app/tools/
 COPY web/  /app/web/
+COPY headunit/dist/ /app/headunit/dist/
 
 ENV CARLINKO_DATA=/data
 # no VOLUME instruction: docker-compose mounts ./data:/data, Railway attaches its own volume

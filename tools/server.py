@@ -1802,6 +1802,55 @@ class H(BaseHTTPRequestHandler):
     def _authed(self):
         return (not _gated()) or valid_session(_cookie_sid(self.headers.get("Cookie")))
 
+    def _hu_local_ok(self):
+        """Head unit tools reach into this machine's LAN, so only a browser on that LAN may use them."""
+        import ipaddress
+        try:
+            ip = ipaddress.ip_address(self.client_address[0])
+            return ip.is_private or ip.is_loopback
+        except ValueError:
+            return False
+
+    def _head_unit(self, action):
+        import headunit
+        def reply(d, code=200):
+            self._send(code, json.dumps(d).encode(), "application/json")
+        if not self._authed():
+            return reply({"ok": False, "error": "auth"}, 401)
+        if DEMO:
+            return reply({"ok": False, "error": "Not available in demo mode."})
+        if not self._hu_local_ok():
+            return reply({"ok": False, "error": "Only from a browser on the same network as this dashboard."}, 403)
+        if "application/json" not in (self.headers.get("Content-Type") or ""):
+            return reply({"ok": False, "error": "JSON only"}, 415)   # forces a CORS preflight cross-site
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            body = json.loads(self.rfile.read(min(n, 4096)).decode() or "{}")
+        except Exception:
+            return reply({"ok": False, "error": "bad request"}, 400)
+        ip = str(body.get("ip") or "").strip()
+        addon = str(body.get("addon") or "climate-gesture")
+        if addon not in headunit.ADDONS:
+            return reply({"ok": False, "error": "unknown add-on"}, 400)
+        if action != "scan" and not headunit.valid_ip(ip):
+            return reply({"ok": False, "error": "Enter the head unit's local IP, like 172.20.10.3."}, 400)
+        try:
+            if action == "scan":
+                d = headunit.scan(ip if headunit.valid_ip(ip) else None)
+                return reply({"ok": True, **d})
+            if action == "probe":
+                return reply({"ok": True, **headunit.probe(ip, addon)})
+            if action == "install":
+                steps = headunit.install(ip, addon)
+                return reply({"ok": all(s[1] for s in steps),
+                              "steps": [{"step": a, "ok": b, "detail": c} for a, b, c in steps]})
+        except OSError:                                # timeout / refused: nothing listening there
+            return reply({"ok": False, "error": "No answer from %s on port 5555. Is Enable ADB on, and is it on "
+                                                "this hotspot? If the add-on is installed, tap Open ADB 5 min first." % ip})
+        except Exception as e:
+            return reply({"ok": False, "error": str(e)[:200]})
+        reply({"ok": False, "error": "unknown action"}, 404)
+
     def _set_cookie(self):
         return {"Set-Cookie": f"sid={make_session()}; HttpOnly; SameSite=Lax; Path=/; Max-Age={SESSION_TTL}"}
 
@@ -1820,6 +1869,29 @@ class H(BaseHTTPRequestHandler):
                     self._send(200, f.read(), "text/html; charset=utf-8")
                 return
             self._send(401, b'{"error":"locked"}', "application/json")
+            return
+        if path == "/api/hu/apk":                       # the add-on APK, for a manual or AI-agent install
+            import headunit
+            q = urllib.parse.parse_qs(self.path.partition("?")[2])
+            k = (q.get("addon") or ["climate-gesture"])[0]
+            info = headunit.ADDONS.get(k) and headunit.apk_info(k)
+            if not info:
+                self._send(404, b'{"error":"no such add-on"}', "application/json"); return
+            with open(info["path"], "rb") as f:
+                self._send(200, f.read(), "application/vnd.android.package-archive",
+                           {"Content-Disposition": 'attachment; filename="%s"' % headunit.ADDONS[k]["apk"]})
+            return
+        if path == "/api/hu/addons":                    # head unit add-ons this server can install
+            import headunit
+            out = []
+            for k, a in headunit.ADDONS.items():
+                info = headunit.apk_info(k) or {}
+                out.append({"id": k, "name": a["name"], "pkg": a["pkg"], "tested": a["tested"],
+                            "apk": bool(info), "size": info.get("size"), "sha256": info.get("sha256")})
+            self._send(200, json.dumps({"addons": out, "demo": DEMO,
+                                        "local": self._hu_local_ok(),
+                                        "networks": [] if DEMO else headunit.networks()}).encode(),
+                       "application/json")
             return
         if path == "/api/summary":
             self._send(200, json.dumps(summary()).encode(), "application/json")
@@ -2046,6 +2118,8 @@ class H(BaseHTTPRequestHandler):
             except Exception as e:
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:180]}).encode(), "application/json")
             return
+        if path.startswith("/api/hu/"):                # head unit add-ons: find + install over local ADB
+            self._head_unit(path[8:]); return
         if path == "/api/photorefresh":                # re-grab this car's render from CarLinko
             if not self._authed():
                 self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
