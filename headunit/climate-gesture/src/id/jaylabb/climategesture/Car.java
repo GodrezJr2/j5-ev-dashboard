@@ -87,6 +87,11 @@ final class Car {
         return (on ? "adb 5555: loopback only" : "adb 5555: open to network") + (out.isEmpty() ? "" : " (" + out + ")");
     }
 
+    /** `pm uninstall` of this app; the package manager kills our process once it goes through. */
+    String uninstallSelf() throws Exception {
+        return sh("pm uninstall " + GestureService.PKG + " 2>&1").trim();
+    }
+
     static String tempLabel(int step) {
         double c = 15.5 + step / 2.0;
         return (c == Math.floor(c) ? String.valueOf((int) c) : String.valueOf(c));

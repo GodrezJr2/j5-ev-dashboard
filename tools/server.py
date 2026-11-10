@@ -1852,7 +1852,7 @@ class H(BaseHTTPRequestHandler):
                               "steps": [{"step": a, "ok": b, "detail": c} for a, b, c in steps]})
         except OSError:                                # timeout / refused: nothing listening there
             return reply({"ok": False, "error": "No answer from %s on port 5555. Is Enable ADB on, and is it on "
-                                                "this hotspot? If the add-on is installed, tap Open ADB 5 min first." % ip})
+                                                "this hotspot? If the add-on is installed, tap Open for 5 minutes in its app first." % ip})
         except Exception as e:
             return reply({"ok": False, "error": str(e)[:200]})
         reply({"ok": False, "error": "unknown action"}, 404)

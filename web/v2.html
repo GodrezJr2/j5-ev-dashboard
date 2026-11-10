@@ -714,6 +714,22 @@
     stroke-linejoin:round;stroke-dasharray:18;stroke-dashoffset:18;transition:stroke-dashoffset var(--t-mid) var(--eo)}
   .huck.on{background:var(--acc);border-color:var(--acc)}
   .huck.on svg{stroke-dashoffset:0}
+  .hufirst{margin-top:var(--s3);background:color-mix(in oklab,var(--warn) 9%,var(--card));
+    border:1px solid color-mix(in oklab,var(--warn) 38%,transparent)}
+  .hufh{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:750;letter-spacing:-.01em;color:var(--ink)}
+  .hufh svg{width:20px;height:20px;fill:none;stroke:var(--warn);stroke-width:1.8;stroke-linecap:round}
+  .hufl{margin-top:var(--s2);font-size:13px;line-height:1.55;color:var(--mut)}
+  .hufli{list-style:none;margin:var(--s3) 0 0;padding:0}
+  .hufli li{position:relative;padding:0 0 0 16px;font-size:13px;line-height:1.55;color:var(--mut)}
+  .hufli li+li{margin-top:8px}
+  .hufli li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--warn)}
+  .hufli b{color:var(--ink);font-weight:700}
+  .hufli code{font:600 11.5px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink);
+    background:var(--card-2);padding:1px 5px;border-radius:5px;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text}
+  .hufs{margin-top:var(--s3);padding-top:var(--s3);border-top:1px solid color-mix(in oklab,var(--warn) 25%,transparent);
+    font-size:12px;line-height:1.55;color:var(--fnt)}
+  .hufirst.done{background:var(--card);border-color:var(--line)}
+  .hufirst.done .hufli li::before{background:var(--acc)}
   .huprg{margin-top:var(--s3)}
   .hubar{height:6px;border-radius:3px;background:var(--card-2);margin-top:var(--s3);overflow:hidden}
   .hubar i{display:block;height:100%;width:0;background:var(--acc);border-radius:3px;transition:width var(--t-slow) var(--eo)}
@@ -2387,10 +2403,11 @@ const HU_STEPS = [
   ['try', 'Try it', [
     ['5.1', 'Rest two fingers on the screen for about a third of a second, then slide. Sideways sets the fan, up and down sets ' +
       'the temperature. You can switch direction without lifting.', null,
-      'To update later, open the Climate gesture app on the head unit, tap Open ADB 5 min, then run step 4 again.'],
+      'To update later, open the Climate Gesture app on the head unit, tap Open for 5 minutes, then run step 4 again.'],
   ]],
 ];
-const HU_ALL = ['need'].concat(...HU_STEPS.map(s => s[2].map(x => x[0])));
+const HU_ALL = ['read', 'need'].concat(...HU_STEPS.map(s => s[2].map(x => x[0])));
+const HU_INFO = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.3"/><path d="M10 9v5M10 6.2v.1"/></svg>';
 const CK_DONE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 12.4l3.6 3.6 7.4-7.6"/></svg>';
 
 function renderHu(){
@@ -2418,6 +2435,22 @@ function renderHu(){
       '<span class="hutag">Head unit T13J-INTL 00.04.15</span><span class="hutag">Android 12</span>' +
       '<span class="hutag" id="huSize"></span></div></div>' +
 
+    '<div class="panel hufirst' + (done.includes('read') ? ' done' : '') + '" data-step="read">' +
+      '<div class="hurow"><span class="hufh">' + HU_INFO + 'Read this first</span>' + box('read', 'Read this first') + '</div>' +
+      '<p class="hufl">One minute. Nothing here is risky if you follow the steps, but know what you are putting on your car.</p>' +
+      '<ul class="hufli">' +
+      '<li><b>No backup needed.</b> It is an ordinary app install. No system files and no car settings change, so there is nothing to restore.</li>' +
+      '<li><b>Easy to undo.</b> Open the Climate Gesture app on the head unit and tap <b>Remove Climate Gesture</b>. That also ' +
+        'gives the ADB port back as it was. To switch it off for a while instead, use the switch at the top of the app.</li>' +
+      '<li><b>In Engineering mode, only switch Enable ADB.</b> The rest are factory and test settings. Leave them as they are.</li>' +
+      '<li><b>Parked, car on.</b> Never while driving. Keep the car on so the head unit does not sleep halfway.</li>' +
+      '<li><b>Your own hotspot only</b> while Enable ADB is on: anyone on the same WiFi could reach the head unit. The add-on shuts that door once it runs.</li>' +
+      '<li><b>Take a photo</b> of the Version information screen (step 1.2). Handy if a later head unit update changes things.</li>' +
+      '</ul>' +
+      '<p class="hufs">Unofficial: not from Jaecoo or Chery, and your dealer will not know it. It only sets fan speed and temperature, the same way ' +
+      'the climate screen does. A head unit update may stop it working; the installer checks the A/C first and stops on a head unit it does not know. ' +
+      'Read the source if you like (headunit/climate-gesture) and decide for yourself.</p></div>' +
+
     '<div class="panel huprg" id="huPrg"><div class="hurow"><span class="plbl" id="huPrgT"></span>' +
       '<button class="hureset" id="huReset">Start over</button></div><div class="hubar"><i id="huPrgB"></i></div></div>' +
 
@@ -2437,12 +2470,6 @@ function renderHu(){
       '<div class="hucode" id="huPrompt"></div>' +
       '<details class="hudet"><summary>Manual commands</summary><div class="hucode" id="huCmds"></div></details></div>' +
 
-    '<div class="panel huwarn" style="margin-top:var(--s3)"><span class="plbl">Before you start</span><ul>' +
-      '<li>With Enable ADB on, anyone on the same WiFi as the head unit can control it fully. The add-on blocks that ' +
-      'from outside once it runs; before that, only use your own hotspot.</li>' +
-      '<li>This is not from Jaecoo or Chery. It changes no system files, but use it at your own risk.</li>' +
-      '<li>A head unit software update may stop it working. The installer checks the A/C first and stops on a head unit it does not know.</li>' +
-      '<li>It only sets fan speed and temperature, the same way the climate screen does.</li></ul></div>' +
     '<p class="note" style="color:var(--mut)">Add-on source: headunit/climate-gesture in this repo. Nothing is sent anywhere except your own head unit.</p>';
 
   el.querySelectorAll('[data-done]').forEach(b => b.onclick = () => {
@@ -2487,13 +2514,19 @@ function huText(){
     'adb install -r climate-gesture.apk\n' +
     'adb shell appops set id.jaylabb.climategesture SYSTEM_ALERT_WINDOW allow\n' +
     'adb shell am start-foreground-service -a id.jaylabb.climategesture.OPEN_ADB -n id.jaylabb.climategesture/.GestureService\n' +
-    'adb shell tail -5 /data/data/id.jaylabb.climategesture/files/log.txt   # expect "car link ok"';
+    'adb shell tail -5 /data/data/id.jaylabb.climategesture/files/log.txt   # expect "car link ok"\n\n' +
+    '# undo: easiest is Remove Climate Gesture in the app. From the laptop: tap Open for 5 minutes in the app, then\n' +
+    'adb connect <head-unit-ip>:5555\n' +
+    'adb uninstall id.jaylabb.climategesture\n' +
+    '# restart the head unit; the WiFi ADB block goes away with the app';
   $('huCmds').textContent = cmds;
   $('huPrompt').textContent =
     'Help me install the Climate Gesture add-on on my car\'s head unit (Jaecoo J5 EV, Android 12). My laptop and the ' +
     'head unit are on the same phone hotspot. "Enable ADB" is on in the head unit\'s engineering menu, so it accepts ' +
     '`adb connect <ip>:5555` without a key prompt and its adb shell runs as root.\n\n' +
     'APK: download ' + apkUrl + (a && a.sha256 ? ' (sha256 ' + a.sha256 + ')' : '') + ' and check the hash.\n\n' +
+    'This is an ordinary app install: it changes no system files and no car settings, so no backup is needed. ' +
+    'Before step 1, tell me in two lines what you are about to change and how to undo it (below), then wait for my OK.\n\n' +
     'Do only these steps, in order, and show me every command and its output:\n' +
     '1. Find the head unit: list the hosts on my hotspot subnet with TCP 5555 open and `adb connect` to it. ' +
     'Tell me `getprop ro.product.model` and `getprop ro.build.display.id`.\n' +
@@ -2505,7 +2538,11 @@ function huText(){
     '6. Wait 5 seconds, then `adb shell tail -5 /data/data/id.jaylabb.climategesture/files/log.txt`. It should say "car link ok".\n\n' +
     'Hard limits: never run `lshal debug --set`, `setprop`, `settings put`, `remount`, `reboot`, or `pm uninstall`; ' +
     'never write to /system or /vendor; do not touch any other app or setting. If anything differs from what I ' +
-    'described, stop and ask me before going further.';
+    'described, stop and ask me before going further.\n\n' +
+    'Undo, only if I ask you to remove it: the simplest is the "Remove Climate Gesture" button in the app on the head unit. ' +
+    'To do it from the laptop, I first tap "Open for 5 minutes" in that app ' +
+    '(the app blocks ADB over WiFi otherwise). Then `adb connect <ip>:5555`, `adb uninstall id.jaylabb.climategesture`, ' +
+    'and tell me to restart the head unit. That is the only uninstall you may run.';
 }
 
 function huTool(){
@@ -2533,7 +2570,7 @@ function huTool(){
         huEsc(d.model || d.device || 'Android device') + '<small>' + huEsc(d.ip) + (d.error ? ' · ' + huEsc(d.error) : '') +
         '</small></span>' + CHEV + '</button>').join('') + '</div>'
       : '<div class="humsg bad">No head unit found. Check that Enable ADB is on and the head unit is on the same hotspot, ' +
-        'then try again. If the add-on is already installed, tap Open ADB 5 min in its app first.</div>';
+        'then try again. If the add-on is already installed, tap Open for 5 minutes in its app first.</div>';
   }
   const p = HU.probe;
   if(p){

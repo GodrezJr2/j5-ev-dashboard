@@ -13,7 +13,7 @@ Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force "$out\classes", "$out\dex" | Out-Null
 
 $srcs = Get-ChildItem "$here\src" -Recurse -Filter *.java | % FullName
-& "$jdk\javac.exe" --release 8 -nowarn -classpath $jar -d "$out\classes" @srcs
+& "$jdk\javac.exe" --release 8 -encoding UTF-8 -nowarn -classpath $jar -d "$out\classes" @srcs
 if ($LASTEXITCODE) { throw 'javac failed' }
 
 $classes = Get-ChildItem "$out\classes" -Recurse -Filter *.class | % FullName

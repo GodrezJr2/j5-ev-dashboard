@@ -40,6 +40,12 @@ public class GestureService extends Service implements GestureTracker.Listener {
     static final int EV_SIZE = 24; // arm64: timeval(16) + type(2) + code(2) + value(4)
 
     static volatile boolean running;
+    // read by MainActivity
+    static volatile String carState = "connecting";   // connecting | ok | unsupported | error
+    static volatile int stFan = -1, stTemp = -1;
+    static volatile long adbOpenUntil;                 // 0 = port 5555 is loopback-only
+    static volatile String removeMsg;                  // set when an uninstall did not go through
+    static volatile boolean paused;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private GestureTracker tracker;
@@ -56,11 +62,22 @@ public class GestureService extends Service implements GestureTracker.Listener {
     private boolean baseKnown;
     private int fanSteps, tempSteps;
     private int wantFan = -1, wantTemp = -1, sentFan = -1, sentTemp = -1;
-    private boolean adbOpenReq;
-    private long adbOpenUntil;   // 0 = port 5555 is loopback-only
+    private boolean adbOpenReq, adbCloseReq, removeReq;
 
     static final String ACTION_OPEN_ADB = PKG + ".OPEN_ADB";
+    static final String ACTION_CLOSE_ADB = PKG + ".CLOSE_ADB";
+    static final String ACTION_REMOVE = PKG + ".REMOVE";
     static final long ADB_OPEN_MS = 5 * 60_000;
+
+    static boolean pausedPref(Context c) {
+        return c.getSharedPreferences("cg", MODE_PRIVATE).getBoolean("paused", false);
+    }
+
+    static void setPaused(Context c, boolean p) {
+        c.getSharedPreferences("cg", MODE_PRIVATE).edit().putBoolean("paused", p).apply();
+        paused = p;
+        log(c, p ? "gestures paused" : "gestures on");
+    }
 
     @Override public IBinder onBind(Intent i) { return null; }
 
@@ -72,13 +89,20 @@ public class GestureService extends Service implements GestureTracker.Listener {
                 .setContentTitle("Climate gesture")
                 .setContentText("Hold 2 fingers, then slide: ↔ fan, ↕ temperature")
                 .build());
-        if (intent != null && ACTION_OPEN_ADB.equals(intent.getAction())) {
+        paused = pausedPref(this);
+        String act = intent == null ? null : intent.getAction();
+        if (ACTION_OPEN_ADB.equals(act)) {
             // set the deadline now, so a fresh start skips the initial lock (an installer is still connected)
             synchronized (lock) {
                 adbOpenReq = true;
                 adbOpenUntil = System.currentTimeMillis() + ADB_OPEN_MS;
                 lock.notifyAll();
             }
+        } else if (ACTION_CLOSE_ADB.equals(act)) {
+            synchronized (lock) { adbCloseReq = true; lock.notifyAll(); }
+        } else if (ACTION_REMOVE.equals(act)) {
+            removeMsg = null;
+            synchronized (lock) { removeReq = true; lock.notifyAll(); }
         }
         if (!running) {
             running = true;
@@ -162,6 +186,7 @@ public class GestureService extends Service implements GestureTracker.Listener {
 
     // ---------------- gesture callbacks (touch thread) ----------------
     @Override public void onArm() {
+        if (paused) return;
         synchronized (lock) {
             needRead = true;
             baseKnown = false;
@@ -178,6 +203,7 @@ public class GestureService extends Service implements GestureTracker.Listener {
     }
 
     @Override public void onFan(int steps) {
+        if (paused) return;
         int v;
         synchronized (lock) {
             fanSteps = steps;
@@ -189,6 +215,7 @@ public class GestureService extends Service implements GestureTracker.Listener {
     }
 
     @Override public void onTemp(int steps) {
+        if (paused) return;
         int v;
         synchronized (lock) {
             tempSteps = steps;
@@ -214,15 +241,18 @@ public class GestureService extends Service implements GestureTracker.Listener {
                 Car car = new Car(c);
                 Car.State st = car.read();
                 if (st.ok()) synchronized (lock) { baseFan = st.fan; baseTemp = st.temp; climateOn = st.on; }
+                carState = st.ok() ? "ok" : "unsupported";
+                stFan = st.fan; stTemp = st.temp;
                 log(this, "car link ok (" + (car.root() ? "root" : "via su") + "): on=" + st.on + " fan=" + st.fan + " temp=" + st.temp);
                 if (!st.ok()) log(this, "climate properties not found: this head unit is not supported, gestures will not write");
                 // adbd has no auth here (ro.adb.secure=0): keep 5555 reachable from loopback only
                 synchronized (lock) { if (adbOpenUntil == 0) log(this, car.adbLocalOnly(true)); }
                 while (!stop) {
-                    boolean read, openReq, relock;
+                    boolean read, openReq, relock, remove;
                     int f, t;
                     synchronized (lock) {
-                        while (!stop && !needRead && !adbOpenReq && wantFan == sentFan && wantTemp == sentTemp
+                        while (!stop && !needRead && !adbOpenReq && !adbCloseReq && !removeReq
+                                && wantFan == sentFan && wantTemp == sentTemp
                                 && !(adbOpenUntil > 0 && System.currentTimeMillis() >= adbOpenUntil)) {
                             lock.wait(adbOpenUntil > 0 ? Math.max(1, adbOpenUntil - System.currentTimeMillis()) : 30_000);
                         }
@@ -230,17 +260,33 @@ public class GestureService extends Service implements GestureTracker.Listener {
                         needRead = false;
                         openReq = adbOpenReq;
                         adbOpenReq = false;
-                        relock = adbOpenUntil > 0 && System.currentTimeMillis() >= adbOpenUntil;
+                        relock = adbOpenUntil > 0 && (adbCloseReq || System.currentTimeMillis() >= adbOpenUntil);
+                        adbCloseReq = false;
+                        remove = removeReq;
+                        removeReq = false;
                         if (openReq) adbOpenUntil = System.currentTimeMillis() + ADB_OPEN_MS;
                         else if (relock) adbOpenUntil = 0;
                     }
                     if (stop) break;
+                    if (remove) {
+                        // give port 5555 back as it was, then uninstall ourselves (this process ends here)
+                        log(this, car.adbLocalOnly(false));
+                        log(this, "removing Climate Gesture");
+                        String out = car.uninstallSelf();
+                        log(this, "uninstall: " + out);
+                        if (out.contains("Success")) { stop = true; break; }   // we are being killed; leave 5555 as it was
+                        removeMsg = out.isEmpty() ? "No answer from the package manager" : out;
+                        synchronized (lock) { if (adbOpenUntil == 0) log(this, car.adbLocalOnly(true)); }
+                        continue;
+                    }
                     if (openReq) log(this, car.adbLocalOnly(false) + " for 5 min");
                     else if (relock) log(this, car.adbLocalOnly(true));
                     if (read) {
                         st = car.read();
                         synchronized (lock) {
                             if (st.ok()) { baseFan = Math.max(1, st.fan); baseTemp = st.temp; climateOn = st.on; }
+                            carState = st.ok() ? "ok" : "unsupported";
+                            stFan = st.fan; stTemp = st.temp;
                             baseKnown = st.ok(); // unknown head unit: show the HUD but never write
                             sentFan = sentTemp = -1;
                             // steps that arrived while we were reading
@@ -258,17 +304,19 @@ public class GestureService extends Service implements GestureTracker.Listener {
                     if (f > 0 && f != sentFan) {
                         boolean on = climateOn == 1;
                         car.setFan(f, on);
+                        stFan = f;
                         synchronized (lock) { sentFan = f; climateOn = 1; }
                         log(this, "fan -> " + f + (on ? "" : " (climate on)"));
                     }
                     if (t >= 0 && t != sentTemp) {
                         car.setTemp(t);
+                        stTemp = t;
                         synchronized (lock) { sentTemp = t; }
                         log(this, "temp -> " + Car.tempLabel(t) + " C");
                     }
                 }
             } catch (Exception e) {
-                if (!stop) log(this, "car: " + e);
+                if (!stop) { log(this, "car: " + e); carState = "error"; }
             } finally {
                 if (c != null) c.close();
             }
