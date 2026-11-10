@@ -508,6 +508,9 @@
   <div id="demoBanner" style="display:none;margin-bottom:12px;padding:9px 12px;border-radius:12px;
        background:color-mix(in oklch,var(--accent) 16%,transparent);border:1px solid var(--line);
        font-size:13px;line-height:1.4">🧪 <b>Demo mode</b> — sample data, no real car connected.</div>
+  <div id="loginGuard" role="status" style="display:none;margin-bottom:12px;padding:9px 12px;border-radius:12px;
+       background:color-mix(in oklch,#e0a020 16%,transparent);border:1px solid var(--line);
+       font-size:13px;line-height:1.4"></div>
   <header>
     <div>
       <div class="over" id="modelLabel">Jaecoo J5 EV</div>
@@ -1790,6 +1793,11 @@ async function load(live){
   syncResyncSeg();
   applyCurrency();                                       // symbol/labels from server currency config
   { const db=$('demoBanner'); if(db) db.style.display = d.demo? 'block':'none'; }
+  { const el=$('loginGuard'), g=d.login_guard;          // auto-login backed off / stopped by the guard
+    if(el){ el.style.display = g? 'block':'none';
+      if(g){
+  el.textContent = g.blocked ? 'CarLinko rejected the login for this account, so updates are paused to protect it (' + (g.reason || 'unknown') + '). Check the account in the CarLinko app, then ' : 'CarLinko login is backing off after a failed attempt. Next try in ' + Math.ceil((g.wait || 0) / 60) + ' min.';
+  if(g.blocked){ const a = document.createElement('a'); a.href = 'login.html'; a.textContent = 'log in again'; a.style.color = 'inherit'; el.append(a, '.'); } } } }
   applyPI();                                            // render plate/VIN (masked if hidden)
   const st=$('status'); st.classList.toggle('on',d.online);
   $('statusTxt').textContent = d.updated ? (d.online?T('live'):T('no signal'))+(d.age_min!=null?' · '+ago(d.age_min)+' '+T('ago'):'') : T('no data yet');

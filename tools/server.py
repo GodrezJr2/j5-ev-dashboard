@@ -125,7 +125,7 @@ def web_login(email, password, region="sea", gmaps_key=None, dashboard_password=
     except Exception: pass
     import auth, requests
     auth._C = auth.cfg()
-    token = auth.login()                                   # writes token.txt; raises on bad creds
+    token = auth.login(manual=True)                        # writes token.txt; raises on bad creds; clears a block
     data = requests.get(auth.api_base() + "/user/vehicle",
                         headers=auth.headers_for({}, token=token), timeout=20).json().get("data")
     v = data[0] if isinstance(data, list) and data else (data if isinstance(data, dict) else {})
@@ -1127,6 +1127,12 @@ def summary():
     """
     out = _summary()
     out["api_version"] = API_VERSION
+    if not DEMO:
+        try:
+            import auth
+            out["login_guard"] = auth.login_status()           # None = fine; else why updates stopped
+        except Exception:
+            out["login_guard"] = None
     return out
 
 

@@ -192,9 +192,23 @@ pernah dikirim ke server manapun yang aku kontrol. Detail lengkap di **[SECURITY
 Tanpa capture app, tanpa MITM, tanpa decompile — cukup login pakai akunmu. (Kunci penanda-tangan
 sudah di-bundle, dan blob `v-data` yang dikirim app ternyata diabaikan server, jadi dibuang.)
 
-### Pakai akun kedua (disarankan)
+### Risiko akun — baca dulu
+Dashboard ini **tidak resmi**: dia ngobrol ke cloud CarLinko dengan cara yang sama seperti app, tapi
+tanpa izin CarLinko. Di November 2026 ada user yang lapor akun CarLinko yang dipakai dashboard-nya
+**di-disable** ("Your account has been disabled"). Pemicunya belum diketahui. Akun apa pun yang
+kamu loginkan ke dashboard bisa kena hal yang sama, jadi pakai dengan risiko sendiri.
+
+Yang dilakukan dashboard supaya jejaknya kecil: satu socket yang terus terbuka (bukan polling), dan
+**login guard**: login ulang otomatis dibatasi 6x per jam, mundur dari 1 menit sampai 30 menit
+setelah gagal, dan berhenti total kalau CarLinko menolak akunnya (dashboard lalu menampilkan banner
+sampai kamu login ulang manual). Selalu update ke versi terbaru. Versi lama bisa mencoba login yang
+gagal setiap beberapa detik.
+
+### Akun kedua (opsional)
 CarLinko cuma izinin **satu sesi aktif per akun**, jadi login dashboard bisa nge-logout app
-resmi-mu. Hindari bentrok dengan kasih dashboard **akun CarLinko-nya sendiri**:
+resmi-mu. Bentrok ini bisa dihindari dengan kasih dashboard **akun CarLinko-nya sendiri** (akun
+utama jadi tidak ikut, tapi lihat catatan risiko di atas: akun yang dilaporkan di-disable justru
+akun kedua):
 
 1. Bikin akun CarLinko kedua (email beda).
 2. Dari akun utama, **Me → Authorisation → +** lalu authorise email akun kedua ke mobilmu.

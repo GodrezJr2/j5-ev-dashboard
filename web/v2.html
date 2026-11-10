@@ -754,6 +754,8 @@ A11Y: --mut ~5.6:1 and --fnt ~4.8:1 on light; both above 4.5:1 in dark. Text sel
 MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduced-motion honored. -->
 
 <div id="viewHome">
+  <div id="loginGuard" role="status" hidden style="margin:12px 16px 0;padding:10px 12px;border:1px solid var(--line);
+       border-left:3px solid var(--warn);font-size:13px;line-height:1.45;color:var(--ink)"></div>
   <header class="hero">
     <div class="hbar">
       <div class="hname">
@@ -2581,8 +2583,18 @@ document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => {
 });
 
 // ---- data ----
+function renderGuard(){                // auto-login backed off or stopped: say so instead of going quietly stale
+  const el = $('loginGuard'), g = S && S.login_guard;
+  if(!el) return;
+  if(!g){ el.hidden = true; return; }
+  el.style.borderLeftColor = g.blocked ? 'var(--bad)' : 'var(--warn)';
+  el.textContent = g.blocked ? 'CarLinko rejected the login for this account, so updates are paused to protect it (' + (g.reason || 'unknown') + '). Check the account in the CarLinko app, then ' : 'CarLinko login is backing off after a failed attempt. Next try in ' + Math.ceil((g.wait || 0) / 60) + ' min.';
+  if(g.blocked){ const a = document.createElement('a'); a.href = 'login.html'; a.textContent = 'log in again'; a.style.color = 'inherit'; el.append(a, '.'); }
+  el.hidden = false;
+}
 function renderAll(forceAc){
   const acct = S && S._acctDone;
+  renderGuard();
   renderHero(); renderQA(); renderCharging(); renderCards();
   if(acct) renderAcct();
   if(openKey === 'doors') liveDoors();

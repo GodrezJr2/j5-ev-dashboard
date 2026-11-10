@@ -167,7 +167,7 @@ def main():
         except Exception:
             pass
 
-    print("=== CarLinko login (use a SECOND account linked to your car, not your daily one) ===")
+    print("=== CarLinko login (unofficial client: the account may be disabled by CarLinko, see README) ===")
     c["email"] = ask("Email", c.get("email"))
     c["password"] = ask("Password", c.get("password"), secret=True)
     c["region"] = ask("Region", c.get("region") or "sea") or "sea"
@@ -193,7 +193,7 @@ def main():
     import auth  # the signing key is bundled; reads creds.json for the account
     auth._C = auth.cfg()
     try:
-        token = auth.login()
+        token = auth.login(manual=True)
     except Exception as e:
         print(f"  login failed: {e}\n  Double-check email/password, then re-run.")
         return

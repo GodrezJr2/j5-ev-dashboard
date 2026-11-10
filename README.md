@@ -191,9 +191,23 @@ No app capture, no MITM, no decompiling needed — you just log in with your acc
 signing key is bundled, and the `v-data` blob the app sends turned out to be ignored by the
 server, so it's dropped entirely.)
 
-### Use a second account (recommended)
+### Account risk — read this first
+This dashboard is **unofficial**: it talks to CarLinko's cloud the way the app does, but CarLinko
+did not approve it. In November 2026 a user reported that the CarLinko account they ran the
+dashboard on was **disabled** ("Your account has been disabled"). We don't know what triggered it.
+Any account you log the dashboard into could be disabled the same way, so use it at your own risk.
+
+What the dashboard does to keep its footprint small: one persistent socket instead of polling,
+and a **login guard**: automatic re-logins are capped at 6 per hour, back off from 1 minute up to
+30 minutes after a failure, and stop completely when CarLinko rejects the account (the dashboard
+then shows a banner until you log in again by hand). Keep your install up to date. Older versions
+could retry a failing login every few seconds.
+
+### Second account (optional)
 CarLinko keeps **one active session per account**, so logging the dashboard in can sign you out
-of the official app. Avoid the clash by giving the dashboard its **own** CarLinko account:
+of the official app. You can avoid the clash by giving the dashboard its **own** CarLinko account
+(this keeps your main account out of it, but see the risk note above: the reported disabled
+account was a second account):
 
 1. Make a second CarLinko account (different email).
 2. From your main account, **Me → Authorisation → +** and authorise the second account's email
