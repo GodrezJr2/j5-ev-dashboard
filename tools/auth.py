@@ -125,7 +125,17 @@ def login_status():
                 "reason": f"{MAX_PER_HOUR} logins in the last hour"}
     return None
 
-def _check_guard():
+def _hour_cap_wait():
+    now = time.time()
+    recent = [t for t in _state().get("attempts", []) if now - t < 3600]
+    return int(3600 - (now - min(recent))) + 1 if len(recent) >= MAX_PER_HOUR else 0
+
+def _check_guard(retry=False):
+    if retry:                       # a person pressed "try now": skip the backoff/block, keep the cap
+        w = _hour_cap_wait()
+        if w:
+            raise LoginWait(f"{MAX_PER_HOUR} logins in the last hour, try again in {w // 60 + 1} min", w)
+        return
     st = login_status()
     if st:
         if st["blocked"]:
@@ -148,13 +158,15 @@ def _record(ok, reason="", fatal=False, rejected=False):
             s["blocked"] = {"reason": reason[:200], "t": int(now)}
     _save_state(s)
 
-def login(manual=False):
+def login(manual=False, retry=False):
     """Log in with stored creds, return the new token (and save it to token.txt).
 
     manual=True is a person logging in on purpose (web login page, setup.py): it skips the guard
-    and clears a block. Everything else is automatic and is rate-limited / backed off."""
+    and clears a block. retry=True is a person pressing "try now" on the dashboard banner: it skips
+    the backoff and the block but still counts against the hourly cap. Everything else is automatic
+    and is rate-limited / backed off."""
     if not manual:
-        _check_guard()
+        _check_guard(retry)
     try:
         token = _do_login()
     except _Rejected as e:

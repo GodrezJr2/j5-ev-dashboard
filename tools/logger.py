@@ -287,7 +287,7 @@ TOUCH           = 30  # re-store the last frame at least this often so a parked 
 RECONNECT_WAIT  = 3   # first backoff before reopening a dropped socket; doubles per failure in a row
 RECONNECT_MAX   = 120 # cap for that backoff
 HEALTHY_SESSION = 120 # a socket that lived this long resets the backoff
-BLOCKED_RECHECK = 60  # login blocked: re-read the (local) guard state this often, no network
+GUARD_POLL      = 5   # while the login guard holds: re-read its local state file this often
 
 def _store_blob(conn, blob):
     ts = int(time.time()); dt = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
@@ -360,11 +360,13 @@ def stream_loop(conn):
         try:
             _stream_session(conn)
         except auth.LoginWait as e:
-            # The guard refused an automatic login. Don't touch the network until it allows one again;
-            # when blocked (account rejected), wait for the owner to log in again from the dashboard.
-            wait = e.wait if e.wait is not None else BLOCKED_RECHECK
-            print(f"{e}; sleeping {wait}s")
-            time.sleep(max(wait, RECONNECT_WAIT))
+            # The guard refused an automatic login. Don't touch the network until it allows one again
+            # (backoff over, or the owner pressed "try now" / logged in again on the dashboard). Only
+            # the local state file is read while waiting, so a blocked account gets zero traffic.
+            print(f"{e}; waiting without network")
+            while auth.login_status() is not None:
+                time.sleep(GUARD_POLL)
+            print("login guard clear, reconnecting")
             continue
         except Exception as e:
             print("stream error, reconnecting:", repr(e))

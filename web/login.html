@@ -2,137 +2,305 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#f4f1ea">
+<meta name="theme-color" content="#dfe6ee" id="themeColor">
 <title>Sign in · EV Dashboard</title>
-<link rel="icon" href="icon.svg">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<script>
+  // same theme choice as the dashboard (v2 stores it per device); set before paint, no flash
+  try{ const t = localStorage.getItem('theme'); if(t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; }catch(e){}
+</script>
 <style>
+  /* Same world as v2: steel-blue hero melting into a porcelain ground, the car as the subject,
+     one white card on the seam, charcoal primary, green only for state. Tokens copied from v2. */
   :root{
-    --canvas: oklch(0.972 0.006 95); --surface: oklch(0.992 0.004 95);
-    --ink: oklch(0.27 0.012 95); --muted: oklch(0.55 0.012 95); --faint: oklch(0.70 0.010 95);
-    --line: oklch(0.90 0.008 95); --accent: oklch(0.52 0.10 158); --bad: oklch(0.58 0.16 27);
+    --bg:      oklch(0.963 0.006 250);
+    --card:    oklch(1 0 0);
+    --card-2:  oklch(0.978 0.004 250);
+    --ink:     oklch(0.25 0.020 260);
+    --mut:     oklch(0.46 0.016 260);
+    --fnt:     oklch(0.50 0.014 260);
+    --line:    oklch(0.915 0.006 250);
+    --acc:     oklch(0.55 0.11 165);
+    --acc-ink: oklch(0.47 0.11 165);
+    --acc-sf:  oklch(0.55 0.11 165 / .13);
+    --warn:    oklch(0.62 0.14 68);
+    --bad:     oklch(0.54 0.18 27);
+    --heroA:   oklch(0.885 0.028 245);
+    --heroB:   oklch(0.963 0.006 250);
+    --btn:     oklch(0.27 0.02 260);
+    --btn-ink: oklch(0.99 0 0);
+    --sh-1:    0 1px 3px oklch(0.30 0.03 250 / .06), 0 6px 16px oklch(0.30 0.03 250 / .05);
+    --r1:10px; --r2:14px; --r3:18px; --r4:24px; --rf:999px;
+    --eo: cubic-bezier(.16,1,.3,1);
   }
-  @media (prefers-color-scheme: dark){ :root{
-    --canvas: oklch(0.18 0.008 95); --surface: oklch(0.225 0.010 95);
-    --ink: oklch(0.93 0.006 95); --muted: oklch(0.68 0.010 95); --faint: oklch(0.52 0.010 95);
-    --line: oklch(0.32 0.010 95); --accent: oklch(0.64 0.11 158);
-  }}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:      oklch(0.175 0.014 255);
+      --card:    oklch(0.232 0.016 255);
+      --card-2:  oklch(0.262 0.016 255);
+      --ink:     oklch(0.960 0.004 250);
+      --mut:     oklch(0.750 0.010 255);
+      --fnt:     oklch(0.625 0.012 255);
+      --line:    oklch(0.315 0.014 255);
+      --acc:     oklch(0.760 0.140 165);
+      --acc-ink: oklch(0.790 0.135 165);
+      --acc-sf:  oklch(0.760 0.140 165 / .16);
+      --warn:    oklch(0.800 0.130 72);
+      --bad:     oklch(0.690 0.170 25);
+      --heroA:   oklch(0.300 0.035 250);
+      --heroB:   oklch(0.175 0.014 255);
+      --btn:     oklch(0.955 0.004 250);
+      --btn-ink: oklch(0.175 0.014 255);
+      --sh-1:    0 1px 3px oklch(0 0 0 / .30), 0 6px 16px oklch(0 0 0 / .24);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:      oklch(0.175 0.014 255);
+    --card:    oklch(0.232 0.016 255);
+    --card-2:  oklch(0.262 0.016 255);
+    --ink:     oklch(0.960 0.004 250);
+    --mut:     oklch(0.750 0.010 255);
+    --fnt:     oklch(0.625 0.012 255);
+    --line:    oklch(0.315 0.014 255);
+    --acc:     oklch(0.760 0.140 165);
+    --acc-ink: oklch(0.790 0.135 165);
+    --acc-sf:  oklch(0.760 0.140 165 / .16);
+    --warn:    oklch(0.800 0.130 72);
+    --bad:     oklch(0.690 0.170 25);
+    --heroA:   oklch(0.300 0.035 250);
+    --heroB:   oklch(0.175 0.014 255);
+    --btn:     oklch(0.955 0.004 250);
+    --btn-ink: oklch(0.175 0.014 255);
+    --sh-1:    0 1px 3px oklch(0 0 0 / .30), 0 6px 16px oklch(0 0 0 / .24);
+  }
+
   *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
-  html,body{background:var(--canvas);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-  body{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px}
-  .card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);
-    border-radius:20px;padding:28px 24px;box-shadow:0 8px 40px rgb(0 0 0 / .06)}
-  .logo{width:46px;height:46px;border-radius:13px;background:var(--accent);display:flex;align-items:center;
-    justify-content:center;margin-bottom:16px}
-  .logo svg{width:26px;height:26px;stroke:var(--surface)}
-  h1{font-size:20px;font-weight:750;letter-spacing:-.01em}
-  .sub{font-size:13px;color:var(--muted);margin:4px 0 20px}
-  label{display:block;font-size:12px;font-weight:650;color:var(--muted);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.03em}
-  input{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--canvas);
-    border:1px solid var(--line);border-radius:11px;padding:11px 13px;outline:none}
-  input:focus{border-color:var(--accent)}
-  .adv{font-size:13px;color:var(--accent);cursor:pointer;margin-top:14px;display:inline-block;font-weight:600}
-  .advbox{display:none} .advbox.show{display:block}
-  .hint{font-size:11.5px;color:var(--faint);margin-top:5px;line-height:1.5}
-  button{width:100%;margin-top:22px;background:var(--accent);color:var(--surface);border:0;
-    border-radius:12px;padding:13px;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
-  button:active{transform:scale(.99)} button:disabled{opacity:.7;cursor:default}
-  button.loading::before{content:"";display:inline-block;width:15px;height:15px;border:2px solid currentColor;
-    border-right-color:transparent;border-radius:50%;vertical-align:-2px;margin-right:8px;animation:r .7s linear infinite}
-  @keyframes r{to{transform:rotate(360deg)}}
-  .err{display:none;background:color-mix(in oklch,var(--bad) 14%,transparent);color:var(--bad);
-    font-size:13px;padding:10px 12px;border-radius:10px;margin-top:16px}
-  .err.show{display:block}
-  .foot{font-size:11.5px;color:var(--faint);margin-top:18px;line-height:1.6;text-align:center}
-  .hide{display:none}
+  html{background:var(--bg);color-scheme:light dark}
+  body{font:400 15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text",Inter,system-ui,sans-serif;
+    color:var(--ink);background:var(--bg);min-height:100dvh;-webkit-font-smoothing:antialiased}
+  button,input{font:inherit;color:inherit}
+  :focus{outline:none}
+  :focus-visible{outline:2px solid var(--acc-ink);outline-offset:2px;border-radius:var(--r1)}
+  .hide{display:none!important}
+
+  /* ---------- hero: the car, under a steel-blue sky ---------- */
+  .hero{background:linear-gradient(180deg,var(--heroA) 0%,var(--heroB) 100%);
+    padding:max(22px,calc(env(safe-area-inset-top) + 14px)) 20px 0;text-align:center}
+  .brand{display:flex;align-items:center;justify-content:center;gap:8px;
+    font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
+  .brand img{width:18px;height:18px}
+  .car{display:block;width:min(300px,78vw);height:auto;margin:22px auto -26px;
+    animation:rise .6s var(--eo) both}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}}
+
+  /* ---------- the card on the seam ---------- */
+  main{width:100%;max-width:420px;margin:0 auto;padding:0 16px max(28px,env(safe-area-inset-bottom))}
+  .card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r4);
+    box-shadow:var(--sh-1);padding:26px 22px 22px;animation:rise .6s .06s var(--eo) both}
+  h1{font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+  .sub{font-size:14px;color:var(--mut);margin:6px 0 4px}
+
+  .f{display:block;margin-top:18px}
+  .f > span{display:block;font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--fnt);margin-bottom:7px}
+  .in{display:flex;align-items:center;background:var(--card-2);border:1px solid var(--line);
+    border-radius:var(--r2);transition:border-color .14s var(--eo)}
+  .in:focus-within{border-color:var(--acc-ink)}
+  .in input{flex:1;min-width:0;border:0;background:none;padding:13px 14px;font-size:16px;outline:none}
+  .in input::placeholder{color:var(--fnt)}
+  .eye{flex:none;width:44px;height:44px;border:0;background:none;color:var(--mut);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;border-radius:var(--r2)}
+  .eye svg{width:18px;height:18px}
+  .hint{font-size:12px;color:var(--fnt);margin-top:6px;line-height:1.5}
+
+  /* region: a segmented control, the two clouds CarLinko runs */
+  .seg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px;padding:4px;background:var(--card-2);
+    border:1px solid var(--line);border-radius:var(--r2)}
+  .seg button{border:0;background:none;padding:9px 6px;border-radius:var(--r1);font-size:14px;font-weight:500;
+    color:var(--mut);cursor:pointer;transition:background .14s var(--eo),color .14s var(--eo)}
+  .seg button[aria-checked="true"]{background:var(--card);color:var(--ink);font-weight:600;box-shadow:var(--sh-1)}
+  .seg small{display:block;font-size:11px;font-weight:400;color:var(--fnt)}
+
+  details{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+  summary{list-style:none;cursor:pointer;font-size:14px;font-weight:500;color:var(--mut);
+    display:flex;align-items:center;justify-content:space-between;border-radius:var(--r1)}
+  summary::-webkit-details-marker{display:none}
+  summary svg{width:16px;height:16px;transition:transform .22s var(--eo)}
+  details[open] summary svg{transform:rotate(180deg)}
+
+  .err{margin-top:16px;padding:11px 13px;border-radius:var(--r2);font-size:13.5px;line-height:1.45;
+    color:var(--ink);background:color-mix(in oklch,var(--bad) 12%,transparent);
+    border:1px solid color-mix(in oklch,var(--bad) 35%,transparent)}
+  .err:empty{display:none}
+
+  .go{width:100%;margin-top:20px;border:0;border-radius:var(--rf);padding:15px;font-size:16px;font-weight:600;
+    background:var(--btn);color:var(--btn-ink);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;
+    transition:transform .14s var(--eo),opacity .14s}
+  .go:active{transform:scale(.98)}
+  .go:disabled{opacity:.75;cursor:default}
+  .go.loading::before{content:"";width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;
+    border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .notes{margin:18px 4px 0;font-size:12.5px;line-height:1.55;color:var(--mut)}
+  .notes p{display:flex;gap:9px;padding:9px 0;border-top:1px solid var(--line)}
+  .notes p:first-child{border-top:0}
+  .notes i{flex:none;width:6px;height:6px;border-radius:50%;margin-top:7px;background:var(--fnt)}
+  .notes i.w{background:var(--warn)}
+  .notes a{color:inherit}
+
+  .lock{width:44px;height:44px;border-radius:50%;background:var(--card-2);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:var(--mut)}
+  .lock svg{width:20px;height:20px}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  }
+  @media (min-width:760px){ .car{width:340px} }
 </style>
 </head>
 <body>
-  <div class="card">
-    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6 17l1.5-5h9L18 17M7 12l1-4h8l1 4M7.5 17v2M16.5 17v2"/></svg></div>
+<header class="hero">
+  <div class="brand"><img src="icon.svg" alt="">EV Dashboard</div>
+  <img class="car" src="car-generic.svg" alt="" width="330" height="150">
+</header>
 
-    <!-- first-run config -->
-    <form id="cfg" class="hide" autocomplete="on">
-      <h1>Sign in</h1>
-      <div class="sub">Connect your CarLinko account to your dashboard.</div>
-      <label for="email">CarLinko email</label>
-      <input id="email" name="email" type="email" inputmode="email" autocomplete="username" placeholder="you@example.com" required>
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" placeholder="passwordhere" required>
-      <span class="adv" id="advToggle">Advanced &#9662;</span>
-      <div class="advbox" id="advBox">
-        <label for="dashpw">Dashboard password (for public hosting)</label>
-        <input id="dashpw" type="password" autocomplete="new-password" placeholder="leave blank on a private/Tailscale host">
-        <div class="hint">Set this if the URL is reachable from the internet — it locks the dashboard
-          behind a password. Leave blank for a private/home/Tailscale setup.</div>
-        <label for="region">Region</label>
-        <input id="region" type="text" value="sea" autocomplete="off">
-        <label for="gmaps">Google Maps API key (optional)</label>
-        <input id="gmaps" type="text" autocomplete="off" placeholder="enables trip planner + SPKLU map">
-        <div class="hint">Use <b>your own</b> free key — don't share someone else's (it bills their quota).</div>
-      </div>
-      <div class="err" id="cfgErr"></div>
-      <button type="submit" id="cfgBtn">Sign in</button>
-      <div class="foot">Self-hosted &middot; your login stays on this device &middot; read-only.<br>
-        Signing in may sign you out of the CarLinko app (one session per account) — just log back in there.</div>
+<main>
+  <div class="card">
+    <!-- first run: connect a CarLinko account -->
+    <form id="cfg" class="hide" autocomplete="on" novalidate>
+      <h1>Connect your car</h1>
+      <p class="sub">Sign in with the CarLinko account your car is linked to.</p>
+
+      <label class="f"><span>CarLinko email</span>
+        <div class="in"><input id="email" name="email" type="email" inputmode="email" autocomplete="username"
+          placeholder="you@example.com" required></div></label>
+
+      <label class="f"><span>Password</span>
+        <div class="in"><input id="password" name="password" type="password" autocomplete="current-password" required>
+          <button type="button" class="eye" data-for="password" aria-label="Show password" aria-pressed="false"></button></div></label>
+
+      <div class="f"><span id="regLbl">Region</span>
+        <div class="seg" role="radiogroup" aria-labelledby="regLbl" id="region">
+          <button type="button" role="radio" data-v="sea" aria-checked="true">SEA<small>Asia Pacific</small></button>
+          <button type="button" role="radio" data-v="emea" aria-checked="false">EMEA<small>Europe, Middle East</small></button>
+        </div></div>
+
+      <details>
+        <summary>More options<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <label class="f"><span>Dashboard password</span>
+          <div class="in"><input id="dashpw" type="password" autocomplete="new-password" placeholder="Leave blank on a private network">
+            <button type="button" class="eye" data-for="dashpw" aria-label="Show password" aria-pressed="false"></button></div>
+          <div class="hint">Set one if this page is reachable from the internet. It locks the dashboard behind a password.</div></label>
+        <label class="f"><span>Google Maps API key</span>
+          <div class="in"><input id="gmaps" type="text" autocomplete="off" spellcheck="false" placeholder="Optional"></div>
+          <div class="hint">Turns on the trip planner and charger map. Use your own key, it bills to its owner.</div></label>
+      </details>
+
+      <div class="err" id="cfgErr" role="alert"></div>
+      <button type="submit" class="go" id="cfgBtn">Sign in</button>
     </form>
 
-    <!-- return visit, locked -->
+    <!-- return visit on a password-gated dashboard -->
     <form id="unlock" class="hide" autocomplete="on">
-      <h1>Locked</h1>
-      <div class="sub">Enter the dashboard password to continue.</div>
-      <label for="upw">Dashboard password</label>
-      <input id="upw" type="password" autocomplete="current-password" placeholder="passwordhere" required>
-      <div class="err" id="unErr"></div>
-      <button type="submit" id="unBtn">Unlock</button>
+      <div class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+      <h1>Dashboard locked</h1>
+      <p class="sub">Enter the dashboard password to continue.</p>
+      <label class="f"><span>Dashboard password</span>
+        <div class="in"><input id="upw" type="password" autocomplete="current-password" required>
+          <button type="button" class="eye" data-for="upw" aria-label="Show password" aria-pressed="false"></button></div></label>
+      <div class="err" id="unErr" role="alert"></div>
+      <button type="submit" class="go" id="unBtn">Unlock</button>
     </form>
   </div>
+
+  <div class="notes" id="cfgNotes">
+    <p><i></i><span>Self-hosted. Your login is stored on this server only and sent nowhere else than CarLinko.</span></p>
+    <p><i></i><span>CarLinko allows one session per account, so signing in here can sign you out of the CarLinko app.</span></p>
+    <p><i class="w"></i><span>This is an unofficial client. A user has reported a CarLinko account being disabled after using it. Use at your own risk; see the <a href="https://github.com/GodrezJr2/j5-ev-dashboard#account-risk--read-this-first" target="_blank" rel="noopener">README</a>.</span></p>
+  </div>
+</main>
+
 <script>
-  const $=id=>document.getElementById(id);
-  function show(which){ $('cfg').classList.toggle('hide', which!=='cfg'); $('unlock').classList.toggle('hide', which!=='unlock'); }
-  async function boot(){
+  const $ = id => document.getElementById(id);
+  const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 5.1A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.8 9.8 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+
+  // the theme-color follows the hero top so the iOS status bar blends in
+  { const dark = document.documentElement.dataset.theme === 'dark' ||
+      (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+    $('themeColor').content = dark ? '#252c37' : '#dfe6ee'; }
+
+  function show(which){
+    $('cfg').classList.toggle('hide', which !== 'cfg');
+    $('unlock').classList.toggle('hide', which !== 'unlock');
+    $('cfgNotes').classList.toggle('hide', which !== 'cfg');
+    const first = which === 'cfg' ? $('email') : $('upw');
+    if(matchMedia('(pointer:fine)').matches) first.focus();
+  }
+  (async () => {
     try{
-      const s=await (await fetch('api/status',{cache:'no-store'})).json();
+      const s = await (await fetch('api/status', {cache:'no-store'})).json();
       if(!s.configured) show('cfg');
       else if(s.gated && !s.authed) show('unlock');
-      else location.href='./';
+      else if(new URLSearchParams(location.search).has('relogin')) show('cfg');   // banner: log in again
+      else location.href = './';
     }catch(e){ show('cfg'); }
-  }
-  boot();
+  })();
 
-  $('advToggle').onclick=()=>{ const open=$('advBox').classList.toggle('show');
-    $('advToggle').textContent = open ? 'Advanced ▴' : 'Advanced ▾'; };
-
-  $('cfg').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const btn=$('cfgBtn'), err=$('cfgErr'); err.classList.remove('show');
-    btn.disabled=true; btn.classList.add('loading'); btn.textContent='Signing in…';
-    try{
-      const r=await fetch('api/login',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({email:$('email').value,password:$('password').value,region:$('region').value||'sea',
-          gmaps_key:$('gmaps').value,dashboard_password:$('dashpw').value})});
-      const d=await r.json();
-      if(d.ok){ btn.textContent='Loading your car…'; location.href='./'; }
-      else{ err.textContent=d.error||'Sign in failed.'; err.classList.add('show');
-        btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Sign in'; }
-    }catch(ex){ err.textContent='Network error — is the server running?'; err.classList.add('show');
-      btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Sign in'; }
+  document.querySelectorAll('.eye').forEach(b => {
+    b.innerHTML = EYE;
+    b.onclick = () => {
+      const i = $(b.dataset.for), on = i.type === 'password';
+      i.type = on ? 'text' : 'password';
+      b.innerHTML = on ? EYE_OFF : EYE;
+      b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Hide password' : 'Show password');
+    };
   });
 
-  $('unlock').addEventListener('submit', async e=>{
+  let region = 'sea';
+  const segBtns = [...$('region').querySelectorAll('button')];
+  function pick(b){ region = b.dataset.v; segBtns.forEach(x => x.setAttribute('aria-checked', x === b)); }
+  segBtns.forEach((b, i) => {
+    b.onclick = () => pick(b);
+    b.onkeydown = e => {                     // radiogroup arrows
+      if(e.key === 'ArrowRight' || e.key === 'ArrowLeft'){
+        e.preventDefault(); const n = segBtns[(i + 1) % segBtns.length]; pick(n); n.focus();
+      }
+    };
+  });
+
+  function busy(btn, on, label){ btn.disabled = on; btn.classList.toggle('loading', on); btn.textContent = label; }
+
+  $('cfg').addEventListener('submit', async e => {
     e.preventDefault();
-    const btn=$('unBtn'), err=$('unErr'); err.classList.remove('show');
-    btn.disabled=true; btn.classList.add('loading'); btn.textContent='Unlocking…';
+    const btn = $('cfgBtn'), err = $('cfgErr'); err.textContent = '';
+    if(!$('email').value.trim() || !$('password').value){ err.textContent = 'Enter your CarLinko email and password.'; return; }
+    busy(btn, true, 'Signing in…');
     try{
-      const r=await fetch('api/unlock',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({password:$('upw').value})});
-      const d=await r.json();
-      if(d.ok){ location.href='./'; }
-      else{ err.textContent=d.error||'Wrong password.'; err.classList.add('show');
-        btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Unlock'; }
-    }catch(ex){ err.textContent='Network error.'; err.classList.add('show');
-      btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Unlock'; }
+      const d = await (await fetch('api/login', {method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:$('email').value, password:$('password').value, region,
+          gmaps_key:$('gmaps').value, dashboard_password:$('dashpw').value})})).json();
+      if(d.ok){ busy(btn, true, 'Loading your car…'); location.href = './'; return; }
+      err.textContent = d.error || 'Sign in failed.';
+    }catch(ex){ err.textContent = 'Could not reach the dashboard server. Is it running?'; }
+    busy(btn, false, 'Sign in');
+  });
+
+  $('unlock').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = $('unBtn'), err = $('unErr'); err.textContent = '';
+    busy(btn, true, 'Unlocking…');
+    try{
+      const d = await (await fetch('api/unlock', {method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({password:$('upw').value})})).json();
+      if(d.ok){ location.href = './'; return; }
+      err.textContent = d.error || 'Wrong password.';
+    }catch(ex){ err.textContent = 'Could not reach the dashboard server.'; }
+    busy(btn, false, 'Unlock');
   });
 </script>
 </body>

@@ -2197,7 +2197,7 @@ function renderAcct(){
   $('aCar').src = $('hCar').src;
 
   const th = readTheme();
-  const ui = (document.cookie.match(/(?:^|;\s*)ui=(\w+)/) || [])[1] || 'v1';
+  const ui = (document.cookie.match(/(?:^|;\s*)ui=(\w+)/) || [])[1] || 'v2';
   const segRow = (ic, label, name, opts, curVal) =>
     '<div class="row"><span class="ri">' + icon(ic) + '</span>' +
     '<span class="rl">' + label + '</span><span class="seg">' +
@@ -2583,13 +2583,35 @@ document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => {
 });
 
 // ---- data ----
+// login guard banner: say why the car stopped updating, and let the owner retry once on purpose.
+// Never retried automatically on page load: every refresh/tab would cost a CarLinko login.
+let guardBusy = false, guardMsg = '';
+function guardBanner(el, g, reload){
+  el.textContent = (g.blocked
+      ? 'CarLinko rejected the login for this account, so updates are paused to protect it (' + (g.reason || 'unknown') + '). '
+      : 'CarLinko login failed, so it is waiting before the next automatic try (' + Math.max(1, Math.ceil((g.wait || 0) / 60)) + ' min). ')
+    + (guardMsg ? guardMsg + ' ' : '');
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = guardBusy ? 'Trying…' : 'Try now'; b.disabled = guardBusy;
+  b.style.cssText = 'font:inherit;font-weight:600;padding:3px 10px;margin-right:8px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer';
+  b.onclick = async () => {
+    guardBusy = true; guardMsg = ''; guardBanner(el, g, reload);
+    try{
+      const r = await (await fetch('api/relogin', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})).json();
+      guardMsg = r.ok ? 'Logged in again, reconnecting…' : (r.error || 'Login failed.');
+    }catch(e){ guardMsg = 'Could not reach the dashboard.'; }
+    guardBusy = false; reload();
+  };
+  const a = document.createElement('a');
+  a.href = 'login.html?relogin'; a.textContent = 'Log in again'; a.style.color = 'inherit';
+  el.append(b, a);
+}
 function renderGuard(){                // auto-login backed off or stopped: say so instead of going quietly stale
   const el = $('loginGuard'), g = S && S.login_guard;
   if(!el) return;
-  if(!g){ el.hidden = true; return; }
+  if(!g){ el.hidden = true; guardMsg = ''; return; }
   el.style.borderLeftColor = g.blocked ? 'var(--bad)' : 'var(--warn)';
-  el.textContent = g.blocked ? 'CarLinko rejected the login for this account, so updates are paused to protect it (' + (g.reason || 'unknown') + '). Check the account in the CarLinko app, then ' : 'CarLinko login is backing off after a failed attempt. Next try in ' + Math.ceil((g.wait || 0) / 60) + ' min.';
-  if(g.blocked){ const a = document.createElement('a'); a.href = 'login.html'; a.textContent = 'log in again'; a.style.color = 'inherit'; el.append(a, '.'); }
+  guardBanner(el, g, load);
   el.hidden = false;
 }
 function renderAll(forceAc){

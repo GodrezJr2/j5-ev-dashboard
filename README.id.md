@@ -43,7 +43,7 @@ Versi mobil asli: [1½ menit di HP dengan Jaecoo J5 EV asli](https://github.com/
 
 ## Screenshot
 
-**Tampilan v2** (`/v2.html`, atau jadikan default lewat Pengaturan). Gambarnya ikut tema GitHub kamu;
+**Tampilan v2** (default di `/`, juga di `/v2.html`). Gambarnya ikut tema GitHub kamu;
 tema terang dan gelap dua-duanya sudah ada.
 
 <table>
@@ -56,7 +56,7 @@ tema terang dan gelap dua-duanya sudah ada.
 
 *Pakai data demo. Plat & VIN disembunyikan secara default (tombol mata privasi).*
 
-**Tampilan Classic** (default di `/`) punya tambahan perencana perjalanan jauh dan peta SPKLU:
+**Tampilan Classic** (`/index.html`, atau jadikan default lewat Pengaturan) punya tambahan perencana perjalanan jauh dan peta SPKLU:
 
 <table>
 <tr><th>Perencana perjalanan</th><th>Peta SPKLU</th></tr>

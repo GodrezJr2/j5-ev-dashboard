@@ -1861,7 +1861,7 @@ class H(BaseHTTPRequestHandler):
         return {"Set-Cookie": f"sid={make_session()}; HttpOnly; SameSite=Lax; Path=/; Max-Age={SESSION_TTL}"}
 
     # paths reachable without a session (so the login/unlock page can load + submit)
-    _PUBLIC = {"/login.html", "/icon.svg", "/manifest.webmanifest", "/api/status", "/api/login", "/api/unlock"}
+    _PUBLIC = {"/login.html", "/icon.svg", "/car-generic.svg", "/manifest.webmanifest", "/api/status", "/api/login", "/api/unlock"}
 
     def do_GET(self):
         path = self.path.split("?")[0]
@@ -2042,7 +2042,7 @@ class H(BaseHTTPRequestHandler):
                     part = part.strip()
                     if part.startswith("ui="):
                         ui = part[3:]
-                path = "/v2.html" if ui == "v2" else "/index.html"
+                path = "/index.html" if ui == "v1" else "/v2.html"   # v2 is the default since Nov 2026
         fp = os.path.normpath(os.path.join(WEB, path.lstrip("/")))
         if not fp.startswith(os.path.abspath(WEB)) or not os.path.isfile(fp):
             self._send(404, b"not found", "text/plain")
@@ -2056,6 +2056,10 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         path = self.path.split("?")[0]
         if path == "/api/login":
+            # public only for the first run; once set up and password-gated, re-pointing the dashboard
+            # at another account (and minting a session) needs an unlocked session first
+            if is_configured() and _gated() and not self._authed():
+                self._send(401, b'{"ok":false,"error":"Unlock the dashboard first."}', "application/json"); return
             try:
                 n = int(self.headers.get("Content-Length") or 0)
                 body = json.loads(self.rfile.read(n).decode() or "{}")
@@ -2091,6 +2095,24 @@ class H(BaseHTTPRequestHandler):
                     self._send(200, json.dumps({"ok": False, "error": "Wrong password."}).encode(), "application/json")
             except Exception as e:
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:120]}).encode(), "application/json")
+            return
+        if path == "/api/relogin":                     # banner "try now": one guarded login attempt
+            if not self._authed():
+                self._send(401, b'{"ok":false,"error":"auth"}', "application/json"); return
+            if "application/json" not in (self.headers.get("Content-Type") or ""):
+                self._send(415, b'{"ok":false,"error":"JSON only"}', "application/json"); return
+            import auth
+            err = None
+            if DEMO:
+                err = "Not available in demo mode."
+            else:
+                try:
+                    auth.login(retry=True)              # skips backoff/block, still capped per hour
+                except Exception as e:
+                    err = str(e)[:200]
+            self._send(200, json.dumps({"ok": err is None, "error": err,
+                                        "login_guard": None if DEMO else auth.login_status()}).encode(),
+                       "application/json")
             return
         if path == "/api/forcerefresh":                # poke the car with the benign init (0x77) so it
             if not self._authed():                     # reports now; the client then re-reads the DB.

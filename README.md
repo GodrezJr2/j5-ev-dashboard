@@ -42,7 +42,7 @@ Recorded on a real car instead: [1½ minutes on a phone against a real Jaecoo J5
 
 ## Screenshots
 
-The **v2 interface** (`/v2.html`, or pick it as the default under Settings). The pictures follow your GitHub theme;
+The **v2 interface** (the default at `/`, also at `/v2.html`). The pictures follow your GitHub theme;
 both a light and a dark theme are built in.
 
 <table>
@@ -54,7 +54,7 @@ both a light and a dark theme are built in.
 
 *Shown with demo data. Plate and VIN are masked by default (privacy eye-toggle).*
 
-The **Classic interface** (the default at `/`) adds the long-trip planner and the SPKLU map:
+The **Classic interface** (`/index.html`, or pick it as the default under Settings) adds the long-trip planner and the SPKLU map:
 
 <table>
 <tr><th>Trip planner</th><th>SPKLU map</th></tr>
