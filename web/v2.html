@@ -688,15 +688,58 @@
     transition:background var(--t-mid) linear,color var(--t-mid) linear}
   .hustep.done .hn b{background:var(--acc);color:var(--btn-ink)}
   .hustep .hn h4{flex:1;font-size:15px;font-weight:700;letter-spacing:-.01em}
-  .hustep p,.hustep li{font-size:13px;line-height:1.6;color:var(--mut)}
-  .hustep p{margin-top:var(--s2)}
-  .hustep ol,.hustep ul{margin:var(--s2) 0 0 18px}
-  .hustep b.k{color:var(--ink);font-weight:700}
-  .hudone{font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:var(--rf);background:var(--card-2);
-    color:var(--mut);transition:background var(--t-mid) linear,color var(--t-mid) linear}
-  .hustep.done .hudone{background:var(--acc-sf);color:var(--acc-ink)}
-  .hutodo{margin-top:var(--s3);padding:10px 12px;border-radius:var(--r1);border:1px dashed var(--line);
-    font-size:12.5px;line-height:1.5;color:var(--mut)}
+  .hucnt{font-size:12px;font-weight:700;color:var(--fnt);font-variant-numeric:tabular-nums}
+  .hustep.done .hucnt{color:var(--acc-ink)}
+  .hustep p,.hustep li,.husub li{font-size:13px;line-height:1.6;color:var(--mut)}
+  .hustep b.k,.husub b.k,.huneed b.k{color:var(--ink);font-weight:700}
+  .husubs{position:relative;margin-top:var(--s1)}
+  .husub{position:relative;display:grid;grid-template-columns:28px 1fr;gap:var(--s3);padding-top:var(--s4)}
+  .husub+.husub::before{content:"";position:absolute;left:13.5px;top:4px;height:calc(var(--s4) - 8px);width:1.5px;
+    border-radius:1px;background:var(--line)}
+  .husb{min-width:0}
+  .hunum{font-size:12px;font-weight:750;color:var(--fnt);margin-right:7px;font-variant-numeric:tabular-nums}
+  .husub p.hutx{margin:0;font-size:14px;line-height:1.55;color:var(--ink);padding-top:3px}
+  .husub p.hunote{margin-top:var(--s2);font-size:12px;line-height:1.5;color:var(--fnt)}
+  .husub.done p.hutx{color:var(--mut)}
+  .husub .huill{transition:opacity var(--t-mid) linear}
+  .husub.done .huill{opacity:.5}
+  .hulist2{margin:var(--s3) 0 0 18px}
+  .hulist2 li+li{margin-top:4px}
+  .huneed li{font-size:13px;line-height:1.6;color:var(--mut)}
+  .huck{width:28px;height:28px;border-radius:9px;border:1.5px solid color-mix(in oklab,var(--mut) 55%,transparent);background:var(--card);flex:none;
+    display:flex;align-items:center;justify-content:center;padding:0;
+    transition:background var(--t-mid) linear,border-color var(--t-mid) linear,transform var(--t-fast) var(--eo)}
+  .huck:active{transform:scale(.9)}
+  .huck svg{width:18px;height:18px;fill:none;stroke:var(--btn-ink);stroke-width:2.4;stroke-linecap:round;
+    stroke-linejoin:round;stroke-dasharray:18;stroke-dashoffset:18;transition:stroke-dashoffset var(--t-mid) var(--eo)}
+  .huck.on{background:var(--acc);border-color:var(--acc)}
+  .huck.on svg{stroke-dashoffset:0}
+  .huprg{margin-top:var(--s3)}
+  .hubar{height:6px;border-radius:3px;background:var(--card-2);margin-top:var(--s3);overflow:hidden}
+  .hubar i{display:block;height:100%;width:0;background:var(--acc);border-radius:3px;transition:width var(--t-slow) var(--eo)}
+  .hureset{font-size:12px;font-weight:700;color:var(--mut)}
+  .hs-lbl.acc{fill:var(--acc-ink)}
+  .hs-card{fill:var(--card);stroke:var(--line)}
+  .hs-sm{fill:var(--ink);font-size:7.5px;font-weight:650}
+  /* close-up drawings of head unit rows */
+  .hz-c{fill:var(--fnt);font-size:10.5px;font-weight:650;letter-spacing:.02em}
+  .hz-row{fill:var(--card-2)}
+  .hz-row.on{fill:var(--acc-sf);stroke:var(--acc);stroke-width:1.6}
+  .hz-t{fill:var(--mut);font-size:12px;font-weight:600}
+  .hz-t.on{fill:var(--ink);font-weight:750}
+  .hz-v{fill:var(--fnt);font-size:11px;font-weight:600}
+  .hz-v.on{fill:var(--acc-ink)}
+  .hz-hl{fill:var(--acc-ink);font-weight:800;text-decoration:underline}
+  .hz-ln{fill:none;stroke:var(--acc);stroke-width:1.4;stroke-dasharray:3 3}
+  .hz-cell{fill:var(--card);stroke:var(--acc);stroke-width:1.4}
+  .hz-sw{fill:var(--acc)}
+  .hz-cnt{fill:var(--ink)}
+  .hz-cntt{fill:var(--bg);font-size:11px;font-weight:800}
+  .hz-dot{fill:var(--ink);opacity:.82}
+  .hz-pulse{fill:none;stroke:var(--ink);stroke-width:1.4;opacity:.5;transform-box:fill-box;transform-origin:center;
+    animation:hzp 1.5s var(--eo) infinite}
+  @keyframes hzp{0%{transform:scale(.6);opacity:.7}100%{transform:scale(1.5);opacity:0}}
+  @media (prefers-reduced-motion:reduce){.hz-pulse{animation:none}}
 
   .hutool{margin-top:var(--s3)}
   .hubtn2{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;
@@ -2258,43 +2301,55 @@ function huCopy(text, btn){
     try{ document.execCommand('copy'); ok(); }catch(e){ toast('Select and copy the text'); } t.remove(); }
 }
 
-// own drawings, head unit portrait screen 110x150 centred in a 300-wide frame
-const huScr = inner => '<svg class="huill" viewBox="0 0 300 166" aria-hidden="true">' +
-  '<rect class="hs-scr" x="95" y="6" width="110" height="154" rx="9"/>' + inner + '</svg>';
+// own line drawings: a close-up of the rows that matter on the head unit, in the page's own colours.
+// The accent row + finger dot marks what to tap.
+const hzRow = (y, label, val, on) =>
+  '<rect class="hz-row' + (on ? ' on' : '') + '" x="20" y="' + y + '" width="260" height="30" rx="8"/>' +
+  '<text class="hz-t' + (on ? ' on' : '') + '" x="34" y="' + (y + 19.5) + '">' + label + '</text>' +
+  (val ? '<text class="hz-v" x="266" y="' + (y + 19.5) + '" text-anchor="end">' + val + '</text>' : '');
+const hzFinger = (x, y) => '<g><circle class="hz-pulse" cx="' + x + '" cy="' + y + '" r="13"/>' +
+  '<circle class="hz-dot" cx="' + x + '" cy="' + y + '" r="8"/></g>';
+const hzCrumb = path => '<text class="hz-c" x="20" y="16">' + path + '</text>';
+const hzBox = (h, inner) => '<svg class="huill hz" viewBox="0 0 300 ' + h + '" aria-hidden="true">' + inner + '</svg>';
 const HU_ILL = {
-  need: '<svg class="huill" viewBox="0 0 320 116" aria-hidden="true">' +
-    // laptop
-    '<rect class="hs-dev" x="22" y="26" width="64" height="42" rx="4"/><rect class="hs-fill" x="28" y="32" width="52" height="30" rx="2"/>' +
-    '<path class="hs-dev" d="M14 72h80l-5 6H19z"/>' +
-    // phone + hotspot waves
-    '<rect class="hs-dev" x="146" y="22" width="28" height="52" rx="6"/><path class="hs-wave" d="M151 14a14 14 0 0118 0M155 9a22 22 0 0110 0" opacity=".9"/>' +
-    // head unit (portrait)
-    '<rect class="hs-dev" x="240" y="14" width="46" height="64" rx="5"/><rect class="hs-fill" x="245" y="19" width="36" height="54" rx="2"/>' +
-    '<path class="hs-lnk" d="M96 48h44M180 48h54"/>' +
-    '<text class="hs-lbl" x="54" y="96">Laptop running</text><text class="hs-lbl" x="54" y="109">this dashboard</text>' +
-    '<text class="hs-lbl" x="160" y="96">Phone</text><text class="hs-lbl" x="160" y="109">hotspot</text>' +
-    '<text class="hs-lbl" x="263" y="96">Head unit</text><text class="hs-lbl" x="263" y="109">WiFi on</text></svg>',
-  menu: huScr(
-    '<text class="hs-sub" x="105" y="20">Settings &#8250; System</text>' +
-    '<rect class="hs-hi" x="103" y="28" width="94" height="22" rx="4"/>' +
-    '<text class="hs-txt" x="109" y="42">Version info</text>' +
-    '<circle cx="186" cy="39" r="10.5" fill="var(--acc)"/>' +
-    '<text x="186" y="42.5" fill="#fff" font-size="8.5" font-weight="750" text-anchor="middle">&#215;10</text>' +
-    ['Software  V2.x', 'Hardware', 'APP Version', 'SOC Version'].map((t, i) =>
-      '<rect class="hs-bar" x="103" y="' + (56 + i * 22) + '" width="94" height="16" rx="4"/>' +
-      '<text class="hs-sub" x="109" y="' + (56 + i * 22 + 11) + '">' + t + '</text>').join('')),
-  adb: huScr(
-    '<text class="hs-txt" x="105" y="24">Engineering mode</text>' +
-    '<rect class="hs-bar" x="103" y="34" width="94" height="16" rx="4"/><rect class="hs-hi" x="103" y="56" width="94" height="22" rx="4"/>' +
-    '<text class="hs-txt" x="109" y="70">Enable ADB</text>' +
-    '<rect class="hs-on" x="172" y="61" width="20" height="12" rx="6"/><circle cx="186" cy="67" r="4.4" fill="#fff"/>' +
-    '<rect class="hs-bar" x="103" y="84" width="94" height="16" rx="4"/><rect class="hs-bar" x="103" y="106" width="94" height="16" rx="4"/>'),
-  wifi: huScr(
-    '<text class="hs-txt" x="105" y="24">WiFi</text>' +
-    '<rect class="hs-hi" x="103" y="34" width="94" height="24" rx="4"/>' +
-    '<text class="hs-txt" x="109" y="45">Your hotspot</text><text class="hs-sub" x="109" y="54">Connected</text>' +
-    '<path d="M184 42l3 3 6-6" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
-    '<rect class="hs-bar" x="103" y="64" width="94" height="16" rx="4"/><rect class="hs-bar" x="103" y="86" width="94" height="16" rx="4"/>'),
+  need: '<svg class="huill" viewBox="0 0 320 120" aria-hidden="true">' +
+    '<rect class="hs-dev" x="22" y="30" width="64" height="42" rx="4"/><rect class="hs-fill" x="28" y="36" width="52" height="30" rx="2"/>' +
+    '<path class="hs-dev" d="M14 76h80l-5 6H19z"/>' +
+    '<rect class="hs-dev" x="146" y="26" width="28" height="52" rx="6"/><path class="hs-wave" d="M151 18a14 14 0 0118 0M155 12a22 22 0 0110 0"/>' +
+    '<rect x="240" y="16" width="46" height="66" rx="6" fill="oklch(0.18 0.01 255)"/><rect x="245" y="21" width="36" height="56" rx="2" fill="oklch(0.28 0.014 255)"/>' +
+    '<path class="hs-lnk" d="M96 52h44M180 52h54"/>' +
+    '<text class="hs-lbl" x="54" y="102">Laptop</text><text class="hs-lbl" x="160" y="102">Phone hotspot</text>' +
+    '<text class="hs-lbl" x="263" y="102">Head unit</text>' +
+    '<text class="hs-lbl acc" x="160" y="117">same network</text></svg>',
+  settings: hzBox(96, hzCrumb('Settings') +
+    hzRow(26, 'Display') + hzRow(62, 'System', '›', 1) + hzFinger(240, 77)),
+  version: hzBox(132, hzCrumb('Settings › System') +
+    hzRow(26, 'Language') + hzRow(62, 'Date and time') + hzRow(98, 'Version information', '›', 1) + hzFinger(240, 113)),
+  app: hzBox(132, hzCrumb('Version information') +
+    hzRow(26, 'Hardware') + hzRow(62, 'APP Version', '', 1) + hzRow(98, 'SOC Version') + hzFinger(196, 77) +
+    '<rect class="hz-cnt" x="218" y="66" width="44" height="22" rx="11"/><text class="hz-cntt" x="240" y="81" text-anchor="middle">10×</text>'),
+  soc: hzBox(150, hzCrumb('Version information') +
+    hzRow(26, 'SOC Version', '') + '<text class="hz-v" x="266" y="45.5" text-anchor="end">…2408<tspan class="hz-hl">123456</tspan></text>' +
+    '<path class="hz-ln" d="M236 52v18H150v14"/>' +
+    [0, 1, 2, 3, 4, 5].map(i => '<rect class="hz-cell" x="' + (69 + i * 28) + '" y="88" width="22" height="28" rx="6"/>' +
+      '<text class="hz-t on" x="' + (80 + i * 28) + '" y="107" text-anchor="middle">' + (i + 1) + '</text>').join('') +
+    '<text class="hz-c" x="150" y="138" text-anchor="middle">password box</text>'),
+  adb: hzBox(96, hzCrumb('Engineering mode') +
+    hzRow(26, 'Log settings') + hzRow(62, 'Enable ADB', '', 1) +
+    '<rect class="hz-sw" x="236" y="68" width="32" height="18" rx="9"/><circle cx="259" cy="77" r="6.5" fill="var(--btn-ink)"/>' +
+    hzFinger(210, 77)),
+  wifi: hzBox(96, hzCrumb('Connection › WiFi') +
+    hzRow(26, 'WiFi', '') + '<rect class="hz-sw" x="236" y="32" width="32" height="18" rx="9"/><circle cx="259" cy="41" r="6.5" fill="var(--btn-ink)"/>' +
+    hzRow(62, 'Your hotspot', '', 1) + '<text class="hz-v on" x="236" y="81.5" text-anchor="end">Connected</text>' +
+    '<path d="M246 77l4 4 9-9" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'),
+  hotspot: '<svg class="huill" viewBox="0 0 300 150" aria-hidden="true">' +
+    '<rect class="hs-dev" x="110" y="6" width="80" height="138" rx="12"/><rect class="hs-fill" x="117" y="18" width="66" height="114" rx="4"/>' +
+    '<text class="hs-lbl" x="150" y="38" style="font-size:9px">Hotspot</text>' +
+    '<rect class="hs-card" x="121" y="48" width="58" height="24" rx="5"/>' +
+    '<text class="hs-sm" x="126" y="63">Personal</text><rect class="hs-on" x="157" y="55" width="17" height="10" rx="5"/>' +
+    '<circle cx="169" cy="60" r="3.6" fill="#fff"/>' +
+    '<path class="hs-wave" d="M60 64a24 24 0 0130 0M66 56a34 34 0 0118 0" transform="translate(0 6)"/>' +
+    '<path class="hs-wave" d="M210 70a24 24 0 0130 0M216 62a34 34 0 0118 0"/></svg>',
   gesture: '<svg viewBox="0 0 300 200" aria-hidden="true">' +
     '<rect class="hs-scr" x="80" y="8" width="140" height="184" rx="10"/>' +
     '<g class="hg-hud"><rect x="104" y="58" width="92" height="62" rx="9" fill="oklch(0.30 0.016 255)"/>' +
@@ -2307,12 +2362,51 @@ const HU_ILL = {
     '</svg>',
 };
 
+// the checklist: every sub-step has its own Done toggle (localStorage huDone)
+const HU_STEPS = [
+  ['menu', 'Open the engineering menu', [
+    ['1.1', 'On the head unit open <b class="k">Settings</b> and tap <b class="k">System</b> in the side list.', 'settings'],
+    ['1.2', 'Tap <b class="k">Version information</b>.', 'version'],
+    ['1.3', 'Tap <b class="k">APP Version</b> 10 times. A password box opens.', 'app'],
+    ['1.4', 'Find the <b class="k">SOC Version</b> on the same screen. Type its <b class="k">last 6 digits</b> as the password and tap <b class="k">OK</b>.',
+      'soc', 'The J5 password is always taken from that version string, nothing to generate.'],
+  ]],
+  ['adb', 'Turn on Enable ADB', [
+    ['2.1', 'In <b class="k">Engineering mode</b>, switch <b class="k">Enable ADB</b> on. Leave it on: the add-on uses it from ' +
+      'inside the head unit to reach the A/C.', 'adb', 'Once installed, the add-on closes this port to WiFi so nothing else can use it.'],
+  ]],
+  ['wifi', 'Join the same hotspot', [
+    ['3.1', 'Turn on the hotspot on your phone.', 'hotspot'],
+    ['3.2', 'On the head unit open <b class="k">Connection</b>, then <b class="k">WiFi</b>, and join your hotspot.', 'wifi',
+      'While the head unit WiFi is on, wireless CarPlay and Android Auto do not work. Turn it off after the install; the add-on keeps working without it.'],
+    ['3.3', 'Connect the laptop to the same hotspot.'],
+  ]],
+  ['install', 'Find and install', [
+    ['4.1', 'Tap <b class="k">Find head unit</b>, pick it, then <b class="k">Install</b>.', 'tool'],
+  ]],
+  ['try', 'Try it', [
+    ['5.1', 'Rest two fingers on the screen for about a third of a second, then slide. Sideways sets the fan, up and down sets ' +
+      'the temperature. You can switch direction without lifting.', null,
+      'To update later, open the Climate gesture app on the head unit, tap Open ADB 5 min, then run step 4 again.'],
+  ]],
+];
+const HU_ALL = ['need'].concat(...HU_STEPS.map(s => s[2].map(x => x[0])));
+const CK_DONE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 12.4l3.6 3.6 7.4-7.6"/></svg>';
+
 function renderHu(){
   const el = $('pgHuBody'), done = huDone();
-  const step = (k, n, title, body) =>
-    '<div class="panel hustep' + (done.includes(k) ? ' done' : '') + '" data-step="' + k + '"><div class="hn"><b>' + n + '</b>' +
-    '<h4>' + title + '</h4><button class="hudone" data-done="' + k + '">' + (done.includes(k) ? 'Done' : 'Mark done') +
-    '</button></div>' + body + '</div>';
+  const box = (k, label) => '<button class="huck' + (done.includes(k) ? ' on' : '') + '" data-done="' + k + '" aria-pressed="' +
+    done.includes(k) + '" aria-label="' + label + ' done">' + CK_DONE + '</button>';
+  const sub = ([k, text, ill, note]) =>
+    '<div class="husub' + (done.includes(k) ? ' done' : '') + '" data-step="' + k + '">' + box(k, 'Step ' + k) +
+      '<div class="husb"><p class="hutx"><span class="hunum">' + k + '</span>' + text + '</p>' +
+      (note ? '<p class="hunote">' + note + '</p>' : '') +
+      (ill === 'tool' ? '<div class="hutool" id="huTool"></div>' : ill ? HU_ILL[ill] : '') + '</div></div>';
+  const group = ([g, title, subs], i) =>
+    '<div class="panel hustep" data-group="' + g + '"><div class="hn"><b>' + (i + 1) + '</b><h4>' + title + '</h4>' +
+      '<span class="hucnt" data-cnt="' + g + '"></span></div><div class="husubs">' + subs.map(sub).join('') + '</div></div>';
+  const tick = k => box(k, 'What you need');
+
   el.innerHTML =
     '<div class="panel huhero"><div class="humedia" id="huMedia">' + HU_ILL.gesture +
       '<span class="cap">DEMO · VIDEO COMING</span></div>' +
@@ -2324,34 +2418,18 @@ function renderHu(){
       '<span class="hutag">Head unit T13J-INTL 00.04.15</span><span class="hutag">Android 12</span>' +
       '<span class="hutag" id="huSize"></span></div></div>' +
 
+    '<div class="panel huprg" id="huPrg"><div class="hurow"><span class="plbl" id="huPrgT"></span>' +
+      '<button class="hureset" id="huReset">Start over</button></div><div class="hubar"><i id="huPrgB"></i></div></div>' +
+
     '<div class="sech husech"><span class="ov">What you need</span></div>' +
-    '<div class="panel">' + HU_ILL.need +
-      '<p class="note" style="margin-top:var(--s2)">A laptop running this dashboard (<b>python tools/server.py</b>) and the head unit on the same ' +
-      'phone hotspot. The installer talks to the head unit over the local network, so the copy of this dashboard on a ' +
-      'home server cannot reach your car. About 10 minutes, parked.</p></div>' +
+    '<div class="panel huneed' + (done.includes('need') ? ' done' : '') + '" data-step="need">' +
+      '<div class="hurow"><span class="plbl">About 10 minutes, parked</span>' + tick('need') + '</div>' +
+      '<ul class="hulist2"><li>A laptop running this dashboard: <b class="k">python tools/server.py</b>. The copy on a home ' +
+      'server cannot reach your car.</li><li>A phone with a hotspot. The laptop and the head unit both join it.</li>' +
+      '<li>No cable. Everything goes over the hotspot.</li></ul>' + HU_ILL.need + '</div>' +
 
     '<div class="sech husech"><span class="ov">Steps</span></div>' +
-    step('menu', 1, 'Open the engineering menu', HU_ILL.menu +
-      '<p>On the head unit open <b class="k">Settings</b>, then <b class="k">System</b>, then ' +
-      '<b class="k">Version information</b>. Tap the title row <b class="k">ten times</b>. A password box opens: ' +
-      'type the engineering password and tap <b class="k">OK</b>.</p>' +
-      '<div class="hutodo">How to get the password, and photos for this step, are coming soon.</div>') +
-    '<div style="height:var(--s3)"></div>' +
-    step('adb', 2, 'Turn on Enable ADB', HU_ILL.adb +
-      '<p>In <b class="k">Engineering mode</b>, switch <b class="k">Enable ADB</b> on. Leave it on: the add-on uses it from inside the head unit to reach the A/C. ' +
-      'Once installed, the add-on closes this port to WiFi so nothing else can use it.</p>') +
-    '<div style="height:var(--s3)"></div>' +
-    step('wifi', 3, 'Join the same hotspot', HU_ILL.wifi +
-      '<p>Turn on your phone hotspot. Connect the head unit WiFi and the laptop to it.</p>' +
-      '<p>While the head unit WiFi is on, wireless CarPlay and Android Auto do not work. Turn the WiFi off after the ' +
-      'install; the add-on keeps working without it.</p>') +
-    '<div style="height:var(--s3)"></div>' +
-    step('install', 4, 'Find and install', '<div class="hutool" id="huTool"></div>') +
-    '<div style="height:var(--s3)"></div>' +
-    step('try', 5, 'Try it', '<p>Rest two fingers on the screen for about a third of a second, then slide. ' +
-      'You can switch between sideways and up-down without lifting.</p>' +
-      '<p>To update later, open the <b class="k">Climate gesture</b> app on the head unit and tap ' +
-      '<b class="k">Open ADB 5 min</b> first, then run step 4 again.</p>') +
+    HU_STEPS.map(group).join('<div style="height:var(--s3)"></div>') +
 
     '<div class="sech husech"><span class="ov">Use an AI agent instead</span></div>' +
     '<div class="panel"><div class="hurow"><span class="plbl">Prompt for Claude Code, Codex or similar</span>' +
@@ -2370,12 +2448,29 @@ function renderHu(){
   el.querySelectorAll('[data-done]').forEach(b => b.onclick = () => {
     const k = b.dataset.done, on = !huDone().includes(k);
     huSetDone(k, on);
-    const p = b.closest('.hustep'); p.classList.toggle('done', on); b.textContent = on ? 'Done' : 'Mark done';
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+    b.closest('[data-step]').classList.toggle('done', on);
+    huProgress();
   });
+  $('huReset').onclick = () => { try{ localStorage.removeItem('huDone'); }catch(e){} renderHu(); };
   $('huCopyP').onclick = ev => huCopy($('huPrompt').textContent, ev.currentTarget);
+  huProgress();
   huText();
   huTool();
   if(!HU.meta) api('api/hu/addons').then(d => { HU.meta = d; huText(); huTool(); }).catch(() => {});
+}
+
+function huProgress(){
+  const d = huDone(), n = HU_ALL.filter(k => d.includes(k)).length;
+  $('huPrgT').textContent = n === HU_ALL.length ? 'All done' : n + ' of ' + HU_ALL.length + ' done';
+  $('huPrgB').style.width = (n / HU_ALL.length * 100) + '%';
+  $('huReset').hidden = !n;
+  HU_STEPS.forEach(([g, , subs]) => {
+    const c = subs.filter(s => d.includes(s[0])).length, all = c === subs.length;
+    const p = document.querySelector('[data-group="' + g + '"]');
+    p.classList.toggle('done', all);
+    p.querySelector('.hucnt').textContent = subs.length > 1 ? c + '/' + subs.length : '';
+  });
 }
 
 function huText(){
@@ -2489,9 +2584,9 @@ async function huRun(action){
     } else {
       HU.steps = d.steps || null;
       if(d.ok){
-        HU.msg = 'Installed. Try two fingers on the head unit screen.'; huSetDone('install', true);
-        const p = document.querySelector('[data-step="install"]');
-        if(p){ p.classList.add('done'); p.querySelector('.hudone').textContent = 'Done'; }
+        HU.msg = 'Installed. Try two fingers on the head unit screen.'; huSetDone('4.1', true);
+        const p = document.querySelector('[data-step="4.1"]');
+        if(p){ p.classList.add('done'); const b = p.querySelector('.huck'); b.classList.add('on'); b.setAttribute('aria-pressed', true); huProgress(); }
         const q = await huPost('probe', {ip: HU.ip, addon: 'climate-gesture'}).catch(() => null);
         if(q && q.ok) HU.probe = q;
       } else { HU.msg = d.error || 'Install stopped. See the step that failed above.'; HU.bad = true; }
