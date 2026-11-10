@@ -33,14 +33,17 @@ public class MainActivity extends Activity {
     private Switch sw;
     private boolean removing;
 
+    // the head unit is 1440 px wide at a low density, so plain dp comes out tiny: scale the layout to ~560 dp wide
+    private float k = 1f;
+
     private int dp(float v) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics());
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v * k, getResources().getDisplayMetrics());
     }
 
     private TextView text(String s, float sp, int color, boolean bold) {
         TextView t = new TextView(this);
         t.setText(s);
-        t.setTextSize(sp);
+        t.setTextSize(sp * k);
         t.setTextColor(color);
         t.setLineSpacing(0, 1.2f);
         if (bold) t.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
@@ -67,7 +70,7 @@ public class MainActivity extends Activity {
         Button b = new Button(this);
         b.setText(s);
         b.setAllCaps(false);
-        b.setTextSize(17);
+        b.setTextSize(17 * k);
         b.setTextColor(ink);
         b.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         b.setBackground(round(fill, stroke, 14));
@@ -102,6 +105,8 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
+        android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
+        k = Math.max(1f, Math.min(2.4f, dm.widthPixels / dm.density / 560f));
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
 
@@ -135,7 +140,9 @@ public class MainActivity extends Activity {
         sw.setThumbTintList(new ColorStateList(new int[][]{{android.R.attr.state_checked}, {}}, new int[]{Color.WHITE, 0xFFB8BEC8}));
         sw.setTrackTintList(new ColorStateList(new int[][]{{android.R.attr.state_checked}, {}}, new int[]{ACC, LINE}));
         sw.setOnCheckedChangeListener((v, on) -> { GestureService.setPaused(this, !on); refresh(); });
-        sr.addView(sw);
+        sw.setScaleX(k);
+        sw.setScaleY(k);
+        sr.addView(sw, new LinearLayout.LayoutParams(dp(60), dp(44)));
         st.addView(sr);
         root.addView(st, gap(24));
 
@@ -174,7 +181,7 @@ public class MainActivity extends Activity {
 
         // log, hidden by default
         logBtn = button("Show log", BG, MUT, LINE);
-        logBtn.setTextSize(15);
+        logBtn.setTextSize(15 * k);
         logBtn.setOnClickListener(v -> {
             boolean show = logView.getVisibility() != View.VISIBLE;
             logView.setVisibility(show ? View.VISIBLE : View.GONE);
