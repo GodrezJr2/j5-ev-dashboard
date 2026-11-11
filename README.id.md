@@ -112,6 +112,7 @@ Kalau ga setuju sama poin di atas, jangan dipakai.
   Hanya *stop charging* yang terkonfirmasi; sisanya label best-effort yang bisa kamu remap dengan
   long-press tombolnya. **Cloud-only — belum bisa Bluetooth.** Lihat
   [docs/control-opcodes.md](docs/control-opcodes.md).
+- **Add-on head unit (baru)** — Climate Gesture: atur kipas dan suhu pakai dua jari di head unit J5. Lihat [Add-on head unit](#add-on-head-unit-climate-gesture).
 - **Perawatan baterai, hitung mundur servis, tampilan ban, toggle privasi, dark mode, i18n EN/ID.**
 - **Home Assistant** — baca semua lewat REST sensor + notif batre-low / charge-selesai. Lihat [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md).
 
@@ -327,6 +328,31 @@ Python quick-start in the README (pip install requests websocket-client, then ru
 tools/server.py and tools/logger.py). If the host is reachable from the internet, remind me to
 set a dashboard password on the login page's Advanced section.
 ```
+
+## Add-on head unit: Climate Gesture
+Atur kipas dan suhu dari **mana aja di layar head unit** pakai dua jari, tanpa buka layar climate.
+Taruh dua jari sekitar sepertiga detik, lalu geser: ke samping = kipas (1 sampai 10), atas/bawah
+= suhu (15.5 sampai 30.5 °C). Ada kartu kecil yang nunjukin nilainya. Nyala sendiri tiap
+restart. Dites di Jaecoo J5 EV asli (head unit T13J-INTL 00.04.15, Android 12).
+
+**Panduan step-by-step plus gambar ada di dalam dashboard:** jalanin di laptop (Windows: file
+`start`, atau `python tools/server.py`), login, lalu **Account → Head unit add-ons**. Sekitar
+10 menit, mobil parkir, tanpa kabel. Versi singkat:
+
+1. **Engineering menu** — di head unit *Settings → System → Version information*, tap
+   *APP Version* 10 kali, isi password = **6 digit terakhir SOC Version**.
+2. **Enable ADB** — nyalain di Engineering mode. Yang lain jangan disentuh.
+3. **Hotspot yang sama** — nyalain hotspot HP; head unit (*Connection → WiFi*) dan laptop konek ke situ.
+4. **Find dan install** — tap *Find head unit*, pilih, *Install*.
+5. **Coba** — dua jari, tahan, geser. Habis itu matiin lagi WiFi head unit (CarPlay / Android
+   Auto wireless ga jalan selama WiFi nyala); add-on tetap jalan.
+
+Ga perlu backup: cuma install app biasa, ga ada file sistem atau setting mobil yang berubah. Buat
+uninstall, buka app Climate Gesture lalu tap **Remove Climate Gesture**. Setelah terpasang, app ini
+nutup ADB lewat WiFi jadi device lain di jaringan ga bisa masuk head unit. **Ga resmi** — bukan dari
+Jaecoo atau Chery; update head unit bisa bikin ga jalan. Installer ngecek A/C dulu dan nolak head
+unit yang ga dikenal. Source: [headunit/climate-gesture](headunit/climate-gesture), APK:
+[headunit/dist](headunit/dist) (perintah `adb` manual ada di halaman add-ons).
 
 ## Menuju multi-user
 

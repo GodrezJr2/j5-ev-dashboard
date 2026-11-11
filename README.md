@@ -109,6 +109,7 @@ If you don't accept the above, don't use this.
   car: lock/unlock, A/C on/off + target temp, windows, sunroof, tailgate, find-car, stop charging.
   Only *stop charging* is confirmed; the rest are best-effort labels you can re-map by long-pressing
   a button. **Cloud only — no Bluetooth.** See [docs/control-opcodes.md](docs/control-opcodes.md).
+- **Head unit add-on (new)** — Climate Gesture: two-finger fan and temperature control on the J5 head unit. See [Head unit add-on](#head-unit-add-on-climate-gesture).
 - **Battery care, service countdown, tyre view, privacy toggles, dark mode, EN/ID i18n.**
 - **Home Assistant** — read it all over a REST sensor and get battery-low / charge-done notifications. See [docs/HOMEASSISTANT.md](docs/HOMEASSISTANT.md). Prefer a native integration? [ha-carlinko](https://github.com/jebentancour/ha-carlinko) by [@jebentancour](https://github.com/jebentancour) (read-only, built on the same telemetry).
 
@@ -415,6 +416,32 @@ Python quick-start in the README (pip install requests websocket-client, then ru
 tools/server.py and tools/logger.py). If the host is reachable from the internet, remind me to
 set a dashboard password on the login page's Advanced section.
 ```
+
+## Head unit add-on: Climate Gesture
+Set the fan and temperature from **anywhere on the head unit screen** with two fingers, without
+opening the climate screen. Rest two fingers for about a third of a second, then slide:
+sideways = fan (1 to 10), up/down = temperature (15.5 to 30.5 °C). A small card shows the value.
+It starts by itself after every restart. Tested on a real Jaecoo J5 EV (head unit T13J-INTL
+00.04.15, Android 12).
+
+**Step-by-step guide with drawings is built into the dashboard:** run it on a laptop (Windows:
+the `start` file, or `python tools/server.py`), log in, then **Account → Head unit add-ons**.
+About 10 minutes, parked, no cable. Short version:
+
+1. **Engineering menu** — head unit *Settings → System → Version information*, tap *APP Version*
+   10 times, type the **last 6 digits of the SOC Version** as the password.
+2. **Enable ADB** — switch it on in Engineering mode. Touch nothing else there.
+3. **Same hotspot** — phone hotspot on; head unit (*Connection → WiFi*) and laptop both join it.
+4. **Find and install** — tap *Find head unit*, pick it, *Install*.
+5. **Try it** — two fingers, hold, slide. Turn the head unit WiFi off again afterwards
+   (wireless CarPlay / Android Auto don't work while it's on); the add-on keeps working.
+
+No backup needed: it's an ordinary app install, no system files or car settings change. To undo,
+open the Climate Gesture app and tap **Remove Climate Gesture**. Once installed, it closes ADB
+over WiFi so nothing else on the network can reach the head unit. **Unofficial** — not from
+Jaecoo or Chery; a head unit update may stop it. The installer checks the A/C first and refuses
+a head unit it doesn't recognise. Source: [headunit/climate-gesture](headunit/climate-gesture),
+APK: [headunit/dist](headunit/dist) (manual `adb` commands are on the add-ons page).
 
 ## Going multi-user
 
