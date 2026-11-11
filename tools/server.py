@@ -2139,7 +2139,10 @@ class H(BaseHTTPRequestHandler):
                 d = send_control(op, body.get("timeOut") or 20)
                 reached = str(d.get("code")) == "0000"
                 done, res, reason = control_verdict(op, d.get("data")) if reached else (False, None, None)
-                self._send(200, json.dumps({"ok": reached and done, "code": d.get("code"),
+                # ok = reached the T-Box and not refused. confirmed = the car itself answered 00;
+                # a 0000 with no verdict (car asleep / weak signal) is ok but NOT confirmed.
+                self._send(200, json.dumps({"ok": reached and done, "confirmed": reached and res == "00",
+                                            "code": d.get("code"),
                                             "msg": d.get("msg"), "result": res,
                                             "reason": reason}).encode(),
                            "application/json")

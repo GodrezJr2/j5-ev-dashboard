@@ -1632,7 +1632,8 @@ async function fireOpcode(op,to){
     const r=await fetch('api/control',{method:'POST',headers:{'content-type':'application/json'},
       body:JSON.stringify({data:op,timeOut:parseInt(to)||20})});
     const d=await r.json();
-    if(d.ok) ctrlLog('&#10003; '+op+' ok');
+    if(d.ok) ctrlLog(d.confirmed ? '&#10003; '+op+' done (car answered 00)'
+                                 : '&#8230; '+op+' sent, car has not confirmed &mdash; watch the status');
     else if(String(d.code)==='50043') ctrlLog('&#10007; '+op+' &mdash; car unreachable (asleep / weak signal &mdash; use Bluetooth)');
     else ctrlLog('&#10007; '+op+' &mdash; '+(d.msg||d.error||d.code||'failed'));
     setTimeout(()=>load(),1500);   // pull fresh status after a command

@@ -1093,27 +1093,56 @@ function opText(op){
   }
   return ['Done', 'do that'];
 }
-// state a command leaves behind once the car has confirmed it (result byte 00)
-const OPTIMISTIC = {
+// State a command should leave behind. It is NEVER written into S: the UI (badge, buttons, 3D
+// model) only changes when a frame from the car reports it. A 0000 reply only means the T-Box got
+// the command; with a weak signal the car can still not do it, and showing "Unlocked" / an open
+// trunk before the car says so was a false positive.
+const EXPECT = {
   '740100': {unlocked: false}, '740200': {unlocked: true},
   '741001': {ac_on: true},     '741000': {ac_on: false},
   '740300': {trunk_open: true}, '740A00': {trunk_open: false},
 };
-async function fire(op, btn){        // resolves true when the car accepted the command
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const PENDING = new Set();                     // opcodes sent and still waiting on the car's report
+const matches = want => S && Object.keys(want).every(k => !!S[k] === want[k]);
+// Wait for the car's own report. Pushed frames update S on their own; poke the car (api/refresh)
+// a few times in case it does not push. Resolves true once S shows the expected state.
+async function awaitCar(want, ms){
+  const end = Date.now() + ms, pokes = [4000, 12000, 22000], t0 = Date.now();
+  while(Date.now() < end){
+    if(matches(want)) return true;
+    if(pokes.length && Date.now() - t0 >= pokes[0]){
+      pokes.shift();
+      try{ take(await api('api/refresh')); renderAll(); }catch(e){}
+      continue;
+    }
+    await sleep(1000);
+  }
+  return matches(want);
+}
+async function fire(op, btn){        // resolves true when the car reported doing it
   const [done, doing] = opText(op);
+  const want = EXPECT[String(op).toUpperCase()];
   let ok = false;
   if(btn) btn.classList.add('busy');
+  PENDING.add(op);
   try{
     await api('api/control', {method: 'POST', headers: {'content-type': 'application/json'},
       body: JSON.stringify({data: '77', timeOut: 20})});
-    await new Promise(r => setTimeout(r, 600));
+    await sleep(600);
     const d = await api('api/control', {method: 'POST', headers: {'content-type': 'application/json'},
       body: JSON.stringify({data: op, timeOut: 20})});
-    if(d.ok){
-      ok = true; toast(done);
-      // the car answered 00 (done), so show the new state now; the next pushed frame confirms it
-      const patch = OPTIMISTIC[String(op).toUpperCase()];
-      if(patch && S){ Object.assign(S, patch); renderAll(); }
+    if(d.ok && want){
+      if(matches(want)){ ok = true; toast(done); }
+      else{
+        toast(d.confirmed ? 'Car accepted, waiting for its status…' : 'Sent, waiting for the car…');
+        ok = await awaitCar(want, 30000);
+        toast(ok ? done : 'Not confirmed by the car (' + doing + '). Weak signal? Refresh to check.');
+      }
+    }
+    else if(d.ok){
+      ok = true;
+      toast(d.confirmed ? done : 'Sent to the car; it has not confirmed yet');
       if(!liveOk()) setTimeout(load, 1800);
     }
     else if(d.reason) toast('Could not ' + doing + ': ' + d.reason);
@@ -1121,7 +1150,9 @@ async function fire(op, btn){        // resolves true when the car accepted the 
     else if(String(d.code) === '9997') toast('CarLinko login expired');
     else toast('Could not ' + doing);
   }catch(e){ toast('Could not reach the dashboard server'); }
+  PENDING.delete(op);
   if(btn) btn.classList.remove('busy');
+  if(S) renderAll();                           // drop the busy look on re-rendered buttons too
   return ok;
 }
 
@@ -1183,10 +1214,11 @@ function renderQA(){
     defs.push({k: 'power', label: 'Stop', op: '742701', ask: true, askNote: 'Ends the charging session on the car.'});
   defs.forEach(d => {
     const b = document.createElement('button');
-    b.className = d.active ? 'on' : '';
+    b.className = (d.active ? 'on' : '') + (PENDING.has(d.op) ? ' busy' : '');
     b.setAttribute('aria-label', d.label);
     b.innerHTML = '<span class="qc">' + icon(d.k) + '</span>' + d.label;
     b.onclick = async () => {
+      if(PENDING.has(d.op)) return;            // still waiting on the car for this one
       if(d.ask && !(await ask(d.label + '?', d.askNote || 'The command is sent to the car now.'))) return;
       fire(d.op, b);
     };
@@ -1716,8 +1748,10 @@ function renderDoors(){
       a.btns.forEach(bt => {
         const b = document.createElement('button');
         b.textContent = bt.t;
+        if(PENDING.has(bt.op)) b.classList.add('busy');
         b.setAttribute('aria-label', a.label + ' ' + bt.t.toLowerCase());
         b.onclick = async () => {
+          if(PENDING.has(bt.op)) return;
           if(bt.ask && !(await ask(bt.ask, 'The command is sent to the car now.'))) return;
           fire(bt.op, b);
         };
