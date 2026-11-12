@@ -145,6 +145,17 @@
     border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
+  .addon{display:flex;align-items:center;gap:13px;margin-top:14px;padding:14px 16px;border-radius:var(--r2);
+    background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none;
+    transition:transform .14s var(--eo)}
+  .addon:active{transform:scale(.985)}
+  .addon .ic{flex:none;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:var(--card-2);color:var(--mut)}
+  .addon .ic svg{width:20px;height:20px}
+  .addon b{display:block;font-size:14.5px;font-weight:600}
+  .addon small{display:block;margin-top:2px;font-size:12.5px;line-height:1.4;color:var(--mut)}
+  .addon > span{flex:1;min-width:0}
+  .addon .chev{flex:none;width:8px;height:14px;color:var(--fnt)}
   .notes{margin:18px 4px 0;font-size:12.5px;line-height:1.55;color:var(--mut)}
   .notes p{display:flex;gap:9px;padding:9px 0;border-top:1px solid var(--line)}
   .notes p:first-child{border-top:0}
@@ -217,6 +228,13 @@
     </form>
   </div>
 
+  <!-- no car login needed: the head unit add-on installer on its own (/addons) -->
+  <a class="addon hide" id="addonLink" href="addons">
+    <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+    <span><b>Only want the head unit add-on?</b><small>Install Climate Gesture without connecting a CarLinko account.</small></span>
+    <svg class="chev" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m1 1 6 6-6 6"/></svg>
+  </a>
+
   <div class="notes" id="cfgNotes">
     <p><i></i><span>Self-hosted. Your login is stored on this server only and sent nowhere else than CarLinko.</span></p>
     <p><i></i><span>CarLinko allows one session per account, so signing in here can sign you out of the CarLinko app.</span></p>
@@ -238,6 +256,7 @@
     $('cfg').classList.toggle('hide', which !== 'cfg');
     $('unlock').classList.toggle('hide', which !== 'unlock');
     $('cfgNotes').classList.toggle('hide', which !== 'cfg');
+    $('addonLink').classList.toggle('hide', which !== 'cfg');
     const first = which === 'cfg' ? $('email') : $('upw');
     if(matchMedia('(pointer:fine)').matches) first.focus();
   }

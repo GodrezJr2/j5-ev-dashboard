@@ -282,6 +282,9 @@
     padding-bottom:calc(var(--s7) + env(safe-area-inset-bottom))}
   .page.open{transform:none;visibility:visible;transition:transform var(--t-slow) var(--eo),visibility 0s}
   .page.drag{transition:none}
+  /* add-ons only (/addons): no car connected, the head-unit page is the whole app */
+  body.solo > :not(#pgHu):not(.toast):not(script){display:none!important}
+  body.solo #pgHu{transform:none;visibility:visible;transition:none}
   .phead{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:var(--s2);
     padding:max(var(--s4),calc(env(safe-area-inset-top) + 6px)) var(--pad) var(--s3);
     background:var(--bg)}
@@ -910,6 +913,9 @@ MOTION: one ease token, 140/220/320ms, transform and opacity only, prefers-reduc
 <script>
 const $ = id => document.getElementById(id);
 let S = null, CAPS = null;
+// /addons: the head-unit add-ons page on its own, for people who only want the add-on and no car login
+const SOLO = /\/addons(\.html)?$/.test(location.pathname);
+if(SOLO) document.body.classList.add('solo');
 async function api(p, opt){ const r = await fetch(p, opt); if(r.status === 401){ location.href = './'; throw 0; } return r.json(); }
 let toastT = null;
 function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show');
@@ -2692,6 +2698,7 @@ function openPage(k, fromHistory){
   if(!fromHistory) history.pushState({page: k}, '', '#' + k);
 }
 function closePage(fromHistory){
+  if(SOLO){ location.href = './'; return; }   // add-ons only: back = the sign-in page
   if(!openKey) return;
   $(PAGES[openKey][0]).classList.remove('open');
   openKey = null;
@@ -2816,6 +2823,7 @@ function live(){
 }
 document.addEventListener('visibilitychange', () => {
   // phones freeze background tabs; reopen the stream on return instead of trusting a dead socket
+  if(SOLO) return;
   if(document.hidden){ if(es){ es.close(); es = null; } }
   else { load(); live(); }
 });
@@ -2829,7 +2837,11 @@ $('hRefresh').onclick = async () => {
 };
 $('aEye').onclick = () => { vinShown = !vinShown; renderAcct(); };
 
-(async () => {
+if(SOLO){
+  document.title = 'Head unit add-ons';
+  document.querySelector('#pgHu [data-close]').setAttribute('aria-label', 'Back to sign in');
+  renderHu(); openKey = 'hu';
+} else (async () => {
   // caps and the summary in parallel: the skeleton is up until the first paint
   const caps = api('api/controls').then(r => r.caps).catch(() => null);
   const first = api('api/summary').catch(() => null);

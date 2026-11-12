@@ -426,6 +426,8 @@ It starts by itself after every restart. Tested on a real Jaecoo J5 EV (head uni
 
 **Step-by-step guide with drawings is built into the dashboard:** run it on a laptop (Windows:
 the `start` file, or `python tools/server.py`), log in, then **Account → Head unit add-ons**.
+Only want the add-on? No CarLinko login needed: tap **Only want the head unit add-on?** on the
+sign-in page, or open `/addons`.
 About 10 minutes, parked, no cable. Short version:
 
 1. **Engineering menu** — head unit *Settings → System → Version information*, tap *APP Version*

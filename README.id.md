@@ -336,8 +336,9 @@ Taruh dua jari sekitar sepertiga detik, lalu geser: ke samping = kipas (1 sampai
 restart. Dites di Jaecoo J5 EV asli (head unit T13J-INTL 00.04.15, Android 12).
 
 **Panduan step-by-step plus gambar ada di dalam dashboard:** jalanin di laptop (Windows: file
-`start`, atau `python tools/server.py`), login, lalu **Account → Head unit add-ons**. Sekitar
-10 menit, mobil parkir, tanpa kabel. Versi singkat:
+`start`, atau `python tools/server.py`), login, lalu **Account → Head unit add-ons**. Cuma mau
+add-on-nya? Ga perlu login CarLinko: tap **Only want the head unit add-on?** di halaman sign-in,
+atau buka `/addons`. Sekitar 10 menit, mobil parkir, tanpa kabel. Versi singkat:
 
 1. **Engineering menu** — di head unit *Settings → System → Version information*, tap
    *APP Version* 10 kali, isi password = **6 digit terakhir SOC Version**.

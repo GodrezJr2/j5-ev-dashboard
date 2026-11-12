@@ -1930,7 +1930,7 @@ class H(BaseHTTPRequestHandler):
                                         "authed": self._authed()}).encode(), "application/json")
             return
         if _gated() and not self._authed() and path not in self._PUBLIC:
-            if path in ("/", "/index.html", "/v2.html"):  # gated + locked -> show the unlock page
+            if path in ("/", "/index.html", "/v2.html", "/addons"):  # gated + locked -> show the unlock page
                 with open(os.path.join(WEB, "login.html"), "rb") as f:
                     self._send(200, f.read(), "text/html; charset=utf-8")
                 return
@@ -2092,6 +2092,8 @@ class H(BaseHTTPRequestHandler):
                 self._send(200, json.dumps({"ok": False, "error": str(e)[:160]}).encode(),
                            "application/json")
             return
+        if path in ("/addons", "/addons.html"):      # add-ons only: v2's head unit page, no car account needed
+            path = "/v2.html"
         if path == "/":
             if not is_configured():
                 path = "/login.html"                          # first run -> login page
