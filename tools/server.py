@@ -246,6 +246,52 @@ KNOWN_OPCODES = [
     {"code": "77",   "note": "captured"},
 ]
 
+def _user_id():
+    """CarLinko numeric account id, needed inside the encrypted control frame. Cached in creds.json."""
+    c = _creds()
+    uid = c.get("user_id")
+    if uid:
+        return str(uid)
+    import auth, requests
+    try:
+        r = requests.get(auth.api_base() + "/user/info",
+                         headers=auth.headers_for({}, token=_read_token()), timeout=15).json()
+        uid = (r.get("data") or {}).get("id")
+    except Exception:
+        uid = None
+    if uid:
+        c["user_id"] = str(uid)
+        try:
+            _save_creds(c)
+        except Exception:
+            pass
+    return str(uid or "")
+
+def _control_data(opcode):
+    """74xx actuation commands must be AES-encrypted: the T-Box firmware (>= 2.3.1_051A01R, ~Nov
+    2026) rejects plain 74xxyy with a bare '__7404'. Init commands (2301/24/77) stay plain.
+    Encryption (reversed from app 1.14.10) lives in carlinko_crypto; it embeds VIN + userId.
+
+    GATED TO THE JAECOO J5 for now: the scheme was verified only on the J5, so other CarLinko
+    models (Chery/Omoda/Jaecoo variants) keep the old plain path until an owner confirms theirs.
+    Widen _is_j5 (or drop the gate) once another model is tested."""
+    if not opcode.lower().startswith("74"):
+        return opcode
+    v = _creds().get("vehicle") or {}
+    vin = (v.get("vin") or VEHICLE.get("vin") or "")
+    model = (v.get("model") or VEHICLE.get("model") or "")
+    is_j5 = ("j5" in model.lower()) or vin.upper().startswith("MF7HD27B")
+    if not is_j5:
+        return opcode   # unverified model -> old behavior, do not risk a wrong frame
+    try:
+        import carlinko_crypto
+        uid = _user_id()
+        if vin and vin != "—" and uid:
+            return carlinko_crypto.build_control_payload(opcode, vin, uid)
+    except Exception as e:
+        import sys; print("control encrypt failed:", e, file=sys.stderr)
+    return opcode   # fall back to plain (fails visibly with __7404) rather than crash
+
 def send_control(opcode, timeout=20):
     """Forge the exact POST /user/vehicle/remoteControl the app sends. timeOut is signed as a
     NUMBER (not a string) to match the app's jsonEncode, else the server rejects the signature."""
@@ -257,7 +303,7 @@ def send_control(opcode, timeout=20):
         return {"code": "-1", "msg": "vehicle_id / device_sn missing from creds.json"}
     try: timeout = int(timeout)
     except Exception: timeout = 20
-    body = {"vehicleId": vid, "deviceSn": dsn, "data": str(opcode), "timeOut": timeout}
+    body = {"vehicleId": vid, "deviceSn": dsn, "data": _control_data(str(opcode)), "timeOut": timeout}
     def _post(tok):
         ts = auth.now_ms()
         ordered = {k: v for k, v in sorted({**body, "timestamp": ts}.items())}
@@ -1783,6 +1829,10 @@ def control_verdict(op, data):
     """(accepted, result_byte, reason) from the car's reply to a 74xxyy command."""
     op = str(op).upper()
     tail = str(data or "").split("__")[-1].upper()
+    # A bare 2-byte "74RR" reply (seen live: "7404") is the T-Box rejecting the command frame
+    # itself; the app's dispatcher only parses replies of 4+ bytes and shows controlSystemError.
+    if op.startswith("74") and len(op) == 6 and tail.startswith("74") and len(tail) == 4:
+        return False, tail[2:4], f"Car control system error (0x{tail[2:4]})"
     if not op.startswith("74") or len(op) != 6 or not tail.startswith(op) or len(tail) < 8:
         return True, None, None                      # not an actuation, or no verdict in the reply
     res = tail[6:8]
