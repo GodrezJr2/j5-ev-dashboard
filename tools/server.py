@@ -253,12 +253,22 @@ def _user_id():
     if uid:
         return str(uid)
     import auth, requests
-    try:
-        r = requests.get(auth.api_base() + "/user/info",
-                         headers=auth.headers_for({}, token=_read_token()), timeout=15).json()
-        uid = (r.get("data") or {}).get("id")
-    except Exception:
-        uid = None
+    def _fetch(tok):
+        # returns (id_or_None, token_was_stale)
+        try:
+            r = requests.get(auth.api_base() + "/user/info",
+                             headers=auth.headers_for({}, token=tok), timeout=15).json()
+            if str(r.get("code")) in ("9997", "40001", "40003", "401", "1001", "1002"):
+                return None, True
+            return (r.get("data") or {}).get("id"), False
+        except Exception:
+            return None, False
+    uid, stale = _fetch(_read_token())
+    if not uid and stale:            # expired token -> relogin once (same as send_control does)
+        try:
+            uid, _ = _fetch(auth.login())
+        except Exception:
+            uid = None
     if uid:
         c["user_id"] = str(uid)
         try:
